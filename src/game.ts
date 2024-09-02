@@ -27,7 +27,7 @@ export class Game {
     squads: Squad[] = [];
 
     init() {
-        times(100, () => this.addDotRandom());
+        times(500, () => this.addDotRandom());
     }
 
     createSquad(slots: Slot[]) {
@@ -35,6 +35,16 @@ export class Game {
         this.squads.push(squad);
 
         return squad;
+    }
+
+    removeSquad(squad: Squad) {
+        this.squads.splice(this.squads.indexOf(squad));
+    }
+
+    isInSquad(dotIndex: number) {
+        return this.squads.some((squad) =>
+            squad.slots.some((slot) => slot.dotIndex === dotIndex),
+        );
     }
 
     addDotRandom() {
@@ -51,8 +61,16 @@ export class Game {
         this.dotsSelectedIndexes.add(dotIndex);
     }
 
-    dotSelectAll() {
+    dotSelectAllWithoutSquad() {
         this.dotsSelectedIndexes = new Set(times(this.dots.length, (i) => i));
+
+        for (const squad of this.squads) {
+            for (const slot of squad.slots) {
+                if (slot.dotIndex) {
+                    this.dotsSelectedIndexes.delete(slot.dotIndex);
+                }
+            }
+        }
     }
 
     dotUnselect(dotIndex: number) {
@@ -100,7 +118,7 @@ export class Game {
             if (length < maxMoveDistance) {
                 dot.path.splice(0, 1);
             }
-        }
+        };
 
         const changePathToSquad = (squad: Squad) => {
             for (const slot of squad.slots) {
@@ -111,7 +129,7 @@ export class Game {
                 const dot = this.dots[slot.dotIndex];
                 dot.path = [slot.position];
             }
-        }
+        };
 
         for (const squad of this.squads) {
             changePathToSquad(squad);

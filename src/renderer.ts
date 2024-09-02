@@ -1,5 +1,5 @@
 import type { Game, Dot, Squad } from "./game";
-import type { SquadFrames, UI } from "./ui";
+import type { SquadFrame, UI } from "./ui";
 import type { Point, Rect } from "./utils";
 
 interface Renderer {
@@ -17,7 +17,7 @@ export class RendererCanvasSimple implements Renderer {
     constructor(
         readonly game: Game,
         readonly ui: UI,
-        canvas: HTMLCanvasElement
+        canvas: HTMLCanvasElement,
     ) {
         this.ctx = canvas.getContext("2d")!;
         this.width = canvas.width;
@@ -28,7 +28,11 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.clearRect(0, 0, this.width, this.height);
 
         this.game.dots.forEach(this.renderDot.bind(this));
-        this.ui.squadFrames.forEach(this.renderSquadFrames.bind(this));
+        this.ui.squadFrames.forEach((squadFrame) => {
+            const isSelected = this.ui.squadFrameSelected === squadFrame;
+
+            this.renderSquadFrames(squadFrame, isSelected);
+        });
 
         if (this.ui.selection) {
             this.renderSelection(this.ui.selection);
@@ -49,7 +53,7 @@ export class RendererCanvasSimple implements Renderer {
             dot.x - this.dotWidth / 2,
             dot.y - this.dotHeight / 2,
             this.dotWidth,
-            this.dotHeight
+            this.dotHeight,
         );
     }
 
@@ -64,12 +68,7 @@ export class RendererCanvasSimple implements Renderer {
     }
 
     private drawRect(rect: Rect) {
-        this.drawPolygon([
-            rect.p1,
-            rect.p2,
-            rect.p3,
-            rect.p4,
-        ]);
+        this.drawPolygon([rect.p1, rect.p2, rect.p3, rect.p4]);
     }
 
     renderSelection(selection: Rect) {
@@ -90,13 +89,12 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.stroke();
     }
 
-    renderSquadFrames(squadFrame: SquadFrames[number]) {
+    renderSquadFrames(squadFrame: SquadFrame, isSelected: boolean) {
         this.ctx.lineWidth = 1;
-        this.ctx.strokeStyle = "brown";
+        this.ctx.strokeStyle = isSelected ? "darkkhaki" : "brown";
 
         this.drawRect(squadFrame.frame);
 
         this.ctx.stroke();
     }
 }
-
