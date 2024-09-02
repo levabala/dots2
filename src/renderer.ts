@@ -24,6 +24,7 @@ export class RendererCanvasSimple implements Renderer {
         this.height = canvas.height;
     }
 
+    lastRenderTimestamp: number | null = null;
     render() {
         this.ctx.clearRect(0, 0, this.width, this.height);
 
@@ -41,6 +42,33 @@ export class RendererCanvasSimple implements Renderer {
         if (this.ui.destination) {
             this.renderDestination(this.ui.destination);
         }
+
+        this.renderPerformance();
+    }
+
+    lastFPS: number[] = [];
+    renderPerformance() {
+        // TODO: move to measurements module
+        const dateNow = Date.now();
+        const timeBetweenRenders =
+            dateNow - (this.lastRenderTimestamp ?? dateNow);
+        this.lastRenderTimestamp = dateNow;
+
+        const fps = 1000 / timeBetweenRenders;
+        this.lastFPS.push(fps);
+
+        if (this.lastFPS.length > 40) {
+            this.lastFPS.splice(0, 1);
+        }
+
+        const fpsAverage =
+            this.lastFPS.reduce((acc, val) => acc + val, 0) /
+            this.lastFPS.length;
+        const fpsLowest = this.lastFPS.reduce((acc,val) => Math.min(acc,val), Infinity);
+
+        this.ctx.fillStyle = "black";
+        this.ctx.lineWidth = 2;
+        this.ctx.fillText(`average: ${fpsAverage.toFixed(0)} lowest: ${fpsLowest.toFixed(0)}`, 2, 10);
     }
 
     renderDot(dot: Dot) {

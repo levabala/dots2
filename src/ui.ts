@@ -147,7 +147,7 @@ export class UI {
 
         for (const squadFrame of this.squadFramesSelected) {
             this.game.removeSquad(squadFrame.squad);
-            this.squadFrames.splice(this.squadFrames.indexOf(squadFrame));
+            this.squadFrames.splice(this.squadFrames.indexOf(squadFrame), 1);
             this.squadFramesSelected = [];
         }
     }

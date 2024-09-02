@@ -27,7 +27,7 @@ export class Game {
     squads: Squad[] = [];
 
     init() {
-        times(500, () => this.addDotRandom());
+        times(5000, () => this.addDotRandom());
     }
 
     createSquad(slots: Slot[]) {
@@ -38,7 +38,7 @@ export class Game {
     }
 
     removeSquad(squad: Squad) {
-        this.squads.splice(this.squads.indexOf(squad));
+        this.squads.splice(this.squads.indexOf(squad), 1);
     }
 
     isInSquad(dotIndex: number) {

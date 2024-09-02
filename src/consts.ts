@@ -1,4 +1,4 @@
-export const WIDTH = 700;
+export const WIDTH = 900;
 export const HEIGHT = 700;
 
 export const DOT_SPEED = 200 / 1000;
