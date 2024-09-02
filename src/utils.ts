@@ -35,7 +35,7 @@ export function randomPointInRect({ p1, p2, p3 }: Rect): Point {
 // chatgpt (c)
 export function sortRectPoints(rect: Rect): Rect {
     // Extract points into an array
-    let points: Point[] = [rect.p1, rect.p2, rect.p3, rect.p4];
+    const points: Point[] = [rect.p1, rect.p2, rect.p3, rect.p4];
 
     // Sort points primarily by the y-coordinate, then by the x-coordinate
     points.sort((a, b) => {

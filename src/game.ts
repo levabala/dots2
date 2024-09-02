@@ -66,7 +66,7 @@ export class Game {
 
         for (const squad of this.squads) {
             for (const slot of squad.slots) {
-                if (slot.dotIndex) {
+                if (slot.dotIndex !== null) {
                     this.dotsSelectedIndexes.delete(slot.dotIndex);
                 }
             }

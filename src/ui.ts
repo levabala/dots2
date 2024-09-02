@@ -22,7 +22,7 @@ export class UI {
     destination: Rect | null = null;
 
     squadFrames: SquadFrame[] = [];
-    squadFrameSelected: SquadFrame | null = null;
+    squadFramesSelected: SquadFrame[] = [];
 
     constructor(
         readonly element: HTMLElement,
@@ -102,11 +102,11 @@ export class UI {
     }
 
     trySelectSquadFrame(x: number, y: number) {
-        this.squadFrameSelected = null;
+        this.squadFramesSelected = [];
 
         for (const squadFrame of this.squadFrames) {
             if (isPointInRect({ x, y }, squadFrame.frame)) {
-                this.squadFrameSelected = squadFrame;
+                this.squadFramesSelected.push(squadFrame);
                 return;
             }
         }
@@ -137,17 +137,19 @@ export class UI {
         const squadFrame = { squad, frame };
         this.squadFrames.push(squadFrame);
 
-        this.squadFrameSelected = squadFrame;
+        this.squadFramesSelected = [squadFrame];
     }
 
     destroySquad() {
-        if (!this.squadFrameSelected) {
+        if (!this.squadFramesSelected.length) {
             return;
         }
 
-        this.game.removeSquad(this.squadFrameSelected.squad);
-        this.squadFrames.splice(this.squadFrames.indexOf(this.squadFrameSelected));
-        this.squadFrameSelected = null;
+        for (const squadFrame of this.squadFramesSelected) {
+            this.game.removeSquad(squadFrame.squad);
+            this.squadFrames.splice(this.squadFrames.indexOf(squadFrame));
+            this.squadFramesSelected = [];
+        }
     }
 
     fillSlotsMutate(slots: Slot[], dotIndexes: number[]) {
@@ -245,11 +247,15 @@ export class UI {
     }
 
     getDotCountForDestination() {
-        if (this.squadFrameSelected) {
-            return this.squadFrameSelected.squad.slots.reduce(
-                (acc, slot) => acc + (slot.dotIndex !== null ? 1 : 0),
-                0,
-            );
+        if (this.squadFramesSelected.length) {
+            let count = 0;
+            for (const squadFrame of this.squadFramesSelected) {
+                for (const slot of squadFrame.squad.slots) {
+                    count += slot.dotIndex !== null ? 1 : 0;
+                }
+            }
+
+            return count;
         }
 
         return this.game.dotsSelectedIndexes.size;
@@ -334,24 +340,23 @@ export class UI {
         );
 
         for (const [positionIndex, dotIndex] of dotIndexes.entries()) {
-            const destination = positions[positionIndex];
-            window.assert(!!destination, "destination must be valid");
-
             this.game.dotMoveTo(dotIndex, positions[positionIndex]);
         }
     }
 
-    commandMoveSquad(squadFrame: SquadFrame, targetFrame: Rect) {
-        const positionsNew = this.createSlotPositions(
-            targetFrame,
-            squadFrame.squad.slots.length,
-        );
+    commandMoveSquads(squadFrames: SquadFrame[], targetFrame: Rect) {
+        for (const squadFrame of squadFrames) {
+            const positionsNew = this.createSlotPositions(
+                targetFrame,
+                squadFrame.squad.slots.length,
+            );
 
-        for (const [index, slot] of squadFrame.squad.slots.entries()) {
-            slot.position = positionsNew[index];
+            for (const [index, slot] of squadFrame.squad.slots.entries()) {
+                slot.position = positionsNew[index];
+            }
+
+            squadFrame.frame = targetFrame;
         }
-
-        squadFrame.frame = targetFrame;
     }
 
     commandMove() {
@@ -359,8 +364,8 @@ export class UI {
             return;
         }
 
-        if (this.squadFrameSelected) {
-            this.commandMoveSquad(this.squadFrameSelected, this.destination);
+        if (this.squadFramesSelected.length) {
+            this.commandMoveSquads(this.squadFramesSelected, this.destination);
             return;
         }
 

@@ -1,4 +1,4 @@
-import type { Game, Dot, Squad } from "./game";
+import type { Game, Dot } from "./game";
 import type { SquadFrame, UI } from "./ui";
 import type { Point, Rect } from "./utils";
 
@@ -29,7 +29,7 @@ export class RendererCanvasSimple implements Renderer {
 
         this.game.dots.forEach(this.renderDot.bind(this));
         this.ui.squadFrames.forEach((squadFrame) => {
-            const isSelected = this.ui.squadFrameSelected === squadFrame;
+            const isSelected = this.ui.squadFramesSelected.includes(squadFrame);
 
             this.renderSquadFrames(squadFrame, isSelected);
         });
