@@ -21,7 +21,7 @@ export function randomPointInRect({ p1, p2, p3 }: Rect): Point {
 
     // Rotate the random point back to the rectangle's original orientation
     const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-    const randomPoint = rotatePoint({ x: randomX, y: randomY }, 0, 0, angle);
+    const randomPoint = rotatePoint({ x: randomX, y: randomY }, { x: 0, y: 0 }, angle);
 
     // Translate the random point to the rectangle's global position
     const finalPoint = {
@@ -85,8 +85,7 @@ export function isPointInRect(point: Point, { p1, p2, p3, p4 }: Rect): boolean {
 // chatgpt (c)
 export function rotatePoint(
     { x: px, y: py }: Point,
-    cx: number,
-    cy: number,
+    { x: cx, y: cy }: Point,
     rad: number,
 ) {
     const cos = Math.cos(rad);
@@ -108,14 +107,18 @@ export function rotateRect({
     anchor: Point;
     angle: number;
 }) {
-    const { x: cx, y: cy } = anchor;
-
-    const p1 = rotatePoint(rect.p1, cx, cy, angle);
-    const p2 = rotatePoint(rect.p2, cx, cy, angle);
-    const p3 = rotatePoint(rect.p3, cx, cy, angle);
-    const p4 = rotatePoint(rect.p4, cx, cy, angle);
+    const p1 = rotatePoint(rect.p1, anchor, angle);
+    const p2 = rotatePoint(rect.p2, anchor, angle);
+    const p3 = rotatePoint(rect.p3, anchor, angle);
+    const p4 = rotatePoint(rect.p4, anchor, angle);
 
     return { p1, p2, p3, p4 };
+}
+
+export function makeRectOrthogonal(rect: Rect) {
+    const angle = Math.atan2(rect.p2.y - rect.p1.y,  rect.p2.x - rect.p1.x);
+
+    return rotateRect({ rect, anchor: rect.p1, angle: -angle });
 }
 
 export function distanceBetween(
