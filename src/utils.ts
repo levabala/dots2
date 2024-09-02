@@ -10,6 +10,7 @@ export function orthogonalRect(p1: Point, p3: Point): Rect {
     };
 }
 
+// chatgpt (c)
 export function randomPointInRect({ p1, p2, p3 }: Rect): Point {
     // Calculate the width and height of the rectangle
     const width = Math.hypot(p2.x - p1.x, p2.y - p1.y);

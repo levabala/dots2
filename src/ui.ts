@@ -191,6 +191,64 @@ export class UI {
         return positions;
     }
 
+    // chatgpt (c)
+    updateSlotPositions(squadFrame: SquadFrame, newFrame: Rect) {
+        function calculateDistance(p1: Point, p2: Point): number {
+            return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
+        }
+
+        const oldPositions = squadFrame.squad.slots.map(
+            (slot) => slot.position,
+        );
+        const newPositions = this.createSlotPositions(
+            newFrame,
+            oldPositions.length,
+        );
+
+        const usedPositions: boolean[] = new Array(newPositions.length).fill(
+            false,
+        );
+
+        // First pass: Map filled slots to the nearest new position
+        squadFrame.squad.slots.forEach((slot) => {
+            if (slot.dotIndex !== null) {
+                let minDistance = Infinity;
+                let closestIndex = -1;
+
+                newPositions.forEach((newPos, index) => {
+                    if (!usedPositions[index]) {
+                        const distance = calculateDistance(
+                            slot.position,
+                            newPos,
+                        );
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            closestIndex = index;
+                        }
+                    }
+                });
+
+                if (closestIndex !== -1) {
+                    slot.position = newPositions[closestIndex];
+                    usedPositions[closestIndex] = true;
+                }
+            }
+        });
+
+        // Second pass: Place empty slots in the remaining positions
+        squadFrame.squad.slots.forEach((slot) => {
+            if (slot.dotIndex === null) {
+                const availableIndex = usedPositions.findIndex((used) => !used);
+                if (availableIndex !== -1) {
+                    slot.position = newPositions[availableIndex];
+                    usedPositions[availableIndex] = true;
+                }
+            }
+        });
+
+        return squadFrame;
+    }
+
     createSlots(rect: Rect, count: number) {
         const positions = this.createSlotPositions(rect, count);
 
@@ -346,15 +404,7 @@ export class UI {
 
     commandMoveSquads(squadFrames: SquadFrame[], targetFrame: Rect) {
         for (const squadFrame of squadFrames) {
-            const positionsNew = this.createSlotPositions(
-                targetFrame,
-                squadFrame.squad.slots.length,
-            );
-
-            for (const [index, slot] of squadFrame.squad.slots.entries()) {
-                slot.position = positionsNew[index];
-            }
-
+            this.updateSlotPositions(squadFrame, targetFrame);
             squadFrame.frame = targetFrame;
         }
     }
