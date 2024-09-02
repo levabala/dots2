@@ -2,6 +2,9 @@
   "name": "dots2",
   "module": "src/index.ts",
   "type": "module",
+  "scripts": {
+    "build:dev": "bun build src/index.ts --outfile .build/main.js --target=browser --sourcemap=inline --watch"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
