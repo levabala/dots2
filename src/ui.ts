@@ -193,7 +193,7 @@ export class UI {
                 return;
             }
 
-            slot.dot = dots[index];
+            this.game.assignDotToSlot(dots[index], slot);
         }
     }
 
@@ -234,9 +234,16 @@ export class UI {
             oldSlots.length,
         );
 
-        // Update slot positions and preserve order
+        // Calculate the front direction angle from p1 to p2
+        const frontAngle = Math.atan2(
+            newFrame.p2.y - newFrame.p1.y,
+            newFrame.p2.x - newFrame.p1.x,
+        );
+
+        // Update slot positions and angles based on the front direction of the frame
         oldSlots.forEach((slot, index) => {
             slot.position = newPositions[index];
+            slot.angle = frontAngle; // Set the angle towards the front of the frame
         });
 
         // Reassign dots to maintain minimal position change
@@ -257,8 +264,7 @@ export class UI {
                 });
 
                 if (closestSlot !== slot) {
-                    closestSlot.dot = slot.dot;
-                    slot.dot.slot = closestSlot;
+                    this.game.assignDotToSlot(slot.dot, closestSlot);
                     slot.dot = null;
                 }
             }
@@ -270,9 +276,12 @@ export class UI {
     createSlots(rect: Rect, count: number) {
         const positions = this.createSlotPositions(rect, count);
 
+        const angle = Math.atan2(rect.p3.y - rect.p2.y, rect.p3.x - rect.p2.x);
+
         return positions.map<Slot>((position) => ({
             position,
             dot: null,
+            angle,
         }));
     }
 

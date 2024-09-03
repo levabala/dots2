@@ -1,3 +1,4 @@
+import { DEFAULT_PROJECTILE } from "./consts";
 import type { Game, Dot, Projectile, Slot } from "./game";
 import type { SquadFrame, UI } from "./ui";
 import {
@@ -30,6 +31,12 @@ export class RendererCanvasSimple implements Renderer {
     render() {
         this.ctx.clearRect(0, 0, this.width, this.height);
 
+        for (const dot of this.game.dots) {
+            if (dot.attackTargetDot) {
+                this.renderDotAttackTargetArrow(dot, dot.attackTargetDot);
+            }
+        }
+
         for (const squad of this.game.squads) {
             for (const slot of squad.slots) {
                 this.renderSlot(slot);
@@ -43,12 +50,6 @@ export class RendererCanvasSimple implements Renderer {
         for (const squadFrame of this.ui.squadFrames) {
             const isSelected = this.ui.squadFramesSelected.includes(squadFrame);
             this.renderSquadFrames(squadFrame, isSelected);
-        }
-
-        for (const dot of this.game.dots) {
-            if (dot.attackTargetDot) {
-                this.renderDotAttackTargetArrow(dot, dot.attackTargetDot);
-            }
         }
 
         for (const projectile of this.game.projectiles) {
@@ -138,12 +139,9 @@ export class RendererCanvasSimple implements Renderer {
         const color = this.getDotColor(dot);
         this.ctx.fillStyle = color;
 
-        this.ctx.fillRect(
-            dot.hitBox.p1.x,
-            dot.hitBox.p1.y,
-            dot.hitBox.p3.x - dot.hitBox.p1.x,
-            dot.hitBox.p3.y - dot.hitBox.p1.y,
-        );
+        this.drawRect(dot.hitBox);
+
+        this.ctx.fill();
     }
 
     private drawPolygon(points: Point[]) {
@@ -188,8 +186,7 @@ export class RendererCanvasSimple implements Renderer {
     }
 
     // chatgpt (c)
-    private drawArrow(p1: Point, p2: Point) {
-        const headLength = 10; // Length of the arrowhead
+    private drawArrow(p1: Point, p2: Point, headLength: number) {
         const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
 
         // Draw the line
@@ -212,12 +209,13 @@ export class RendererCanvasSimple implements Renderer {
     }
 
     renderDotAttackTargetArrow(dotFrom: Dot, dotTo: Dot) {
-        this.ctx.lineWidth = 0.01;
+        this.ctx.lineWidth = 0.5;
         this.ctx.strokeStyle = "palevioletred";
 
         this.drawArrow(
             dotFrom.position,
             dotTo.position,
+            7
         );
 
         this.ctx.stroke();
@@ -247,7 +245,7 @@ export class RendererCanvasSimple implements Renderer {
             return;
         }
 
-        this.drawArrow(start, end);
+        this.drawArrow(start, end, 10);
 
         this.ctx.stroke();
     }
@@ -258,7 +256,7 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.arc(
             projectile.position.x,
             projectile.position.y,
-            1,
+            DEFAULT_PROJECTILE.radius / 2,
             0,
             Math.PI * 2,
         );

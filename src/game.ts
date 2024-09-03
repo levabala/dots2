@@ -1,7 +1,8 @@
-import { DEFAULT_PROJECTILE, DOT_HEIGTH, DOT_SPEED, DOT_WIDTH } from "./consts";
+import { DEFAULT_PROJECTILE, DOT_HEIGHT, DOT_SPEED, DOT_WIDTH } from "./consts";
 import {
     distanceBetween as getDistanceBetween,
     getIntersectionAny,
+    rotatePoint,
     type Point,
     type Rect,
 } from "./utils";
@@ -20,6 +21,7 @@ export type Dot = {
     slot: Slot | null;
     hitBox: Rect;
     health: number;
+    angle: number;
 };
 
 export type Projectile = {
@@ -29,10 +31,12 @@ export type Projectile = {
     damage: number;
     flyDistanceLeft: number;
     fromDot: Dot;
+    radius: number;
 };
 
 export type Slot = {
     position: Point;
+    angle: number;
     dot: Dot | null;
 };
 
@@ -71,7 +75,10 @@ export class Game {
     shootProjectile(
         fromDot: Dot,
         toPoint: Point,
-        params: Pick<Projectile, "speed" | "damage" | "flyDistanceLeft">,
+        params: Pick<
+            Projectile,
+            "speed" | "damage" | "flyDistanceLeft" | "radius"
+        >,
     ) {
         const projectile: Projectile = {
             ...params,
@@ -103,6 +110,58 @@ export class Game {
         for (const targeter of dot.attackTargetedByDots) {
             targeter.attackTargetDot = null;
         }
+    }
+
+    assignDotToSlot(dot: Dot, slot: Slot): void {
+        if (dot.slot) {
+            dot.slot.dot = null;
+        }
+
+        slot.dot = dot;
+        dot.slot = slot;
+    }
+
+    syncDotAndSlotAngle(dot: Dot, slot: Slot) {
+        dot.angle = slot.angle;
+        dot.hitBox = this.calculateHitBox(dot.position, dot.angle);
+    }
+
+    // chatgpt (c)
+    private calculateHitBox(position: Point, angle: number): Rect {
+        const initialHitBox: Rect = {
+            p1: {
+                x: position.x - DOT_WIDTH / 2,
+                y: position.y - DOT_HEIGHT / 2,
+            },
+            p2: {
+                x: position.x + DOT_WIDTH / 2,
+                y: position.y - DOT_HEIGHT / 2,
+            },
+            p3: {
+                x: position.x + DOT_WIDTH / 2,
+                y: position.y + DOT_HEIGHT / 2,
+            },
+            p4: {
+                x: position.x - DOT_WIDTH / 2,
+                y: position.y + DOT_HEIGHT / 2,
+            },
+        };
+
+        return this.calculateRotatedHitBox(position, initialHitBox, angle);
+    }
+
+    // chatgpt (c)
+    private calculateRotatedHitBox(
+        position: Point,
+        hitBox: Rect,
+        angle: number,
+    ): Rect {
+        return {
+            p1: rotatePoint(hitBox.p1, position, angle),
+            p2: rotatePoint(hitBox.p2, position, angle),
+            p3: rotatePoint(hitBox.p3, position, angle),
+            p4: rotatePoint(hitBox.p4, position, angle),
+        };
     }
 
     createSquad(slots: Slot[]) {
@@ -168,24 +227,8 @@ export class Game {
             squad: null,
             slot: null,
             health: 2,
-            hitBox: {
-                p1: {
-                    x: position.x - DOT_WIDTH / 2,
-                    y: position.y - DOT_HEIGTH / 2,
-                },
-                p2: {
-                    x: position.x + DOT_WIDTH / 2,
-                    y: position.y - DOT_HEIGTH / 2,
-                },
-                p3: {
-                    x: position.x + DOT_WIDTH / 2,
-                    y: position.y + DOT_HEIGTH / 2,
-                },
-                p4: {
-                    x: position.x - DOT_WIDTH / 2,
-                    y: position.y + DOT_HEIGTH / 2,
-                },
-            },
+            angle: 0,
+            hitBox: this.calculateHitBox(position, 0),
         });
     }
 
@@ -244,6 +287,32 @@ export class Game {
         }
     }
 
+    private checkHaShootIntersectionWithOwnSquad(
+        dot: Dot,
+        target: Dot,
+    ): boolean {
+        if (!dot.squad) {
+            return false;
+        }
+
+        const line = {
+            p1: dot.position,
+            p2: target.position,
+        };
+        for (const slot of dot.squad.slots) {
+            if (slot === dot.slot || !slot.dot) {
+                continue;
+            }
+
+            const intersection = getIntersectionAny(line, slot.dot.hitBox);
+            if (intersection) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     tick(timeDelta: number) {
         const moveByPath = (dot: Dot) => {
             const maxMoveDistance = timeDelta * DOT_SPEED;
@@ -299,7 +368,23 @@ export class Game {
             squadTarget: Squad,
         ) => {
             if (dot.attackTargetDot?.squad === squadTarget) {
-                return;
+                const distance = getDistanceBetween(
+                    dot.position,
+                    dot.attackTargetDot.position,
+                );
+
+                if (
+                    distance > dot.attackRange ||
+                    this.checkHaShootIntersectionWithOwnSquad(
+                        dot,
+                        dot.attackTargetDot,
+                    )
+                ) {
+                    dot.attackTargetDot?.attackTargetedByDots.delete(dot);
+                    dot.attackTargetDot = null;
+                } else {
+                    return;
+                }
             }
 
             const dotPotentionalTargets = [];
@@ -308,30 +393,46 @@ export class Game {
                     continue;
                 }
 
+                const distance = getDistanceBetween(
+                    dot.position,
+                    slot.dot.position,
+                );
+                if (distance > dot.attackRange) {
+                    continue;
+                }
+
+                const hasIntersection =
+                    this.checkHaShootIntersectionWithOwnSquad(dot, slot.dot);
+
+                if (hasIntersection) {
+                    continue;
+                }
+
                 dotPotentionalTargets.push(slot.dot);
             }
 
             if (!dotPotentionalTargets.length) {
+                dot.attackTargetDot?.attackTargetedByDots.delete(dot);
+                dot.attackTargetDot = null;
                 return;
             }
 
-            dotPotentionalTargets
-                .sort(
-                    (d1, d2) =>
-                        Math.hypot(
-                            d1.position.x - dot.position.x,
-                            d1.position.y - dot.position.y,
-                        ) -
-                        Math.hypot(
-                            d2.position.x - dot.position.x,
-                            d2.position.y - dot.position.y,
-                        ),
-                )
-                .sort(
-                    (d1, d2) =>
-                        d1.attackTargetedByDots.size -
-                        d2.attackTargetedByDots.size,
-                );
+            dotPotentionalTargets.sort(
+                (d1, d2) =>
+                    Math.hypot(
+                        d1.position.x - dot.position.x,
+                        d1.position.y - dot.position.y,
+                    ) -
+                    Math.hypot(
+                        d2.position.x - dot.position.x,
+                        d2.position.y - dot.position.y,
+                    ),
+            );
+
+            dotPotentionalTargets.sort(
+                (d1, d2) =>
+                    d1.attackTargetedByDots.size - d2.attackTargetedByDots.size,
+            );
 
             const target = dotPotentionalTargets[0];
 
@@ -363,24 +464,13 @@ export class Game {
                 return;
             }
 
-            if (dot.squad) {
-                const line = {
-                    p1: dot.position,
-                    p2: dot.attackTargetDot.position,
-                };
-                for (const slot of dot.squad.slots) {
-                    if (slot === dot.slot || !slot.dot) {
-                        continue;
-                    }
+            const hasIntersection = this.checkHaShootIntersectionWithOwnSquad(
+                dot,
+                dot.attackTargetDot,
+            );
 
-                    const intersection = getIntersectionAny(
-                        line,
-                        slot.dot.hitBox,
-                    );
-                    if (intersection) {
-                        return;
-                    }
-                }
+            if (hasIntersection) {
+                return;
             }
 
             this.shootProjectile(
@@ -457,6 +547,14 @@ export class Game {
             }
 
             this.fillEmptyFrontSlots(squad);
+
+            for (const slot of squad.slots) {
+                if (!slot.dot) {
+                    continue;
+                }
+
+                this.syncDotAndSlotAngle(slot.dot, slot);
+            }
         }
 
         for (const projectile of this.projectiles) {
