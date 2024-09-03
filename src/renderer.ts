@@ -1,6 +1,11 @@
 import type { Game, Dot } from "./game";
 import type { SquadFrame, UI } from "./ui";
-import type { Point, Rect } from "./utils";
+import {
+    getFirstIntersection,
+    getRectCenter,
+    type Point,
+    type Rect,
+} from "./utils";
 
 interface Renderer {
     game: Game;
@@ -35,6 +40,20 @@ export class RendererCanvasSimple implements Renderer {
             this.renderSquadFrames(squadFrame, isSelected);
         });
 
+        for (const squadFrame of this.ui.squadFrames) {
+            if (squadFrame.squad.attackTargetSquad) {
+                const squadFrameTarget = this.ui.squadFrames.find(
+                    (sf) => sf.squad === squadFrame.squad.attackTargetSquad,
+                );
+                if (squadFrameTarget) {
+                    this.renderSquadFrameAttackArrow(
+                        squadFrame,
+                        squadFrameTarget,
+                    );
+                }
+            }
+        }
+
         if (this.ui.selection) {
             this.renderSelection(this.ui.selection);
         }
@@ -64,7 +83,10 @@ export class RendererCanvasSimple implements Renderer {
         const fpsAverage =
             this.lastFPS.reduce((acc, val) => acc + val, 0) /
             this.lastFPS.length;
-        const fpsLowest = this.lastFPS.reduce((acc,val) => Math.min(acc,val), Infinity);
+        const fpsLowest = this.lastFPS.reduce(
+            (acc, val) => Math.min(acc, val),
+            Infinity,
+        );
 
         const str = `average: ${fpsAverage.toFixed(0)} lowest: ${fpsLowest.toFixed(0)}`;
 
@@ -127,6 +149,59 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.strokeStyle = isSelected ? "darkkhaki" : "brown";
 
         this.drawRect(squadFrame.frame);
+
+        this.ctx.stroke();
+    }
+
+    // chatgpt (c)
+    private drawArrow(p1: Point, p2: Point) {
+        const headLength = 10; // Length of the arrowhead
+        const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+
+        // Draw the line
+        this.ctx.beginPath();
+        this.ctx.moveTo(p1.x, p1.y);
+        this.ctx.lineTo(p2.x, p2.y);
+
+        // Draw the arrowhead
+        this.ctx.lineTo(
+            p2.x - headLength * Math.cos(angle - Math.PI / 6),
+            p2.y - headLength * Math.sin(angle - Math.PI / 6),
+        );
+        this.ctx.moveTo(p2.x, p2.y);
+        this.ctx.lineTo(
+            p2.x - headLength * Math.cos(angle + Math.PI / 6),
+            p2.y - headLength * Math.sin(angle + Math.PI / 6),
+        );
+
+        this.ctx.closePath();
+    }
+
+    renderSquadFrameAttackArrow(
+        squadFrameFrom: SquadFrame,
+        squadFrameTo: SquadFrame,
+    ) {
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeStyle = "red";
+
+        const centerFrom = getRectCenter(squadFrameFrom.frame);
+        const centerTo = getRectCenter(squadFrameTo.frame);
+
+        const lineCenterToCenter = { p1: centerFrom, p2: centerTo };
+        const start = getFirstIntersection(
+            lineCenterToCenter,
+            squadFrameFrom.frame,
+        );
+        const end = getFirstIntersection(
+            lineCenterToCenter,
+            squadFrameTo.frame,
+        );
+
+        if (!start || !end) {
+            return;
+        }
+
+        this.drawArrow(start, end);
 
         this.ctx.stroke();
     }

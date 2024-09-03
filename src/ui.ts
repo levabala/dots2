@@ -12,7 +12,7 @@ import {
 import { DOT_TARGET_MOVE_SPACE } from "./consts";
 import type { Game, Slot, Squad } from "./game";
 
-export type SquadFrame = { squad: Squad; frame: Rect };
+export type SquadFrame = { index: number; squad: Squad; frame: Rect };
 
 export class UI {
     selectionStartPoint: Point | null = null;
@@ -48,8 +48,7 @@ export class UI {
                     this.trySelectSquadFrame(e.offsetX, e.offsetY);
                     break;
                 case 2:
-                    e.preventDefault();
-                    this.commandMove();
+                    this.handleRightButtonUp(e);
                     break;
             }
         });
@@ -86,6 +85,26 @@ export class UI {
         window.addEventListener("keypress", this.handleKeypress.bind(this));
     }
 
+    handleRightButtonUp(e: MouseEvent) {
+        if (!this.squadFramesSelected.length) {
+            return;
+        }
+
+        const squadFrameClicked = this.getSquadFrameByPosition(
+            e.offsetX,
+            e.offsetY,
+        );
+
+        if (
+            squadFrameClicked &&
+            !this.squadFramesSelected.includes(squadFrameClicked)
+        ) {
+            this.attackSquad(squadFrameClicked);
+        } else {
+            this.commandMove();
+        }
+    }
+
     handleKeypress(e: KeyboardEvent) {
         console.log(e);
         switch (e.code) {
@@ -101,14 +120,32 @@ export class UI {
         }
     }
 
+    attackSquad(squadFrameTarget: SquadFrame) {
+        for (const squadFrame of this.squadFramesSelected) {
+            this.game.attackSquad({
+                squadAttacker: squadFrame.squad,
+                squadTarget: squadFrameTarget.squad,
+            });
+        }
+    }
+
+    getSquadFrameByPosition(x: number, y: number): SquadFrame | null {
+        for (const squadFrame of this.squadFrames) {
+            if (isPointInRect({ x, y }, squadFrame.frame)) {
+                return squadFrame;
+            }
+        }
+
+        return null;
+    }
+
     trySelectSquadFrame(x: number, y: number) {
         this.squadFramesSelected = [];
 
-        for (const squadFrame of this.squadFrames) {
-            if (isPointInRect({ x, y }, squadFrame.frame)) {
-                this.squadFramesSelected.push(squadFrame);
-                return;
-            }
+        const squadFrameClicked = this.getSquadFrameByPosition(x, y);
+
+        if (squadFrameClicked) {
+            this.squadFramesSelected.push(squadFrameClicked);
         }
     }
 
@@ -134,7 +171,7 @@ export class UI {
 
         const squad = this.game.createSquad(slots);
 
-        const squadFrame = { squad, frame };
+        const squadFrame = { index: this.squadFrames.length, squad, frame };
         this.squadFrames.push(squadFrame);
 
         this.squadFramesSelected = [squadFrame];

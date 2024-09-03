@@ -45,6 +45,10 @@ function renderLoop() {
     requestAnimationFrame(renderLoop);
 }
 
-console.log(game, ui, renderer);
+/* eslint-disable @typescript-eslint/no-explicit-any */
+(window as any).game = game;
+(window as any).ui = ui;
+(window as any).renderer = renderer;
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 renderLoop();

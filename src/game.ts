@@ -6,6 +6,11 @@ export type Dot = Point & {
     index: number;
     speed: number;
     path: Point[];
+    attackTargetedByDots: Dot[];
+    attackTargetDot: Dot | null;
+    attackTargetSquad: Squad | null;
+    attackRange: number;
+    attackCooldown: number;
 };
 
 export type Slot = {
@@ -14,23 +19,43 @@ export type Slot = {
 };
 
 export type Squad = {
+    index: number;
     slots: Slot[];
+    attackTargetDot: Dot | null;
+    attackTargetSquad: Squad | null;
 };
 
 export class Game {
     dots: Dot[] = [];
     dotsSelectedIndexes = new Set<number>();
-
     squads: Squad[] = [];
 
-    constructor(readonly width: number, readonly height: number) {}
+    constructor(
+        readonly width: number,
+        readonly height: number,
+    ) {}
 
     init() {
         times(5000, () => this.addDotRandom());
     }
 
+    attackSquad({
+        squadAttacker,
+        squadTarget,
+    }: {
+        squadAttacker: Squad;
+        squadTarget: Squad;
+    }) {
+        squadAttacker.attackTargetSquad = squadTarget;
+    }
+
     createSquad(slots: Slot[]) {
-        const squad: Squad = { slots };
+        const squad: Squad = {
+            index: this.squads.length,
+            slots,
+            attackTargetDot: null,
+            attackTargetSquad: null,
+        };
         this.squads.push(squad);
 
         return squad;
@@ -53,6 +78,11 @@ export class Game {
             y: randomInteger(0, this.height),
             path: [],
             speed: DOT_SPEED,
+            attackTargetDot: null,
+            attackTargetSquad: null,
+            attackRange: 200,
+            attackCooldown: 1000,
+            attackTargetedByDots: [],
         });
     }
 
@@ -130,8 +160,48 @@ export class Game {
             }
         };
 
+        const assignDotAttackTargetsBySquad = (
+            dot: Dot,
+            squadTarget: Squad,
+        ) => {
+            const dotPotentionalTargets = [];
+            for (const slot of squadTarget.slots) {
+                if (slot.dotIndex === null) {
+                    continue;
+                }
+
+                dotPotentionalTargets.push(this.dots[slot.dotIndex]);
+            }
+
+            if (!dotPotentionalTargets.length) {
+                return;
+            }
+
+            dotPotentionalTargets.sort(
+                (d1, d2) =>
+                    d1.attackTargetedByDots.length -
+                    d2.attackTargetedByDots.length,
+            );
+
+            const target = dotPotentionalTargets[0];
+
+            dot.attackTargetDot = target;
+        };
+
         for (const squad of this.squads) {
             changePathToSquad(squad);
+
+            if (squad.attackTargetSquad) {
+                for (const slot of squad.slots) {
+                    if (slot.dotIndex === null) {
+                        continue;
+                    }
+
+                    const dot = this.dots[slot.dotIndex];
+
+                    assignDotAttackTargetsBySquad(dot, squad.attackTargetSquad);
+                }
+            }
         }
 
         for (const dot of this.dots) {
