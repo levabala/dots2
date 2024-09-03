@@ -108,7 +108,7 @@ export class Game {
             attackRange: 200,
             attackCooldown: 1000,
             attackTargetedByDots: new Set(),
-            squad: null
+            squad: null,
         });
     }
 
@@ -207,11 +207,17 @@ export class Game {
                 return;
             }
 
-            dotPotentionalTargets.sort(
-                (d1, d2) =>
-                    d1.attackTargetedByDots.size -
-                    d2.attackTargetedByDots.size,
-            );
+            dotPotentionalTargets
+                .sort(
+                    (d1, d2) =>
+                        Math.hypot(d1.x - dot.x, d1.y - dot.y) -
+                        Math.hypot(d2.x - dot.x, d2.y - dot.y),
+                )
+                .sort(
+                    (d1, d2) =>
+                        d1.attackTargetedByDots.size -
+                        d2.attackTargetedByDots.size,
+                );
 
             const target = dotPotentionalTargets[0];
 
