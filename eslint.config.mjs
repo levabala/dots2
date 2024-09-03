@@ -15,6 +15,7 @@ export default tseslint.config(
         },
         rules: {
             "@typescript-eslint/strict-boolean-expressions": "error",
+            "@typescript-eslint/no-unused-vars": "off",
         },
     },
 );
