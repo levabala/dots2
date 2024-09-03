@@ -7,14 +7,18 @@ export default tseslint.config(
     eslint.configs.recommended,
     ...tseslint.configs.recommended,
     {
-        
         languageOptions: {
             parserOptions: {
-                project: './tsconfig.json',
+                project: "./tsconfig.json",
             },
         },
         rules: {
-            "@typescript-eslint/strict-boolean-expressions": "error",
+            "@typescript-eslint/strict-boolean-expressions": [
+                "error",
+                {
+                    allowNullableObject: true,
+                },
+            ],
             "@typescript-eslint/no-unused-vars": "off",
         },
     },
