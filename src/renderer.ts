@@ -40,6 +40,12 @@ export class RendererCanvasSimple implements Renderer {
             this.renderSquadFrames(squadFrame, isSelected);
         });
 
+        for (const dot of this.game.dots) {
+            if (dot.attackTargetDot) {
+                this.renderDotAttackTargetArrow(dot, dot.attackTargetDot);
+            }
+        }
+
         for (const squadFrame of this.ui.squadFrames) {
             if (squadFrame.squad.attackTargetSquad) {
                 const squadFrameTarget = this.ui.squadFrames.find(
@@ -175,6 +181,18 @@ export class RendererCanvasSimple implements Renderer {
         );
 
         this.ctx.closePath();
+    }
+
+    renderDotAttackTargetArrow(dotFrom: Dot, dotTo: Dot) {
+        this.ctx.lineWidth = 0.5;
+        this.ctx.strokeStyle = "palevioletred";
+
+        this.drawArrow(
+            { x: dotFrom.x, y: dotFrom.y },
+            { x: dotTo.x, y: dotTo.y },
+        );
+
+        this.ctx.stroke();
     }
 
     renderSquadFrameAttackArrow(

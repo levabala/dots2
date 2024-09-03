@@ -6,11 +6,12 @@ export type Dot = Point & {
     index: number;
     speed: number;
     path: Point[];
-    attackTargetedByDots: Dot[];
+    attackTargetedByDots: Set<Dot>;
     attackTargetDot: Dot | null;
     attackTargetSquad: Squad | null;
     attackRange: number;
     attackCooldown: number;
+    squad: Squad | null;
 };
 
 export type Slot = {
@@ -58,11 +59,35 @@ export class Game {
         };
         this.squads.push(squad);
 
+        for (const slot of slots) {
+            if (slot.dotIndex === null) {
+                continue;
+            }
+
+            this.dots[slot.dotIndex].squad = squad;
+        }
+
         return squad;
     }
 
     removeSquad(squad: Squad) {
         this.squads.splice(this.squads.indexOf(squad), 1);
+
+        for (const slot of squad.slots) {
+            if (slot.dotIndex === null) {
+                continue;
+            }
+
+            const dot = this.dots[slot.dotIndex];
+
+            if (dot.attackTargetDot) {
+                dot.attackTargetDot.attackTargetedByDots.delete(dot);
+            }
+
+            dot.squad = null;
+            dot.attackTargetSquad = null;
+            dot.attackTargetDot = null;
+        }
     }
 
     isInSquad(dotIndex: number) {
@@ -82,7 +107,8 @@ export class Game {
             attackTargetSquad: null,
             attackRange: 200,
             attackCooldown: 1000,
-            attackTargetedByDots: [],
+            attackTargetedByDots: new Set(),
+            squad: null
         });
     }
 
@@ -164,6 +190,10 @@ export class Game {
             dot: Dot,
             squadTarget: Squad,
         ) => {
+            if (dot.attackTargetSquad === squadTarget) {
+                return;
+            }
+
             const dotPotentionalTargets = [];
             for (const slot of squadTarget.slots) {
                 if (slot.dotIndex === null) {
@@ -179,13 +209,19 @@ export class Game {
 
             dotPotentionalTargets.sort(
                 (d1, d2) =>
-                    d1.attackTargetedByDots.length -
-                    d2.attackTargetedByDots.length,
+                    d1.attackTargetedByDots.size -
+                    d2.attackTargetedByDots.size,
             );
 
             const target = dotPotentionalTargets[0];
 
+            if (dot.attackTargetDot) {
+                dot.attackTargetDot.attackTargetedByDots.delete(dot);
+            }
+
             dot.attackTargetDot = target;
+            dot.attackTargetSquad = target.squad;
+            target.attackTargetedByDots.add(dot);
         };
 
         for (const squad of this.squads) {
