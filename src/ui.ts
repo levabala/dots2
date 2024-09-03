@@ -153,14 +153,8 @@ export class UI {
             return;
         }
 
-        const sumX = dots.reduce(
-            (acc, dot) => acc + dot.x,
-            0,
-        );
-        const sumY = dots.reduce(
-            (acc, dot) => acc + dot.y,
-            0,
-        );
+        const sumX = dots.reduce((acc, dot) => acc + dot.x, 0);
+        const sumY = dots.reduce((acc, dot) => acc + dot.y, 0);
         const center = {
             x: sumX / dots.length,
             y: sumY / dots.length,
@@ -233,56 +227,39 @@ export class UI {
     }
 
     // chatgpt (c)
-    updateSlotPositions(squadFrame: SquadFrame, newFrame: Rect) {
-        function calculateDistance(p1: Point, p2: Point): number {
-            return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
-        }
-
-        const oldPositions = squadFrame.squad.slots.map(
-            (slot) => slot.position,
-        );
+    updateSlotPositionsAndReassignDots(squadFrame: SquadFrame, newFrame: Rect) {
+        const oldSlots = squadFrame.squad.slots;
         const newPositions = this.createSlotPositions(
             newFrame,
-            oldPositions.length,
+            oldSlots.length,
         );
 
-        const usedPositions: boolean[] = new Array(newPositions.length).fill(
-            false,
-        );
+        // Update slot positions and preserve order
+        oldSlots.forEach((slot, index) => {
+            slot.position = newPositions[index];
+        });
 
-        // First pass: Map filled slots to the nearest new position
-        squadFrame.squad.slots.forEach((slot) => {
+        // Reassign dots to maintain minimal position change
+        oldSlots.forEach((slot) => {
             if (slot.dot) {
                 let minDistance = Infinity;
-                let closestIndex = -1;
+                let closestSlot = slot;
 
-                newPositions.forEach((newPos, index) => {
-                    if (!usedPositions[index]) {
-                        const distance = calculateDistance(
-                            slot.position,
-                            newPos,
-                        );
-                        if (distance < minDistance) {
-                            minDistance = distance;
-                            closestIndex = index;
-                        }
+                oldSlots.forEach((targetSlot) => {
+                    const distance = distanceBetween(
+                        slot.position,
+                        targetSlot.position,
+                    );
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestSlot = targetSlot;
                     }
                 });
 
-                if (closestIndex !== -1) {
-                    slot.position = newPositions[closestIndex];
-                    usedPositions[closestIndex] = true;
-                }
-            }
-        });
-
-        // Second pass: Place empty slots in the remaining positions
-        squadFrame.squad.slots.forEach((slot) => {
-            if (!slot.dot) {
-                const availableIndex = usedPositions.findIndex((used) => !used);
-                if (availableIndex !== -1) {
-                    slot.position = newPositions[availableIndex];
-                    usedPositions[availableIndex] = true;
+                if (closestSlot !== slot) {
+                    closestSlot.dot = slot.dot;
+                    slot.dot.slot = closestSlot;
+                    slot.dot = null;
                 }
             }
         });
@@ -433,9 +410,7 @@ export class UI {
     }
 
     commandMoveDots(dots: Dot[]) {
-        const positions = dots.map(() =>
-            randomPointInRect(this.destination!),
-        );
+        const positions = dots.map(() => randomPointInRect(this.destination!));
 
         for (const [positionIndex, dot] of dots.entries()) {
             this.game.dotMoveTo(dot, positions[positionIndex]);
@@ -444,7 +419,7 @@ export class UI {
 
     commandMoveSquads(squadFrames: SquadFrame[], targetFrame: Rect) {
         for (const squadFrame of squadFrames) {
-            this.updateSlotPositions(squadFrame, targetFrame);
+            this.updateSlotPositionsAndReassignDots(squadFrame, targetFrame);
             squadFrame.frame = targetFrame;
         }
     }

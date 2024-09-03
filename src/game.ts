@@ -213,6 +213,29 @@ export class Game {
         dot.path = [destination];
     }
 
+    fillEmptyFrontSlots(squad: Squad) {
+        let headIndex = 0;
+        let tailIndex = squad.slots.length - 1;
+        while (headIndex < tailIndex) {
+            const head = squad.slots[headIndex];
+            if (head.dot) {
+                headIndex++;
+                continue;
+            }
+
+            const tail = squad.slots[tailIndex];
+            if (tail.dot === null) {
+                tailIndex--;
+                continue;
+            }
+
+            head.dot = tail.dot;
+            tail.dot = null;
+
+            head.dot.slot = head;
+        }
+    }
+
     tick(timeDelta: number) {
         const moveByPath = (dot: Dot) => {
             const maxMoveDistance = timeDelta * DOT_SPEED;
@@ -384,6 +407,8 @@ export class Game {
                     tryShoot(dot);
                 }
             }
+
+            this.fillEmptyFrontSlots(squad);
         }
 
         for (const projectile of this.projectiles) {
