@@ -57,7 +57,7 @@ export class RendererCanvasSimple implements Renderer {
         const fps = 1000 / timeBetweenRenders;
         this.lastFPS.push(fps);
 
-        if (this.lastFPS.length > 40) {
+        if (this.lastFPS.length > 100) {
             this.lastFPS.splice(0, 1);
         }
 
@@ -66,9 +66,14 @@ export class RendererCanvasSimple implements Renderer {
             this.lastFPS.length;
         const fpsLowest = this.lastFPS.reduce((acc,val) => Math.min(acc,val), Infinity);
 
+        const str = `average: ${fpsAverage.toFixed(0)} lowest: ${fpsLowest.toFixed(0)}`;
+
+        this.ctx.strokeStyle = "white";
+        this.ctx.lineWidth = 4;
+        this.ctx.strokeText(str, 2, 10);
         this.ctx.fillStyle = "black";
-        this.ctx.lineWidth = 2;
-        this.ctx.fillText(`average: ${fpsAverage.toFixed(0)} lowest: ${fpsLowest.toFixed(0)}`, 2, 10);
+        this.ctx.lineWidth = 6;
+        this.ctx.fillText(str, 2, 10);
     }
 
     renderDot(dot: Dot) {

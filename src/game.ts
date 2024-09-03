@@ -1,4 +1,4 @@
-import { DOT_SPEED, HEIGHT, WIDTH } from "./consts";
+import { DOT_SPEED } from "./consts";
 import type { Point } from "./utils";
 import { randomInteger, times } from "remeda";
 
@@ -18,13 +18,12 @@ export type Squad = {
 };
 
 export class Game {
-    width = WIDTH;
-    height = HEIGHT;
-
     dots: Dot[] = [];
     dotsSelectedIndexes = new Set<number>();
 
     squads: Squad[] = [];
+
+    constructor(readonly width: number, readonly height: number) {}
 
     init() {
         times(5000, () => this.addDotRandom());

@@ -1,16 +1,18 @@
-import { WIDTH, HEIGHT } from "./consts";
 import { Game } from "./game";
 import { UI } from "./ui";
 import { RendererCanvasSimple } from "./renderer";
 
+const width = Math.floor(window.innerWidth * 0.9);
+const height = Math.floor(window.innerHeight * 0.9);
+
 const canvas = document.createElement("canvas");
-canvas.width = WIDTH;
-canvas.height = HEIGHT;
+canvas.width = width;
+canvas.height = height;
 canvas.style.border = "solid gray 1px";
 
 document.body.appendChild(canvas);
 
-const game = new Game();
+const game = new Game(width, height);
 game.init();
 
 const ui = new UI(canvas, game);
