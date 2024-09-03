@@ -38,7 +38,7 @@ export class UI {
                     this.startSelection(e.offsetX, e.offsetY);
                     break;
                 case 2:
-                    this.startDestination(e.offsetX, e.offsetY);
+                    this.handleRightButtonDown(e);
                     break;
             }
         });
@@ -51,6 +51,9 @@ export class UI {
                     this.handleRightButtonUp(e);
                     break;
             }
+
+            isMouseDown = false;
+            this.cancelSelection();
         });
         this.element.addEventListener("contextmenu", (e) => {
             e.preventDefault();
@@ -69,10 +72,6 @@ export class UI {
                     break;
             }
         });
-        this.element.addEventListener("mouseup", () => {
-            isMouseDown = false;
-            this.cancelSelection();
-        });
         this.element.addEventListener(
             "mouseleave",
             this.cancelSelection.bind(this),
@@ -83,6 +82,19 @@ export class UI {
         );
         this.element.addEventListener("dblclick", this.markDotsAll.bind(this));
         window.addEventListener("keypress", this.handleKeypress.bind(this));
+    }
+
+    handleRightButtonDown(e: MouseEvent) {
+        const squadFrameClicked = this.getSquadFrameByPosition(
+            e.offsetX,
+            e.offsetY,
+        );
+
+        if (squadFrameClicked) {
+            return;
+        }
+
+        this.startDestination(e.offsetX, e.offsetY);
     }
 
     handleRightButtonUp(e: MouseEvent) {
