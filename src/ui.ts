@@ -86,16 +86,13 @@ export class UI {
     }
 
     handleRightButtonUp(e: MouseEvent) {
-        if (!this.squadFramesSelected.length) {
-            return;
-        }
-
         const squadFrameClicked = this.getSquadFrameByPosition(
             e.offsetX,
             e.offsetY,
         );
 
         if (
+            this.squadFramesSelected.length &&
             squadFrameClicked &&
             !this.squadFramesSelected.includes(squadFrameClicked)
         ) {
@@ -297,6 +294,7 @@ export class UI {
 
     startSelection(x: number, y: number) {
         this.game.dotsAllUnselect();
+        this.squadFramesSelected = [];
 
         this.selectionStartPoint = { x, y };
     }
