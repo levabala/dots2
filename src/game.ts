@@ -2,7 +2,8 @@ import { DEFAULT_PROJECTILE, DOT_HEIGTH, DOT_SPEED, DOT_WIDTH } from "./consts";
 import { distanceBetween as getDistanceBetween, getIntersectionAny, type Point, type Rect } from "./utils";
 import { randomInteger, times } from "remeda";
 
-export type Dot = Point & {
+export type Dot = {
+    position: Point;
     speed: number;
     path: Point[];
     attackTargetedByDots: Set<Dot>;
@@ -69,8 +70,8 @@ export class Game {
     ) {
         const projectile: Projectile = {
             ...params,
-            position: { x: fromDot.x, y: fromDot.y },
-            angle: Math.atan2(toPoint.y - fromDot.y, toPoint.x - fromDot.x),
+            position: { ...fromDot.position },
+            angle: Math.atan2(toPoint.y - fromDot.position.y, toPoint.x - fromDot.position.x),
             fromDot,
         };
 
@@ -149,8 +150,7 @@ export class Game {
         };
         this.dots.add({
             path: [],
-            x: position.x,
-            y: position.y,
+            position,
             speed: DOT_SPEED,
             attackTargetDot: null,
             attackRange: 200,
@@ -241,8 +241,8 @@ export class Game {
             const maxMoveDistance = timeDelta * DOT_SPEED;
 
             const target = dot.path[0];
-            const dxRaw = target.x - dot.x;
-            const dyRaw = target.y - dot.y;
+            const dxRaw = target.x - dot.position.x;
+            const dyRaw = target.y - dot.position.y;
 
             if (dxRaw === 0 && dyRaw === 0) {
                 return;
@@ -259,8 +259,8 @@ export class Game {
             const dx = length * Math.cos(angle);
             const dy = length * Math.sin(angle);
 
-            dot.x += dx;
-            dot.y += dy;
+            dot.position.x += dx;
+            dot.position.y += dy;
 
             dot.hitBox.p1.x += dx;
             dot.hitBox.p2.x += dx;
@@ -310,8 +310,8 @@ export class Game {
             dotPotentionalTargets
                 .sort(
                     (d1, d2) =>
-                        Math.hypot(d1.x - dot.x, d1.y - dot.y) -
-                        Math.hypot(d2.x - dot.x, d2.y - dot.y),
+                        Math.hypot(d1.position.x - dot.position.x, d1.position.y - dot.position.y) -
+                        Math.hypot(d2.position.x - dot.position.x, d2.position.y - dot.position.y),
                 )
                 .sort(
                     (d1, d2) =>
@@ -341,12 +341,12 @@ export class Game {
                 return;
             }
 
-            const distance = getDistanceBetween(dot, dot.attackTargetDot);
+            const distance = getDistanceBetween(dot.position, dot.attackTargetDot.position);
             if (distance > dot.attackRange) {
                 return;
             }
 
-            this.shootProjectile(dot, dot.attackTargetDot, DEFAULT_PROJECTILE);
+            this.shootProjectile(dot, dot.attackTargetDot.position, DEFAULT_PROJECTILE);
             dot.attackCooldownLeft = dot.attackCooldown;
         };
 

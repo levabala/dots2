@@ -153,8 +153,8 @@ export class UI {
             return;
         }
 
-        const sumX = dots.reduce((acc, dot) => acc + dot.x, 0);
-        const sumY = dots.reduce((acc, dot) => acc + dot.y, 0);
+        const sumX = dots.reduce((acc, dot) => acc + dot.position.x, 0);
+        const sumY = dots.reduce((acc, dot) => acc + dot.position.y, 0);
         const center = {
             x: sumX / dots.length,
             y: sumY / dots.length,
@@ -392,7 +392,7 @@ export class UI {
 
         for (const dot of this.game.dots) {
             if (
-                isPointInRect(dot, this.selection) &&
+                isPointInRect(dot.position, this.selection) &&
                 !this.game.isInSquad(dot)
             ) {
                 this.game.dotSelect(dot);

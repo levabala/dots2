@@ -216,8 +216,8 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.strokeStyle = "palevioletred";
 
         this.drawArrow(
-            { x: dotFrom.x, y: dotFrom.y },
-            { x: dotTo.x, y: dotTo.y },
+            dotFrom.position,
+            dotTo.position,
         );
 
         this.ctx.stroke();
