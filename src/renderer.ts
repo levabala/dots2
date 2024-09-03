@@ -1,7 +1,7 @@
-import type { Game, Dot } from "./game";
+import type { Game, Dot, Projectile, Slot } from "./game";
 import type { SquadFrame, UI } from "./ui";
 import {
-    getFirstIntersection,
+    getIntersectionFirst,
     getRectCenter,
     type Point,
     type Rect,
@@ -15,9 +15,6 @@ export class RendererCanvasSimple implements Renderer {
     ctx: CanvasRenderingContext2D;
     width: number;
     height: number;
-
-    dotWidth = 4;
-    dotHeight = 4;
 
     constructor(
         readonly game: Game,
@@ -33,17 +30,29 @@ export class RendererCanvasSimple implements Renderer {
     render() {
         this.ctx.clearRect(0, 0, this.width, this.height);
 
-        this.game.dots.forEach(this.renderDot.bind(this));
-        this.ui.squadFrames.forEach((squadFrame) => {
-            const isSelected = this.ui.squadFramesSelected.includes(squadFrame);
+        for (const squad of this.game.squads) {
+            for (const slot of squad.slots) {
+                this.renderSlot(slot);
+            }
+        }
 
+        for (const dot of this.game.dots) {
+            this.renderDot(dot);
+        }
+
+        for (const squadFrame of this.ui.squadFrames) {
+            const isSelected = this.ui.squadFramesSelected.includes(squadFrame);
             this.renderSquadFrames(squadFrame, isSelected);
-        });
+        }
 
         for (const dot of this.game.dots) {
             if (dot.attackTargetDot) {
                 this.renderDotAttackTargetArrow(dot, dot.attackTargetDot);
             }
+        }
+
+        for (const projectile of this.game.projectiles) {
+            this.renderProjectile(projectile);
         }
 
         for (const squadFrame of this.ui.squadFrames) {
@@ -104,17 +113,36 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.fillText(str, 2, 10);
     }
 
+    private getDotColor(dot: Dot) {
+        if (dot.health <= 0) {
+            return "lightcoral";
+        }
+
+        if (this.game.isDotSelected(dot)) {
+            return "darkgoldenrod";
+        }
+
+        return "black";
+    }
+
+    renderSlot(slot: Slot) {
+        this.ctx.strokeStyle = "khaki";
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.arc(slot.position.x, slot.position.y, 2, 0, Math.PI * 2);
+        this.ctx.closePath();
+        this.ctx.stroke();
+    }
+
     renderDot(dot: Dot) {
-        const color = this.game.isDotSelected(dot.index)
-            ? "darkgoldenrod"
-            : "black";
+        const color = this.getDotColor(dot);
         this.ctx.fillStyle = color;
 
         this.ctx.fillRect(
-            dot.x - this.dotWidth / 2,
-            dot.y - this.dotHeight / 2,
-            this.dotWidth,
-            this.dotHeight,
+            dot.hitBox.p1.x,
+            dot.hitBox.p1.y,
+            dot.hitBox.p3.x - dot.hitBox.p1.x,
+            dot.hitBox.p3.y - dot.hitBox.p1.y,
         );
     }
 
@@ -184,7 +212,7 @@ export class RendererCanvasSimple implements Renderer {
     }
 
     renderDotAttackTargetArrow(dotFrom: Dot, dotTo: Dot) {
-        this.ctx.lineWidth = 0.5;
+        this.ctx.lineWidth = 0.01;
         this.ctx.strokeStyle = "palevioletred";
 
         this.drawArrow(
@@ -206,11 +234,11 @@ export class RendererCanvasSimple implements Renderer {
         const centerTo = getRectCenter(squadFrameTo.frame);
 
         const lineCenterToCenter = { p1: centerFrom, p2: centerTo };
-        const start = getFirstIntersection(
+        const start = getIntersectionFirst(
             lineCenterToCenter,
             squadFrameFrom.frame,
         );
-        const end = getFirstIntersection(
+        const end = getIntersectionFirst(
             lineCenterToCenter,
             squadFrameTo.frame,
         );
@@ -222,5 +250,19 @@ export class RendererCanvasSimple implements Renderer {
         this.drawArrow(start, end);
 
         this.ctx.stroke();
+    }
+
+    renderProjectile(projectile: Projectile) {
+        this.ctx.fillStyle = "gray";
+        this.ctx.beginPath();
+        this.ctx.arc(
+            projectile.position.x,
+            projectile.position.y,
+            1,
+            0,
+            Math.PI * 2,
+        );
+        this.ctx.closePath();
+        this.ctx.fill();
     }
 }

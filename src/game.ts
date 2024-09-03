@@ -1,22 +1,33 @@
-import { DOT_SPEED } from "./consts";
-import type { Point } from "./utils";
+import { DEFAULT_PROJECTILE, DOT_HEIGTH, DOT_SPEED, DOT_WIDTH } from "./consts";
+import { distanceBetween as getDistanceBetween, getIntersectionAny, type Point, type Rect } from "./utils";
 import { randomInteger, times } from "remeda";
 
 export type Dot = Point & {
-    index: number;
     speed: number;
     path: Point[];
     attackTargetedByDots: Set<Dot>;
     attackTargetDot: Dot | null;
-    attackTargetSquad: Squad | null;
     attackRange: number;
     attackCooldown: number;
+    attackCooldownLeft: number;
     squad: Squad | null;
+    slot: Slot | null;
+    hitBox: Rect;
+    health: number;
+};
+
+export type Projectile = {
+    position: Point;
+    angle: number;
+    speed: number;
+    damage: number;
+    flyDistanceLeft: number;
+    fromDot: Dot;
 };
 
 export type Slot = {
     position: Point;
-    dotIndex: number | null;
+    dot: Dot | null;
 };
 
 export type Squad = {
@@ -27,9 +38,10 @@ export type Squad = {
 };
 
 export class Game {
-    dots: Dot[] = [];
-    dotsSelectedIndexes = new Set<number>();
+    dots = new Set<Dot>();
+    dotsSelected = new Set<Dot>();
     squads: Squad[] = [];
+    projectiles: Projectile[] = [];
 
     constructor(
         readonly width: number,
@@ -37,7 +49,7 @@ export class Game {
     ) {}
 
     init() {
-        times(5000, () => this.addDotRandom());
+        times(1000, () => this.addDotRandom());
     }
 
     attackSquad({
@@ -50,6 +62,40 @@ export class Game {
         squadAttacker.attackTargetSquad = squadTarget;
     }
 
+    shootProjectile(
+        fromDot: Dot,
+        toPoint: Point,
+        params: Pick<Projectile, "speed" | "damage" | "flyDistanceLeft">,
+    ) {
+        const projectile: Projectile = {
+            ...params,
+            position: { x: fromDot.x, y: fromDot.y },
+            angle: Math.atan2(toPoint.y - fromDot.y, toPoint.x - fromDot.x),
+            fromDot,
+        };
+
+        this.projectiles.push(projectile);
+    }
+
+    hitProjectile(projectile: Projectile, dot: Dot) {
+        this.projectiles.splice(this.projectiles.indexOf(projectile), 1);
+        dot.health -= projectile.damage;
+
+        if (dot.health <= 0) {
+            this.removeDot(dot);
+        }
+    }
+
+    removeDot(dot: Dot) {
+        this.dots.delete(dot);
+        if (dot.slot) {
+            dot.slot.dot = null;
+        }
+        for (const targeter of dot.attackTargetedByDots) {
+            targeter.attackTargetDot = null;
+        }
+    }
+
     createSquad(slots: Slot[]) {
         const squad: Squad = {
             index: this.squads.length,
@@ -60,11 +106,12 @@ export class Game {
         this.squads.push(squad);
 
         for (const slot of slots) {
-            if (slot.dotIndex === null) {
+            if (!slot.dot) {
                 continue;
             }
 
-            this.dots[slot.dotIndex].squad = squad;
+            slot.dot.squad = squad;
+            slot.dot.slot = slot;
         }
 
         return squad;
@@ -74,74 +121,96 @@ export class Game {
         this.squads.splice(this.squads.indexOf(squad), 1);
 
         for (const slot of squad.slots) {
-            if (slot.dotIndex === null) {
+            if (!slot.dot) {
                 continue;
             }
 
-            const dot = this.dots[slot.dotIndex];
+            const dot = slot.dot;
 
             if (dot.attackTargetDot) {
                 dot.attackTargetDot.attackTargetedByDots.delete(dot);
             }
 
             dot.squad = null;
-            dot.attackTargetSquad = null;
             dot.attackTargetDot = null;
         }
     }
 
-    isInSquad(dotIndex: number) {
+    isInSquad(dot: Dot) {
         return this.squads.some((squad) =>
-            squad.slots.some((slot) => slot.dotIndex === dotIndex),
+            squad.slots.some((slot) => slot.dot === dot),
         );
     }
 
     addDotRandom() {
-        this.dots.push({
-            index: this.dots.length,
+        const position = {
             x: randomInteger(0, this.width),
             y: randomInteger(0, this.height),
+        };
+        this.dots.add({
             path: [],
+            x: position.x,
+            y: position.y,
             speed: DOT_SPEED,
             attackTargetDot: null,
-            attackTargetSquad: null,
             attackRange: 200,
             attackCooldown: 1000,
+            attackCooldownLeft: 0,
             attackTargetedByDots: new Set(),
             squad: null,
+            slot: null,
+            health: 2,
+            hitBox: {
+                p1: {
+                    x: position.x - DOT_WIDTH / 2,
+                    y: position.y - DOT_HEIGTH / 2,
+                },
+                p2: {
+                    x: position.x + DOT_WIDTH / 2,
+                    y: position.y - DOT_HEIGTH / 2,
+                },
+                p3: {
+                    x: position.x + DOT_WIDTH / 2,
+                    y: position.y + DOT_HEIGTH / 2,
+                },
+                p4: {
+                    x: position.x - DOT_WIDTH / 2,
+                    y: position.y + DOT_HEIGTH / 2,
+                },
+            },
         });
     }
 
-    dotSelect(dotIndex: number) {
-        this.dotsSelectedIndexes.add(dotIndex);
+    dotSelect(dot: Dot) {
+        this.dotsSelected.add(dot);
     }
 
     dotSelectAllWithoutSquad() {
-        this.dotsSelectedIndexes = new Set(times(this.dots.length, (i) => i));
+        this.dotsSelected = new Set(this.dots);
 
         for (const squad of this.squads) {
             for (const slot of squad.slots) {
-                if (slot.dotIndex !== null) {
-                    this.dotsSelectedIndexes.delete(slot.dotIndex);
+                if (slot.dot) {
+                    this.dotsSelected.delete(slot.dot);
                 }
             }
         }
     }
 
-    dotUnselect(dotIndex: number) {
-        this.dotsSelectedIndexes.delete(dotIndex);
+    dotUnselect(dot: Dot) {
+        this.dotsSelected.delete(dot);
     }
 
     dotsAllUnselect() {
-        this.dotsSelectedIndexes.clear();
+        this.dotsSelected.clear();
     }
 
-    isDotSelected(dotIndex: number) {
-        return this.dotsSelectedIndexes.has(dotIndex);
+    isDotSelected(dot: Dot) {
+        return this.dotsSelected.has(dot);
     }
 
-    dotMoveTo(dotIndex: number, destination: Point) {
-        this.dots[dotIndex].path = [destination];
+    dotMoveTo(dot: Dot, destination: Point) {
+        dot.path = [destination];
     }
 
     tick(timeDelta: number) {
@@ -170,6 +239,15 @@ export class Game {
             dot.x += dx;
             dot.y += dy;
 
+            dot.hitBox.p1.x += dx;
+            dot.hitBox.p2.x += dx;
+            dot.hitBox.p3.x += dx;
+            dot.hitBox.p4.x += dx;
+            dot.hitBox.p1.y += dy;
+            dot.hitBox.p2.y += dy;
+            dot.hitBox.p3.y += dy;
+            dot.hitBox.p4.y += dy;
+
             if (length < maxMoveDistance) {
                 dot.path.splice(0, 1);
             }
@@ -177,12 +255,11 @@ export class Game {
 
         const changePathToSquad = (squad: Squad) => {
             for (const slot of squad.slots) {
-                if (slot.dotIndex === null) {
+                if (!slot.dot) {
                     continue;
                 }
 
-                const dot = this.dots[slot.dotIndex];
-                dot.path = [slot.position];
+                slot.dot.path = [slot.position];
             }
         };
 
@@ -190,17 +267,17 @@ export class Game {
             dot: Dot,
             squadTarget: Squad,
         ) => {
-            if (dot.attackTargetSquad === squadTarget) {
+            if (dot.attackTargetDot?.squad === squadTarget) {
                 return;
             }
 
             const dotPotentionalTargets = [];
             for (const slot of squadTarget.slots) {
-                if (slot.dotIndex === null) {
+                if (!slot.dot) {
                     continue;
                 }
 
-                dotPotentionalTargets.push(this.dots[slot.dotIndex]);
+                dotPotentionalTargets.push(slot.dot);
             }
 
             if (!dotPotentionalTargets.length) {
@@ -226,8 +303,69 @@ export class Game {
             }
 
             dot.attackTargetDot = target;
-            dot.attackTargetSquad = target.squad;
             target.attackTargetedByDots.add(dot);
+        };
+
+        const proceedCooldown = (dot: Dot) => {
+            dot.attackCooldownLeft = Math.max(
+                dot.attackCooldownLeft - timeDelta,
+                0,
+            );
+        };
+
+        const tryShoot = (dot: Dot) => {
+            if (!dot.attackTargetDot || dot.attackCooldownLeft > 0) {
+                return;
+            }
+
+            const distance = getDistanceBetween(dot, dot.attackTargetDot);
+            if (distance > dot.attackRange) {
+                return;
+            }
+
+            this.shootProjectile(dot, dot.attackTargetDot, DEFAULT_PROJECTILE);
+            dot.attackCooldownLeft = dot.attackCooldown;
+        };
+
+        const updateProjectile = (projectile: Projectile) => {
+            const traveledDistance = projectile.speed * timeDelta;
+
+            const dx = Math.cos(projectile.angle) * traveledDistance;
+            const dy = Math.sin(projectile.angle) * traveledDistance;
+
+            const line = {
+                p1: projectile.position,
+                p2: {
+                    x: projectile.position.x + dx,
+                    y: projectile.position.y + dy,
+                },
+            };
+
+            let closestIntersection: { dot: Dot, distance: number } | null = null;
+            for (const dot of this.dots) {
+                if (dot === projectile.fromDot) {
+                    continue;
+                }
+
+                const intersection = getIntersectionAny(line, dot.hitBox);
+
+                if (!intersection) {
+                    continue;
+                }
+
+                const distance = getDistanceBetween(projectile.position, intersection);
+                if (closestIntersection === null || distance > closestIntersection.distance) {
+                    closestIntersection = { dot, distance };
+                }
+            }
+
+            if (closestIntersection) {
+                this.hitProjectile(projectile, closestIntersection.dot);
+                return;
+            }
+
+            projectile.position.x += dx;
+            projectile.position.y += dy;
         };
 
         for (const squad of this.squads) {
@@ -235,15 +373,21 @@ export class Game {
 
             if (squad.attackTargetSquad) {
                 for (const slot of squad.slots) {
-                    if (slot.dotIndex === null) {
+                    if (!slot.dot) {
                         continue;
                     }
 
-                    const dot = this.dots[slot.dotIndex];
+                    const dot = slot.dot;
 
                     assignDotAttackTargetsBySquad(dot, squad.attackTargetSquad);
+                    proceedCooldown(dot);
+                    tryShoot(dot);
                 }
             }
+        }
+
+        for (const projectile of this.projectiles) {
+            updateProjectile(projectile);
         }
 
         for (const dot of this.dots) {

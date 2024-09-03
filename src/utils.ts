@@ -126,16 +126,6 @@ export function makeRectOrthogonal(rect: Rect) {
     return rotateRect({ rect, anchor: rect.p1, angle: -angle });
 }
 
-export function distanceBetween(
-    p1: { x: number; y: number },
-    p2: { x: number; y: number },
-) {
-    const dx = p2.x - p1.x;
-    const dy = p2.y - p1.y;
-
-    return Math.sqrt(dx * dx + dy * dy);
-}
-
 export function getRectCenter(rect: Rect): Point {
     return {
         x: (rect.p1.x + rect.p2.x + rect.p3.x + rect.p4.x) / 4,
@@ -144,13 +134,26 @@ export function getRectCenter(rect: Rect): Point {
 }
 
 // chatgpt (c)
-export function getFirstIntersection(line: { p1: Point, p2: Point }, rect: Rect): Point | null {
-    function getIntersection(p1: Point, p2: Point, p3: Point, p4: Point): Point | null {
-        const denom = (p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y);
+export function getIntersectionFirst(
+    line: { p1: Point; p2: Point },
+    rect: Rect,
+): Point | null {
+    function getIntersection(
+        p1: Point,
+        p2: Point,
+        p3: Point,
+        p4: Point,
+    ): Point | null {
+        const denom =
+            (p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y);
         if (denom === 0) return null; // Lines are parallel
 
-        const ua = ((p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x)) / denom;
-        const ub = ((p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x)) / denom;
+        const ua =
+            ((p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x)) /
+            denom;
+        const ub =
+            ((p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x)) /
+            denom;
 
         if (ua >= 0 && ua <= 1 && ub >= 0 && ub <= 1) {
             const x = p1.x + ua * (p2.x - p1.x);
@@ -161,24 +164,25 @@ export function getFirstIntersection(line: { p1: Point, p2: Point }, rect: Rect)
         return null; // No intersection
     }
 
-    function distanceSquared(p1: Point, p2: Point): number {
-        return (p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2;
-    }
-
     const sides = [
         { p1: rect.p1, p2: rect.p2 },
         { p1: rect.p2, p2: rect.p3 },
         { p1: rect.p3, p2: rect.p4 },
-        { p1: rect.p4, p2: rect.p1 }
+        { p1: rect.p4, p2: rect.p1 },
     ];
 
     let closestIntersection: Point | null = null;
     let minDistSquared = Infinity;
 
     for (const side of sides) {
-        const intersection = getIntersection(line.p1, line.p2, side.p1, side.p2);
+        const intersection = getIntersection(
+            line.p1,
+            line.p2,
+            side.p1,
+            side.p2,
+        );
         if (intersection) {
-            const distSquared = distanceSquared(line.p1, intersection);
+            const distSquared = distanceBetween(line.p1, intersection);
             if (distSquared < minDistSquared) {
                 minDistSquared = distSquared;
                 closestIntersection = intersection;
@@ -187,4 +191,60 @@ export function getFirstIntersection(line: { p1: Point, p2: Point }, rect: Rect)
     }
 
     return closestIntersection;
+}
+
+export function getIntersectionAny(
+    line: { p1: Point; p2: Point },
+    rect: Rect,
+): Point | null {
+    function getIntersection(
+        p1: Point,
+        p2: Point,
+        p3: Point,
+        p4: Point,
+    ): Point | null {
+        const denom =
+            (p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y);
+        if (denom === 0) return null; // Lines are parallel
+
+        const ua =
+            ((p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x)) /
+            denom;
+        const ub =
+            ((p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x)) /
+            denom;
+
+        if (ua >= 0 && ua <= 1 && ub >= 0 && ub <= 1) {
+            const x = p1.x + ua * (p2.x - p1.x);
+            const y = p1.y + ua * (p2.y - p1.y);
+            return { x, y };
+        }
+
+        return null; // No intersection
+    }
+
+    const sides = [
+        { p1: rect.p1, p2: rect.p2 },
+        { p1: rect.p2, p2: rect.p3 },
+        { p1: rect.p3, p2: rect.p4 },
+        { p1: rect.p4, p2: rect.p1 },
+    ];
+
+    for (const side of sides) {
+        const intersection = getIntersection(
+            line.p1,
+            line.p2,
+            side.p1,
+            side.p2,
+        );
+        if (intersection) {
+            return intersection;
+        }
+    }
+
+    return null;
+}
+
+export function distanceBetween(p1: Point, p2: Point): number {
+    return Math.hypot(p2.x - p1.x, p2.y - p1.y);
 }

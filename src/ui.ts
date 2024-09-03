@@ -10,7 +10,7 @@ import {
     type Rect,
 } from "./utils";
 import { DOT_TARGET_MOVE_SPACE } from "./consts";
-import type { Game, Slot, Squad } from "./game";
+import type { Dot, Game, Slot, Squad } from "./game";
 
 export type SquadFrame = { index: number; squad: Squad; frame: Rect };
 
@@ -147,24 +147,29 @@ export class UI {
     }
 
     createSquad() {
-        const dotIndexes = Array.from(this.game.dotsSelectedIndexes);
-        const sumX = dotIndexes.reduce(
-            (acc, dotIndex) => acc + this.game.dots[dotIndex].x,
+        const dots = Array.from(this.game.dotsSelected);
+
+        if (!dots.length) {
+            return;
+        }
+
+        const sumX = dots.reduce(
+            (acc, dot) => acc + dot.x,
             0,
         );
-        const sumY = dotIndexes.reduce(
-            (acc, dotIndex) => acc + this.game.dots[dotIndex].y,
+        const sumY = dots.reduce(
+            (acc, dot) => acc + dot.y,
             0,
         );
         const center = {
-            x: sumX / dotIndexes.length,
-            y: sumY / dotIndexes.length,
+            x: sumX / dots.length,
+            y: sumY / dots.length,
         };
 
-        const frame = this.createSquadSquare(dotIndexes.length, center);
-        const slots = this.createSlots(frame, dotIndexes.length);
+        const frame = this.createSquadSquare(dots.length, center);
+        const slots = this.createSlots(frame, dots.length);
 
-        this.fillSlotsMutate(slots, dotIndexes);
+        this.fillSlotsMutate(slots, dots);
 
         const squad = this.game.createSquad(slots);
 
@@ -172,6 +177,8 @@ export class UI {
         this.squadFrames.push(squadFrame);
 
         this.squadFramesSelected = [squadFrame];
+
+        this.game.dotsSelected.clear();
     }
 
     destroySquad() {
@@ -186,13 +193,13 @@ export class UI {
         }
     }
 
-    fillSlotsMutate(slots: Slot[], dotIndexes: number[]) {
+    fillSlotsMutate(slots: Slot[], dots: Dot[]) {
         for (const [index, slot] of slots.entries()) {
-            if (index >= dotIndexes.length) {
+            if (index >= dots.length) {
                 return;
             }
 
-            slot.dotIndex = dotIndexes[index];
+            slot.dot = dots[index];
         }
     }
 
@@ -245,7 +252,7 @@ export class UI {
 
         // First pass: Map filled slots to the nearest new position
         squadFrame.squad.slots.forEach((slot) => {
-            if (slot.dotIndex !== null) {
+            if (slot.dot) {
                 let minDistance = Infinity;
                 let closestIndex = -1;
 
@@ -271,7 +278,7 @@ export class UI {
 
         // Second pass: Place empty slots in the remaining positions
         squadFrame.squad.slots.forEach((slot) => {
-            if (slot.dotIndex === null) {
+            if (!slot.dot) {
                 const availableIndex = usedPositions.findIndex((used) => !used);
                 if (availableIndex !== -1) {
                     slot.position = newPositions[availableIndex];
@@ -288,7 +295,7 @@ export class UI {
 
         return positions.map<Slot>((position) => ({
             position,
-            dotIndex: null,
+            dot: null,
         }));
     }
 
@@ -343,15 +350,13 @@ export class UI {
         if (this.squadFramesSelected.length) {
             let count = 0;
             for (const squadFrame of this.squadFramesSelected) {
-                for (const slot of squadFrame.squad.slots) {
-                    count += slot.dotIndex !== null ? 1 : 0;
-                }
+                count += squadFrame.squad.slots.length;
             }
 
             return count;
         }
 
-        return this.game.dotsSelectedIndexes.size;
+        return this.game.dotsSelected.size;
     }
 
     startDestination(x: number, y: number) {
@@ -411,9 +416,9 @@ export class UI {
         for (const dot of this.game.dots) {
             if (
                 isPointInRect(dot, this.selection) &&
-                !this.game.isInSquad(dot.index)
+                !this.game.isInSquad(dot)
             ) {
-                this.game.dotSelect(dot.index);
+                this.game.dotSelect(dot);
             }
         }
     }
@@ -427,13 +432,13 @@ export class UI {
         this.selection = null;
     }
 
-    commandMoveDots(dotIndexes: number[]) {
-        const positions = dotIndexes.map(() =>
+    commandMoveDots(dots: Dot[]) {
+        const positions = dots.map(() =>
             randomPointInRect(this.destination!),
         );
 
-        for (const [positionIndex, dotIndex] of dotIndexes.entries()) {
-            this.game.dotMoveTo(dotIndex, positions[positionIndex]);
+        for (const [positionIndex, dot] of dots.entries()) {
+            this.game.dotMoveTo(dot, positions[positionIndex]);
         }
     }
 
@@ -454,7 +459,7 @@ export class UI {
             return;
         }
 
-        const dotIndexesToMove = Array.from(this.game.dotsSelectedIndexes);
+        const dotIndexesToMove = Array.from(this.game.dotsSelected);
         this.commandMoveDots(dotIndexesToMove);
     }
 }
