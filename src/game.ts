@@ -1,5 +1,10 @@
 import { DEFAULT_PROJECTILE, DOT_HEIGTH, DOT_SPEED, DOT_WIDTH } from "./consts";
-import { distanceBetween as getDistanceBetween, getIntersectionAny, type Point, type Rect } from "./utils";
+import {
+    distanceBetween as getDistanceBetween,
+    getIntersectionAny,
+    type Point,
+    type Rect,
+} from "./utils";
 import { randomInteger, times } from "remeda";
 
 export type Dot = {
@@ -71,7 +76,10 @@ export class Game {
         const projectile: Projectile = {
             ...params,
             position: { ...fromDot.position },
-            angle: Math.atan2(toPoint.y - fromDot.position.y, toPoint.x - fromDot.position.x),
+            angle: Math.atan2(
+                toPoint.y - fromDot.position.y,
+                toPoint.x - fromDot.position.x,
+            ),
             fromDot,
         };
 
@@ -310,8 +318,14 @@ export class Game {
             dotPotentionalTargets
                 .sort(
                     (d1, d2) =>
-                        Math.hypot(d1.position.x - dot.position.x, d1.position.y - dot.position.y) -
-                        Math.hypot(d2.position.x - dot.position.x, d2.position.y - dot.position.y),
+                        Math.hypot(
+                            d1.position.x - dot.position.x,
+                            d1.position.y - dot.position.y,
+                        ) -
+                        Math.hypot(
+                            d2.position.x - dot.position.x,
+                            d2.position.y - dot.position.y,
+                        ),
                 )
                 .sort(
                     (d1, d2) =>
@@ -341,12 +355,39 @@ export class Game {
                 return;
             }
 
-            const distance = getDistanceBetween(dot.position, dot.attackTargetDot.position);
+            const distance = getDistanceBetween(
+                dot.position,
+                dot.attackTargetDot.position,
+            );
             if (distance > dot.attackRange) {
                 return;
             }
 
-            this.shootProjectile(dot, dot.attackTargetDot.position, DEFAULT_PROJECTILE);
+            if (dot.squad) {
+                const line = {
+                    p1: dot.position,
+                    p2: dot.attackTargetDot.position,
+                };
+                for (const slot of dot.squad.slots) {
+                    if (slot === dot.slot || !slot.dot) {
+                        continue;
+                    }
+
+                    const intersection = getIntersectionAny(
+                        line,
+                        slot.dot.hitBox,
+                    );
+                    if (intersection) {
+                        return;
+                    }
+                }
+            }
+
+            this.shootProjectile(
+                dot,
+                dot.attackTargetDot.position,
+                DEFAULT_PROJECTILE,
+            );
             dot.attackCooldownLeft = dot.attackCooldown;
         };
 
@@ -364,7 +405,8 @@ export class Game {
                 },
             };
 
-            let closestIntersection: { dot: Dot, distance: number } | null = null;
+            let closestIntersection: { dot: Dot; distance: number } | null =
+                null;
             for (const dot of this.dots) {
                 if (dot === projectile.fromDot) {
                     continue;
@@ -376,8 +418,14 @@ export class Game {
                     continue;
                 }
 
-                const distance = getDistanceBetween(projectile.position, intersection);
-                if (closestIntersection === null || distance > closestIntersection.distance) {
+                const distance = getDistanceBetween(
+                    projectile.position,
+                    intersection,
+                );
+                if (
+                    closestIntersection === null ||
+                    distance > closestIntersection.distance
+                ) {
                     closestIntersection = { dot, distance };
                 }
             }
