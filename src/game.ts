@@ -47,11 +47,21 @@ export type Squad = {
     attackTargetSquad: Squad | null;
 };
 
+export type GameEvent = { name: "squad-removed"; payload: { squad: Squad } };
+export type GameEventListener<Name extends GameEvent["name"]> = (
+    payload: Extract<GameEvent, { name: Name }>["payload"],
+) => void;
+
 export class Game {
     dots = new Set<Dot>();
     dotsSelected = new Set<Dot>();
     squads: Squad[] = [];
     projectiles: Projectile[] = [];
+    eventListeners: {
+        [key in GameEvent["name"]]: Set<GameEventListener<key>>;
+    } = {
+        "squad-removed": new Set(),
+    };
 
     constructor(
         readonly width: number,
@@ -60,6 +70,29 @@ export class Game {
 
     init() {
         times(1000, () => this.addDotRandom());
+    }
+
+    addEventListener<Name extends GameEvent["name"]>(
+        name: Name,
+        listener: GameEventListener<Name>,
+    ) {
+        this.eventListeners[name].add(listener);
+    }
+
+    removeEventListener<Name extends GameEvent["name"]>(
+        name: Name,
+        listener: GameEventListener<Name>,
+    ) {
+        this.eventListeners[name].delete(listener);
+    }
+
+    private emitEvent<Name extends GameEvent["name"]>(
+        name: Name,
+        payload: Extract<GameEvent, { name: Name }>["payload"],
+    ) {
+        for (const listener of this.eventListeners[name]) {
+            listener(payload);
+        }
     }
 
     attackSquad({
@@ -104,11 +137,25 @@ export class Game {
 
     removeDot(dot: Dot) {
         this.dots.delete(dot);
+
         if (dot.slot) {
             dot.slot.dot = null;
         }
+
         for (const targeter of dot.attackTargetedByDots) {
             targeter.attackTargetDot = null;
+        }
+
+        if (dot.squad) {
+            this.removeSquadIfEmpty(dot.squad);
+        }
+    }
+
+    removeSquadIfEmpty(squad: Squad) {
+        const squadHasNoDots = squad.slots.every((slot) => slot.dot === null);
+
+        if (squadHasNoDots) {
+            this.removeSquad(squad);
         }
     }
 
@@ -202,6 +249,8 @@ export class Game {
             dot.squad = null;
             dot.attackTargetDot = null;
         }
+
+        this.emitEvent("squad-removed", { squad });
     }
 
     isInSquad(dot: Dot) {

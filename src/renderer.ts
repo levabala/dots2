@@ -212,11 +212,7 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.lineWidth = 0.5;
         this.ctx.strokeStyle = "palevioletred";
 
-        this.drawArrow(
-            dotFrom.position,
-            dotTo.position,
-            7
-        );
+        this.drawArrow(dotFrom.position, dotTo.position, 7);
 
         this.ctx.stroke();
     }

@@ -82,6 +82,17 @@ export class UI {
         );
         this.element.addEventListener("dblclick", this.markDotsAll.bind(this));
         window.addEventListener("keypress", this.handleKeypress.bind(this));
+
+        this.game.addEventListener("squad-removed", ({ squad }) =>
+            this.removeSquadFrameBySquad(squad),
+        );
+    }
+
+    removeSquadFrameBySquad(squad: Squad) {
+        this.squadFrames.splice(
+            this.squadFrames.findIndex((sf) => sf.squad === squad),
+            1,
+        );
     }
 
     handleRightButtonDown(e: MouseEvent) {
@@ -452,6 +463,7 @@ export class UI {
 
         if (this.squadFramesSelected.length) {
             this.commandMoveSquads(this.squadFramesSelected, this.destination);
+            this.destination = null;
             return;
         }
 
