@@ -119,11 +119,22 @@ export class RendererCanvasSimple implements Renderer {
             return "lightcoral";
         }
 
-        if (this.game.isDotSelected(dot)) {
+        if (this.ui.isDotSelected(dot)) {
             return "darkgoldenrod";
         }
 
         return "black";
+    }
+
+    private getDotTeamColor(dot: Dot) {
+        switch (dot.team.index) {
+            case 0:
+                return "red";
+            case 1:
+                return "blue";
+            default:
+                return "black";
+        }
     }
 
     renderSlot(slot: Slot) {
@@ -136,12 +147,14 @@ export class RendererCanvasSimple implements Renderer {
     }
 
     renderDot(dot: Dot) {
-        const color = this.getDotColor(dot);
-        this.ctx.fillStyle = color;
+        this.ctx.fillStyle = this.getDotColor(dot);
+        this.ctx.strokeStyle = this.getDotTeamColor(dot);
+        this.ctx.lineWidth = 1;
 
         this.drawRect(dot.hitBox);
 
         this.ctx.fill();
+        this.ctx.stroke();
     }
 
     private drawPolygon(points: Point[]) {

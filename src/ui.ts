@@ -15,6 +15,8 @@ import type { Dot, Game, Slot, Squad } from "./game";
 export type SquadFrame = { index: number; squad: Squad; frame: Rect };
 
 export class UI {
+    dotsSelected = new Set<Dot>();
+
     selectionStartPoint: Point | null = null;
     selection: Rect | null = null;
 
@@ -86,6 +88,64 @@ export class UI {
         this.game.addEventListener("squad-removed", ({ squad }) =>
             this.removeSquadFrameBySquad(squad),
         );
+
+        this.createTestSquads();
+    }
+
+    createTestSquads() {
+        for (const dot of this.game.dots) {
+            if (dot.team.name === "red") {
+                this.dotsSelected.add(dot);
+            }
+        }
+
+        this.createSquad();
+
+        this.startDestination(300, 100);
+        this.adjustDestination(300, 600);
+        this.commandMove();
+
+        this.cancelSelection();
+
+        for (const dot of this.game.dots) {
+            if (dot.team.name === "blue") {
+                this.dotsSelected.add(dot);
+            }
+        }
+
+        this.createSquad();
+
+        this.startDestination(700, 600);
+        this.adjustDestination(700, 100);
+        this.commandMove();
+    }
+
+    dotSelect(dot: Dot) {
+        this.dotsSelected.add(dot);
+    }
+
+    dotSelectAllWithoutSquad() {
+        this.dotsSelected = new Set(this.game.dots);
+
+        for (const squad of this.game.squads) {
+            for (const slot of squad.slots) {
+                if (slot.dot) {
+                    this.dotsSelected.delete(slot.dot);
+                }
+            }
+        }
+    }
+
+    dotUnselect(dot: Dot) {
+        this.dotsSelected.delete(dot);
+    }
+
+    dotsAllUnselect() {
+        this.dotsSelected.clear();
+    }
+
+    isDotSelected(dot: Dot) {
+        return this.dotsSelected.has(dot);
     }
 
     removeSquadFrameBySquad(squad: Squad) {
@@ -101,7 +161,10 @@ export class UI {
             e.offsetY,
         );
 
-        if (squadFrameClicked) {
+        if (
+            squadFrameClicked &&
+            !this.squadFramesSelected.includes(squadFrameClicked)
+        ) {
             return;
         }
 
@@ -170,7 +233,7 @@ export class UI {
     }
 
     createSquad() {
-        const dots = Array.from(this.game.dotsSelected);
+        const dots = Array.from(this.dotsSelected);
 
         if (!dots.length) {
             return;
@@ -195,7 +258,7 @@ export class UI {
 
         this.squadFramesSelected = [squadFrame];
 
-        this.game.dotsSelected.clear();
+        this.dotsAllUnselect();
     }
 
     destroySquad() {
@@ -309,7 +372,7 @@ export class UI {
     }
 
     startSelection(x: number, y: number) {
-        this.game.dotsAllUnselect();
+        this.dotsAllUnselect();
         this.squadFramesSelected = [];
 
         this.selectionStartPoint = { x, y };
@@ -365,7 +428,7 @@ export class UI {
             return count;
         }
 
-        return this.game.dotsSelected.size;
+        return this.dotsSelected.size;
     }
 
     startDestination(x: number, y: number) {
@@ -427,18 +490,21 @@ export class UI {
                 isPointInRect(dot.position, this.selection) &&
                 !this.game.isInSquad(dot)
             ) {
-                this.game.dotSelect(dot);
+                this.dotSelect(dot);
             }
         }
     }
 
     markDotsAll() {
-        this.game.dotSelectAllWithoutSquad();
+        this.dotSelectAllWithoutSquad();
     }
 
     cancelSelection() {
         this.selectionStartPoint = null;
         this.selection = null;
+        this.destination = null;
+        this.destinationStartPoint = null;
+        this.dotsAllUnselect();
     }
 
     commandMoveDots(dots: Dot[]) {
@@ -467,7 +533,7 @@ export class UI {
             return;
         }
 
-        const dotIndexesToMove = Array.from(this.game.dotsSelected);
+        const dotIndexesToMove = Array.from(this.dotsSelected);
         this.commandMoveDots(dotIndexesToMove);
     }
 }

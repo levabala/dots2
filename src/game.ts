@@ -8,6 +8,11 @@ import {
 } from "./utils";
 import { randomInteger, times } from "remeda";
 
+export type Team = {
+    index: number;
+    name: string;
+};
+
 export type Dot = {
     position: Point;
     speed: number;
@@ -17,11 +22,13 @@ export type Dot = {
     attackRange: number;
     attackCooldown: number;
     attackCooldownLeft: number;
-    squad: Squad | null;
-    slot: Slot | null;
     hitBox: Rect;
     health: number;
     angle: number;
+
+    team: Team;
+    squad: Squad | null;
+    slot: Slot | null;
 };
 
 export type Projectile = {
@@ -37,6 +44,7 @@ export type Projectile = {
 export type Slot = {
     position: Point;
     angle: number;
+
     dot: Dot | null;
 };
 
@@ -53,8 +61,8 @@ export type GameEventListener<Name extends GameEvent["name"]> = (
 ) => void;
 
 export class Game {
+    teams = new Set<Team>();
     dots = new Set<Dot>();
-    dotsSelected = new Set<Dot>();
     squads: Squad[] = [];
     projectiles: Projectile[] = [];
     eventListeners: {
@@ -69,7 +77,11 @@ export class Game {
     ) {}
 
     init() {
-        times(1000, () => this.addDotRandom());
+        const team1 = this.createTeam({ name: "red" });
+        const team2 = this.createTeam({ name: "blue" });
+
+        times(500, () => this.addDotRandom(team1));
+        times(500, () => this.addDotRandom(team2));
     }
 
     addEventListener<Name extends GameEvent["name"]>(
@@ -253,13 +265,20 @@ export class Game {
         this.emitEvent("squad-removed", { squad });
     }
 
+    createTeam(teamParams: Omit<Team, "index">): Team {
+        const team = { ...teamParams, index: this.teams.size };
+        this.teams.add(team);
+
+        return team;
+    }
+
     isInSquad(dot: Dot) {
         return this.squads.some((squad) =>
             squad.slots.some((slot) => slot.dot === dot),
         );
     }
 
-    addDotRandom() {
+    addDotRandom(team: Team) {
         const position = {
             x: randomInteger(0, this.width),
             y: randomInteger(0, this.height),
@@ -273,40 +292,14 @@ export class Game {
             attackCooldown: 1000,
             attackCooldownLeft: 0,
             attackTargetedByDots: new Set(),
-            squad: null,
-            slot: null,
             health: 2,
             angle: 0,
             hitBox: this.calculateHitBox(position, 0),
+
+            team,
+            squad: null,
+            slot: null,
         });
-    }
-
-    dotSelect(dot: Dot) {
-        this.dotsSelected.add(dot);
-    }
-
-    dotSelectAllWithoutSquad() {
-        this.dotsSelected = new Set(this.dots);
-
-        for (const squad of this.squads) {
-            for (const slot of squad.slots) {
-                if (slot.dot) {
-                    this.dotsSelected.delete(slot.dot);
-                }
-            }
-        }
-    }
-
-    dotUnselect(dot: Dot) {
-        this.dotsSelected.delete(dot);
-    }
-
-    dotsAllUnselect() {
-        this.dotsSelected.clear();
-    }
-
-    isDotSelected(dot: Dot) {
-        return this.dotsSelected.has(dot);
     }
 
     dotMoveTo(dot: Dot, destination: Point) {
