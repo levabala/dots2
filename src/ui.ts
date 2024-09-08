@@ -101,8 +101,8 @@ export class UI {
 
         this.createSquad();
 
-        this.startDestination(300, 100);
-        this.adjustDestination(300, 600);
+        this.startDestination(500, 100);
+        this.adjustDestination(500, 600);
         this.commandMove();
 
         this.cancelSelection();
@@ -115,8 +115,8 @@ export class UI {
 
         this.createSquad();
 
-        this.startDestination(700, 600);
-        this.adjustDestination(700, 100);
+        this.startDestination(600, 600);
+        this.adjustDestination(600, 100);
         this.commandMove();
     }
 

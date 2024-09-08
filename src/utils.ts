@@ -248,3 +248,7 @@ export function getIntersectionAny(
 export function distanceBetween(p1: Point, p2: Point): number {
     return Math.hypot(p2.x - p1.x, p2.y - p1.y);
 }
+
+export function arePointsEqual(p1: Point, p2: Point) {
+    return Math.abs(p2.x - p1.x) < Number.EPSILON && Math.abs(p2.y - p1.y) < Number.EPSILON;
+}

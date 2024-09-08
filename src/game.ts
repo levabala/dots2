@@ -1,5 +1,6 @@
 import { DEFAULT_PROJECTILE, DOT_HEIGHT, DOT_SPEED, DOT_WIDTH } from "./consts";
 import {
+    arePointsEqual,
     distanceBetween as getDistanceBetween,
     getIntersectionAny,
     rotatePoint,
@@ -329,7 +330,7 @@ export class Game {
         }
     }
 
-    private checkHaShootIntersectionWithOwnSquad(
+    private checkHasShootIntersectionWithOwnSquad(
         dot: Dot,
         target: Dot,
     ): boolean {
@@ -390,7 +391,7 @@ export class Game {
             dot.hitBox.p3.y += dy;
             dot.hitBox.p4.y += dy;
 
-            if (length < maxMoveDistance) {
+            if (length <= maxMoveDistance) {
                 dot.path.splice(0, 1);
             }
         };
@@ -398,6 +399,13 @@ export class Game {
         const changePathToSquad = (squad: Squad) => {
             for (const slot of squad.slots) {
                 if (!slot.dot) {
+                    continue;
+                }
+
+                if (
+                    slot.dot.path.length === 0 &&
+                    arePointsEqual(slot.dot.position, slot.position)
+                ) {
                     continue;
                 }
 
@@ -417,7 +425,7 @@ export class Game {
 
                 if (
                     distance > dot.attackRange ||
-                    this.checkHaShootIntersectionWithOwnSquad(
+                    this.checkHasShootIntersectionWithOwnSquad(
                         dot,
                         dot.attackTargetDot,
                     )
@@ -444,7 +452,7 @@ export class Game {
                 }
 
                 const hasIntersection =
-                    this.checkHaShootIntersectionWithOwnSquad(dot, slot.dot);
+                    this.checkHasShootIntersectionWithOwnSquad(dot, slot.dot);
 
                 if (hasIntersection) {
                     continue;
@@ -506,7 +514,7 @@ export class Game {
                 return;
             }
 
-            const hasIntersection = this.checkHaShootIntersectionWithOwnSquad(
+            const hasIntersection = this.checkHasShootIntersectionWithOwnSquad(
                 dot,
                 dot.attackTargetDot,
             );
@@ -576,11 +584,11 @@ export class Game {
 
             if (squad.attackTargetSquad) {
                 for (const slot of squad.slots) {
-                    if (!slot.dot) {
+                    const dot = slot.dot;
+
+                    if (!dot) {
                         continue;
                     }
-
-                    const dot = slot.dot;
 
                     assignDotAttackTargetsBySquad(dot, squad.attackTargetSquad);
                     proceedCooldown(dot);
