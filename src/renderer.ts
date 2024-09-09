@@ -32,7 +32,7 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.clearRect(0, 0, this.width, this.height);
 
         for (const dot of this.game.dots) {
-            if (dot.attackTargetDot) {
+            if (dot.attackTargetDot && dot.attackCooldownLeft === 0) {
                 this.renderDotAttackTargetArrow(dot, dot.attackTargetDot);
             }
         }

@@ -23,6 +23,9 @@ export type Dot = {
     attackRange: number;
     attackCooldown: number;
     attackCooldownLeft: number;
+    aimingDuration: number;
+    aimingTimeLeft: number;
+    aimingTarget: Dot | null;
     hitBox: Rect;
     health: number;
     angle: number;
@@ -293,9 +296,12 @@ export class Game {
             speed: DOT_SPEED,
             attackTargetDot: null,
             attackRange: 200,
-            attackCooldown: 1000,
+            attackCooldown: 3000,
             attackCooldownLeft: 0,
             attackTargetedByDots: new Set(),
+            aimingDuration: 1000,
+            aimingTimeLeft: 1000,
+            aimingTarget: null,
             health: 2,
             angle: 0,
             hitBox: this.calculateHitBox(position, 0),
@@ -393,6 +399,8 @@ export class Game {
             dot.hitBox.p2.y += dy;
             dot.hitBox.p3.y += dy;
             dot.hitBox.p4.y += dy;
+
+            dot.aimingTimeLeft = dot.aimingDuration;
 
             if (length <= maxMoveDistance) {
                 dot.path.splice(0, 1);
@@ -504,8 +512,39 @@ export class Game {
             );
         };
 
-        const tryShoot = (dot: Dot) => {
+        const abortAiming = (dot: Dot) => {
+            dot.aimingTarget = dot.attackTargetDot;
+            dot.aimingTimeLeft = dot.aimingDuration;
+        }
+
+        const proceedAiming = (dot: Dot) => {
             if (!dot.attackTargetDot || dot.attackCooldownLeft > 0) {
+                abortAiming(dot);
+                return;
+            }
+
+            const distance = getDistanceBetween(
+                dot.position,
+                dot.attackTargetDot.position,
+            );
+            if (distance > dot.attackRange) {
+                abortAiming(dot);
+                return;
+            }
+
+            if (dot.aimingTarget !== dot.attackTargetDot) {
+                abortAiming(dot);
+            }
+
+            dot.aimingTimeLeft = Math.max(dot.aimingTimeLeft - timeDelta, 0);
+        };
+
+        const tryShoot = (dot: Dot) => {
+            if (
+                !dot.attackTargetDot ||
+                dot.attackCooldownLeft > 0 ||
+                dot.aimingTimeLeft > 0
+            ) {
                 return;
             }
 
@@ -597,6 +636,7 @@ export class Game {
                         continue;
                     }
 
+                    proceedAiming(dot);
                     proceedCooldown(dot);
 
                     if (dot.attackCooldownLeft === 0) {
