@@ -106,6 +106,9 @@ export class UI {
         this.commandMove();
 
         this.cancelSelection();
+        this.clearDestination();
+        this.dotsAllUnselect();
+        this.squadFramesSelected.splice(0, this.squadFramesSelected.length);
 
         for (const dot of this.game.dots) {
             if (dot.team.name === "blue") {
@@ -268,7 +271,6 @@ export class UI {
 
         for (const squadFrame of this.squadFramesSelected) {
             this.game.removeSquad(squadFrame.squad);
-            this.squadFrames.splice(this.squadFrames.indexOf(squadFrame), 1);
             this.squadFramesSelected = [];
         }
     }
@@ -502,9 +504,11 @@ export class UI {
     cancelSelection() {
         this.selectionStartPoint = null;
         this.selection = null;
+    }
+
+    clearDestination() {
         this.destination = null;
         this.destinationStartPoint = null;
-        this.dotsAllUnselect();
     }
 
     commandMoveDots(dots: Dot[]) {
