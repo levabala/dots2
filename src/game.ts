@@ -590,8 +590,19 @@ export class Game {
                         continue;
                     }
 
-                    assignDotAttackTargetsBySquad(dot, squad.attackTargetSquad);
+                    if (dot.path.length > 0) {
+                        continue;
+                    }
+
                     proceedCooldown(dot);
+
+                    if (dot.attackCooldownLeft === 0) {
+                        assignDotAttackTargetsBySquad(
+                            dot,
+                            squad.attackTargetSquad,
+                        );
+                    }
+
                     tryShoot(dot);
                 }
             }
