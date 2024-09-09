@@ -266,6 +266,7 @@ export class Game {
             }
 
             dot.squad = null;
+            dot.slot = null;
             dot.attackTargetDot = null;
         }
 
@@ -378,15 +379,15 @@ export class Game {
             }
 
             const angle = Math.atan2(dyRaw, dxRaw);
-            const lengthRaw = Math.sqrt(dxRaw * dxRaw + dyRaw * dyRaw);
-            const length = Math.min(lengthRaw, maxMoveDistance);
+            const distanceToTarget = Math.sqrt(dxRaw * dxRaw + dyRaw * dyRaw);
+            const distanceMove = Math.min(distanceToTarget, maxMoveDistance);
 
-            if (length === 0) {
+            if (distanceMove === 0) {
                 return;
             }
 
-            const dx = length * Math.cos(angle);
-            const dy = length * Math.sin(angle);
+            const dx = distanceMove * Math.cos(angle);
+            const dy = distanceMove * Math.sin(angle);
 
             dot.position.x += dx;
             dot.position.y += dy;
@@ -402,7 +403,7 @@ export class Game {
 
             dot.aimingTimeLeft = dot.aimingDuration;
 
-            if (length <= maxMoveDistance) {
+            if (distanceToTarget <= distanceMove) {
                 dot.path.splice(0, 1);
             }
         };
