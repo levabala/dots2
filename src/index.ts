@@ -2,8 +2,8 @@ import { Game } from "./game";
 import { UI } from "./ui";
 import { RendererCanvasSimple } from "./renderer";
 
-const width = Math.floor(window.innerWidth * 0.9);
-const height = Math.floor(window.innerHeight * 0.9);
+const width = Math.floor(window.innerWidth * 0.98);
+const height = Math.floor(window.innerHeight * 0.98);
 
 const canvas = document.createElement("canvas");
 canvas.width = width;

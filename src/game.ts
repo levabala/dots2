@@ -54,6 +54,8 @@ export type Squad = {
     slots: Slot[];
     attackTargetDot: Dot | null;
     attackTargetSquad: Squad | null;
+
+    team: Team;
 };
 
 export type GameEvent = { name: "squad-removed"; payload: { squad: Squad } };
@@ -224,12 +226,13 @@ export class Game {
         };
     }
 
-    createSquad(slots: Slot[]) {
+    createSquad(slots: Slot[], team: Team) {
         const squad: Squad = {
             index: this.squads.length,
             slots,
             attackTargetDot: null,
             attackTargetSquad: null,
+            team,
         };
         this.squads.push(squad);
 

@@ -159,14 +159,19 @@ export class UI {
     }
 
     handleRightButtonDown(e: MouseEvent) {
+        this.destinationStartPoint = null;
+
         const squadFrameClicked = this.getSquadFrameByPosition(
             e.offsetX,
             e.offsetY,
         );
 
+        const teamSelected = this.squadFramesSelected[0]?.squad.team;
+
         if (
             squadFrameClicked &&
-            !this.squadFramesSelected.includes(squadFrameClicked)
+            !this.squadFramesSelected.includes(squadFrameClicked) &&
+            teamSelected !== squadFrameClicked.squad.team
         ) {
             return;
         }
@@ -254,7 +259,9 @@ export class UI {
 
         this.fillSlotsMutate(slots, dots);
 
-        const squad = this.game.createSquad(slots);
+        const team = dots[0].team;
+
+        const squad = this.game.createSquad(slots, team);
 
         const squadFrame = { index: this.squadFrames.length, squad, frame };
         this.squadFrames.push(squadFrame);
