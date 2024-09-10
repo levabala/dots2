@@ -336,7 +336,7 @@ export class UI {
         const frontAngle = Math.atan2(
             newFrame.p2.y - newFrame.p1.y,
             newFrame.p2.x - newFrame.p1.x,
-        );
+        ) + Math.PI;
 
         // Update slot positions and angles based on the front direction of the frame
         oldSlots.forEach((slot, index) => {

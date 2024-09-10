@@ -159,7 +159,7 @@ export class RendererCanvasSimple implements Renderer {
         const endPoint = rotatePoint(
             { x: dot.position.x, y: dot.position.y + dot.height / 2 + length },
             dot.position,
-            -dot.angle,
+            dot.angle,
         );
 
         this.ctx.beginPath();

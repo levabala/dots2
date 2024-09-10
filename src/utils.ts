@@ -123,7 +123,7 @@ export function rotateRect({
 export function makeRectOrthogonal(rect: Rect) {
     const angle = Math.atan2(rect.p2.y - rect.p1.y, rect.p2.x - rect.p1.x);
 
-    return rotateRect({ rect, anchor: rect.p1, angle: -angle });
+    return rotateRect({ rect, anchor: rect.p1, angle });
 }
 
 export function getRectCenter(rect: Rect): Point {

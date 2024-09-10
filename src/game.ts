@@ -190,11 +190,21 @@ export class Game {
 
     syncDotAndSlotAngle(dot: Dot, slot: Slot) {
         dot.angle = slot.angle;
-        dot.hitBox = this.calculateHitBox(dot.position, dot.angle, dot.width, dot.height);
+        dot.hitBox = this.calculateHitBox(
+            dot.position,
+            dot.angle,
+            dot.width,
+            dot.height,
+        );
     }
 
     // chatgpt (c)
-    private calculateHitBox(position: Point, angle: number, width: number, height: number): Rect {
+    private calculateHitBox(
+        position: Point,
+        angle: number,
+        width: number,
+        height: number,
+    ): Rect {
         const initialHitBox: Rect = {
             p1: {
                 x: position.x - width / 2,
@@ -624,6 +634,15 @@ export class Game {
             projectile.position.y += dy;
         };
 
+        for (const dot of this.dots) {
+            if (dot.path.length > 0) {
+                continue;
+            }
+
+            proceedAiming(dot);
+            proceedCooldown(dot);
+        }
+
         for (const squad of this.squads) {
             changePathToSquad(squad);
 
@@ -639,17 +658,12 @@ export class Game {
                         continue;
                     }
 
-                    proceedAiming(dot);
-                    proceedCooldown(dot);
-
                     if (dot.attackCooldownLeft === 0) {
                         assignDotAttackTargetsBySquad(
                             dot,
                             squad.attackTargetSquad,
                         );
                     }
-
-                    tryShoot(dot);
                 }
             }
 
@@ -662,6 +676,14 @@ export class Game {
 
                 this.syncDotAndSlotAngle(slot.dot, slot);
             }
+        }
+
+        for (const dot of this.dots) {
+            if (dot.path.length > 0) {
+                continue;
+            }
+
+            tryShoot(dot);
         }
 
         for (const projectile of this.projectiles) {
