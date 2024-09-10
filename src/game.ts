@@ -491,11 +491,6 @@ export class Game {
                     ),
             );
 
-            dotPotentionalTargets.sort(
-                (d1, d2) =>
-                    d1.attackTargetedByDots.size - d2.attackTargetedByDots.size,
-            );
-
             const target = dotPotentionalTargets[0];
 
             if (dot.attackTargetDot) {
