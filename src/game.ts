@@ -402,6 +402,9 @@ export class Game {
             dot.hitBox.p4.y += dy;
 
             dot.aimingTimeLeft = dot.aimingDuration;
+            if (dot.attackCooldownLeft > 0) {
+                dot.attackCooldownLeft = dot.attackCooldown;
+            }
 
             if (distanceToTarget <= distanceMove) {
                 dot.path.splice(0, 1);
@@ -511,7 +514,7 @@ export class Game {
         const abortAiming = (dot: Dot) => {
             dot.aimingTarget = dot.attackTargetDot;
             dot.aimingTimeLeft = dot.aimingDuration;
-        }
+        };
 
         const proceedAiming = (dot: Dot) => {
             if (!dot.attackTargetDot || dot.attackCooldownLeft > 0) {
