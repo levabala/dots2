@@ -1,10 +1,10 @@
 # dots2
 
 TODO:
+- [x] attack only other team's squads
 - [ ] attack only if no obstructions at all
 - [ ] morale&panic system
 - [ ] squad reinforcement
-- [ ] attack only other team's squads
 - [ ] attack non-squad dots
 - [ ] attack the closest
 - [ ] hold fire until command

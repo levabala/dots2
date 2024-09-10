@@ -9,7 +9,7 @@ import {
     type Point,
     type Rect,
 } from "./utils";
-import { DOT_TARGET_MOVE_SPACE } from "./consts";
+import { DOT_TARGET_MOVE_SPACE, DOT_WIDTH } from "./consts";
 import type { Dot, Game, Slot, Squad } from "./game";
 
 export type SquadFrame = { index: number; squad: Squad; frame: Rect };
@@ -185,10 +185,13 @@ export class UI {
             e.offsetY,
         );
 
+        const teamSelected = this.squadFramesSelected[0]?.squad.team;
+
         if (
             this.squadFramesSelected.length &&
             squadFrameClicked &&
-            !this.squadFramesSelected.includes(squadFrameClicked)
+            !this.squadFramesSelected.includes(squadFrameClicked) &&
+            squadFrameClicked.squad.team !== teamSelected
         ) {
             this.attackSquad(squadFrameClicked);
         } else {
@@ -449,10 +452,26 @@ export class UI {
         );
 
         this.destination = targetRect;
+        window.assert(
+            Object.values(this.destination).every(
+                (p) => Number.isFinite(p.x) && Number.isFinite(p.y),
+            ),
+            "destination rect must be valid",
+            {
+                destination: this.destination,
+                destinationStartPoint: this.destinationStartPoint,
+                targetRect,
+                dotCountToMove,
+            },
+        );
     }
 
     adjustDestination(x: number, y: number) {
-        if (!this.destinationStartPoint) {
+        if (
+            !this.destinationStartPoint ||
+            (this.destinationStartPoint.x === x &&
+                this.destinationStartPoint.y === y)
+        ) {
             return;
         }
 
@@ -463,6 +482,10 @@ export class UI {
             { x, y },
             this.destinationStartPoint,
         );
+
+        if (frontLength < DOT_WIDTH) {
+            return;
+        }
 
         const sideLength = destinationRectArea / frontLength;
 
@@ -487,6 +510,18 @@ export class UI {
             anchor: destinationRaw.p1,
             angle,
         });
+        window.assert(
+            Object.values(this.destination).every(
+                (p) => Number.isFinite(p.x) && Number.isFinite(p.y),
+            ),
+            "destination rect must be valid",
+            {
+                destination: this.destination,
+                destinationStartPoint: this.destinationStartPoint,
+                destinationRaw,
+                dotCountToMove,
+            },
+        );
     }
 
     markDotsInSelection() {
