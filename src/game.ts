@@ -16,6 +16,8 @@ export type Team = {
 
 export type Dot = {
     position: Point;
+    width: number;
+    height: number;
     speed: number;
     path: Point[];
     attackTargetedByDots: Set<Dot>;
@@ -188,27 +190,27 @@ export class Game {
 
     syncDotAndSlotAngle(dot: Dot, slot: Slot) {
         dot.angle = slot.angle;
-        dot.hitBox = this.calculateHitBox(dot.position, dot.angle);
+        dot.hitBox = this.calculateHitBox(dot.position, dot.angle, dot.width, dot.height);
     }
 
     // chatgpt (c)
-    private calculateHitBox(position: Point, angle: number): Rect {
+    private calculateHitBox(position: Point, angle: number, width: number, height: number): Rect {
         const initialHitBox: Rect = {
             p1: {
-                x: position.x - DOT_WIDTH / 2,
-                y: position.y - DOT_HEIGHT / 2,
+                x: position.x - width / 2,
+                y: position.y - height / 2,
             },
             p2: {
-                x: position.x + DOT_WIDTH / 2,
-                y: position.y - DOT_HEIGHT / 2,
+                x: position.x + width / 2,
+                y: position.y - height / 2,
             },
             p3: {
-                x: position.x + DOT_WIDTH / 2,
-                y: position.y + DOT_HEIGHT / 2,
+                x: position.x + width / 2,
+                y: position.y + height / 2,
             },
             p4: {
-                x: position.x - DOT_WIDTH / 2,
-                y: position.y + DOT_HEIGHT / 2,
+                x: position.x - width / 2,
+                y: position.y + height / 2,
             },
         };
 
@@ -294,6 +296,8 @@ export class Game {
         this.dots.add({
             path: [],
             position,
+            width: DOT_WIDTH,
+            height: DOT_HEIGHT,
             speed: DOT_SPEED,
             attackTargetDot: null,
             attackRange: 200,
@@ -305,7 +309,7 @@ export class Game {
             aimingTarget: null,
             health: 2,
             angle: 0,
-            hitBox: this.calculateHitBox(position, 0),
+            hitBox: this.calculateHitBox(position, 0, DOT_WIDTH, DOT_HEIGHT),
 
             team,
             squad: null,

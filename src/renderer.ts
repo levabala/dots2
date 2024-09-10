@@ -4,6 +4,7 @@ import type { SquadFrame, UI } from "./ui";
 import {
     getIntersectionFirst,
     getRectCenter,
+    rotatePoint,
     type Point,
     type Rect,
 } from "./utils";
@@ -44,6 +45,10 @@ export class RendererCanvasSimple implements Renderer {
         }
 
         for (const dot of this.game.dots) {
+            if (dot.attackCooldownLeft === 0) {
+                this.renderDotWeaponRaised(dot);
+            }
+
             this.renderDot(dot);
         }
 
@@ -143,6 +148,25 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.beginPath();
         this.ctx.arc(slot.position.x, slot.position.y, 2, 0, Math.PI * 2);
         this.ctx.closePath();
+        this.ctx.stroke();
+    }
+
+    renderDotWeaponRaised(dot: Dot) {
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeStyle = "gray";
+
+        const length = 4;
+        const endPoint = rotatePoint(
+            { x: dot.position.x, y: dot.position.y + dot.height / 2 + length },
+            dot.position,
+            -dot.angle,
+        );
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(dot.position.x, dot.position.y);
+        this.ctx.lineTo(endPoint.x, endPoint.y);
+        this.ctx.closePath();
+
         this.ctx.stroke();
     }
 
