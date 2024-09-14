@@ -1,7 +1,7 @@
 import { DEFAULT_PROJECTILE } from "./consts";
 import type { DotsGrid } from "./DotsGrid";
 import type { Game, Dot, Projectile, Slot } from "./Game";
-import type { SquadFrame, UI } from "./UI";
+import type { SquadFrame, UI } from "./UI/UI";
 import {
     getIntersectionFirst,
     getRectCenter,

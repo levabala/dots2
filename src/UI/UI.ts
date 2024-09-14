@@ -10,7 +10,13 @@ import {
     type Rect,
 } from "../utils";
 import { DOT_TARGET_MOVE_SPACE, DOT_WIDTH } from "../consts";
-import type { Dot, Game, Slot, Squad } from "../Game";
+import type { Dot, Game, Slot, Squad, Team } from "../Game";
+import {
+    CommandPanelUI,
+    type CommandPanelCallbacks,
+    type CommandPanelState,
+} from "./CommandPanel";
+import { isNonNull } from "remeda";
 
 export type SquadFrame = { index: number; squad: Squad; frame: Rect };
 
@@ -26,15 +32,62 @@ export class UI {
     squadFrames: SquadFrame[] = [];
     squadFramesSelected: SquadFrame[] = [];
 
+    squadFramesAllowAttackOnce: SquadFrame[] = [];
+
+    commandPanelUI: CommandPanelUI;
+
+    currentTeam: Team | null = null;
+
     constructor(
         readonly element: HTMLElement,
         readonly game: Game,
         readonly isRunningRef: { current: boolean },
         readonly start: () => void,
         readonly pause: () => void,
-    ) {}
+    ) {
+        this.commandPanelUI = new CommandPanelUI(this.initCommandPanelNode());
+    }
 
     init() {
+        this.initUserEventListeners();
+        this.initGameEventListeners();
+
+        this.createTestSquads();
+
+        this.renderCommandPanel();
+    }
+
+    initCommandPanelNode() {
+        const node = document.createElement("div");
+        node.style.position = "absolute";
+        node.style.bottom = "0";
+        node.style.left = "0";
+        node.style.right = "0";
+        node.style.height = "150px";
+
+        this.element.appendChild(node);
+
+        node.addEventListener("mousedown", (e) => {
+            e.stopPropagation();
+        });
+        node.addEventListener("mouseup", (e) => {
+            e.stopPropagation();
+        });
+
+        return node;
+    }
+
+    initGameEventListeners() {
+        this.game.addEventListener("dot-removed", () =>
+            this.renderCommandPanel(),
+        );
+
+        this.game.addEventListener("squad-removed", ({ squad }) =>
+            this.removeSquadFrameBySquad(squad),
+        );
+    }
+
+    initUserEventListeners() {
         let isMouseDown = false;
         this.element.addEventListener("mousedown", (e) => {
             isMouseDown = true;
@@ -88,12 +141,6 @@ export class UI {
         );
         this.element.addEventListener("dblclick", this.markDotsAll.bind(this));
         window.addEventListener("keypress", this.handleKeypress.bind(this));
-
-        this.game.addEventListener("squad-removed", ({ squad }) =>
-            this.removeSquadFrameBySquad(squad),
-        );
-
-        this.createTestSquads();
     }
 
     createTestSquads() {
@@ -131,6 +178,8 @@ export class UI {
 
     dotSelect(dot: Dot) {
         this.dotsSelected.add(dot);
+
+        this.selectTeam(dot.team);
     }
 
     dotSelectAllWithoutSquad() {
@@ -145,12 +194,74 @@ export class UI {
         }
     }
 
+    createCommandPanelState(): CommandPanelState {
+        return {
+            team:
+                (this.squadFramesSelected[0]?.squad as Squad | undefined)
+                    ?.team ||
+                (this.dotsSelected.values().next()?.value as Dot | undefined)
+                    ?.team ||
+                null,
+            squads: this.squadFramesSelected.map((sf) => sf.squad),
+        };
+    }
+
+    commandPanelCallbacks: CommandPanelCallbacks = {
+        changeAllowAttack: (squads, allowAttack) => {
+            for (const squad of squads) {
+                squad.allowAttack = allowAttack;
+            }
+
+            this.renderCommandPanel();
+        },
+        changeAllowAttackOnce: (squads, allowAttackOnce) => {
+            for (const squad of squads) {
+                squad.allowShootOnce = allowAttackOnce;
+
+                if (allowAttackOnce) {
+                    squad.dotsToShootOnce = new Set(
+                        squad.slots.map((slot) => slot.dot).filter(isNonNull),
+                    );
+                } else {
+                    squad.dotsToShootOnce.clear();
+                }
+            }
+
+            this.renderCommandPanel();
+        },
+    };
+
+    renderCommandPanel() {
+        this.commandPanelUI.render(
+            this.createCommandPanelState(),
+            this.commandPanelCallbacks,
+        );
+    }
+
+    selectTeam(team: Team) {
+        this.currentTeam = team;
+        this.renderCommandPanel();
+    }
+
+    deselectTeam() {
+        this.currentTeam = null;
+        this.renderCommandPanel();
+    }
+
     dotUnselect(dot: Dot) {
         this.dotsSelected.delete(dot);
+
+        if (this.dotsSelected.size === 0) {
+            this.deselectTeam();
+        }
     }
 
     dotsAllUnselect() {
         this.dotsSelected.clear();
+
+        if (this.dotsSelected.size === 0) {
+            this.deselectTeam();
+        }
     }
 
     isDotSelected(dot: Dot) {
@@ -236,10 +347,14 @@ export class UI {
 
     cancelAttack(squadFrame: SquadFrame) {
         this.game.cancelAttackSquad(squadFrame.squad);
+
+        this.renderCommandPanel();
     }
 
     cancelAttackSelected() {
         this.squadFramesSelected.forEach(this.cancelAttack.bind(this));
+
+        this.renderCommandPanel();
     }
 
     attackSquad(squadFrameTarget: SquadFrame) {
@@ -249,6 +364,8 @@ export class UI {
                 squadTarget: squadFrameTarget.squad,
             });
         }
+
+        this.renderCommandPanel();
     }
 
     getSquadFrameByPosition(x: number, y: number): SquadFrame | null {
@@ -272,13 +389,36 @@ export class UI {
         return null;
     }
 
-    trySelectSquadFrame(x: number, y: number) {
+    selectSquadFrame(squadFrame: SquadFrame) {
+        this.squadFramesSelected.push(squadFrame);
+        this.selectTeam(squadFrame.squad.team);
+    }
+
+    deselectSquadFrame(squadFrame: SquadFrame) {
+        this.squadFramesSelected.splice(
+            this.squadFramesSelected.indexOf(squadFrame),
+            1,
+        );
+
+        if (this.squadFramesSelected.length) {
+            this.selectTeam(this.squadFramesSelected[0].squad.team);
+        } else {
+            this.deselectTeam();
+        }
+    }
+
+    deselectSquadFramesAll() {
         this.squadFramesSelected = [];
+        this.deselectTeam();
+    }
+
+    trySelectSquadFrame(x: number, y: number) {
+        this.deselectSquadFramesAll();
 
         const squadFrameClicked = this.getSquadFrameByPosition(x, y);
 
         if (squadFrameClicked) {
-            this.squadFramesSelected.push(squadFrameClicked);
+            this.selectSquadFrame(squadFrameClicked);
             return { selected: true };
         }
 
@@ -334,8 +474,9 @@ export class UI {
 
         for (const squadFrame of this.squadFramesSelected) {
             this.game.removeSquad(squadFrame.squad);
-            this.squadFramesSelected = [];
         }
+
+        this.deselectSquadFramesAll();
     }
 
     fillSlotsMutate(slots: Slot[], dots: Dot[]) {

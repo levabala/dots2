@@ -1,3 +1,4 @@
+import { SQUAD_NAMES } from "./assets/squadNames";
 import { DEFAULT_PROJECTILE, DOT_HEIGHT, DOT_SPEED, DOT_WIDTH } from "./consts";
 import { DotsGrid } from "./DotsGrid";
 import {
@@ -61,10 +62,15 @@ export type Slot = {
 };
 
 export type Squad = {
+    key: string;
+
     index: number;
     slots: Slot[];
-    attackTargetDot: Dot | null;
     attackTargetSquad: Squad | null;
+    allowAttack: boolean;
+    allowShootOnce: boolean;
+
+    dotsToShootOnce: Set<Dot>;
 
     team: Team;
 };
@@ -72,6 +78,7 @@ export type Squad = {
 export type GameEvent =
     | { name: "squad-removed"; payload: { squad: Squad } }
     | { name: "dot-added"; payload: { dot: Dot } }
+    | { name: "dot-removed"; payload: { dot: Dot } }
     | { name: "dot-moved"; payload: { dot: Dot } }
     | {
           name: "dot-action-verbose";
@@ -100,6 +107,7 @@ export class Game {
     } = {
         "squad-removed": new Set(),
         "dot-added": new Set(),
+        "dot-removed": new Set(),
         "dot-moved": new Set(),
         "dot-action-verbose": new Set(),
     };
@@ -205,6 +213,8 @@ export class Game {
         if (dot.squad) {
             this.removeSquadIfEmpty(dot.squad);
         }
+
+        this.emitEvent("dot-removed", { dot });
     }
 
     removeSquadIfEmpty(squad: Squad) {
@@ -277,12 +287,20 @@ export class Game {
         };
     }
 
+    squadKeyIndex = 0;
+    createSquadKey() {
+        return SQUAD_NAMES[this.squadKeyIndex++] || "JustASquad";
+    }
+
     createSquad(slots: Slot[], team: Team) {
         const squad: Squad = {
+            key: this.createSquadKey(),
             index: this.squads.length,
             slots,
-            attackTargetDot: null,
             attackTargetSquad: null,
+            allowAttack: false,
+            allowShootOnce: false,
+            dotsToShootOnce: new Set(),
             team,
         };
         this.squads.push(squad);
@@ -398,7 +416,10 @@ export class Game {
         }
     }
 
-    private checkHasShootIntersectionWithOwnSquad(dot: Dot, target: Dot): boolean {
+    private checkHasShootIntersectionWithOwnSquad(
+        dot: Dot,
+        target: Dot,
+    ): boolean {
         if (!dot.squad) {
             return false;
         }
@@ -605,6 +626,17 @@ export class Game {
 
         const tryShoot = (dot: Dot) => {
             if (
+                dot.squad &&
+                dot.squad.allowAttack === false &&
+                !(
+                    dot.squad.allowShootOnce &&
+                    dot.squad.dotsToShootOnce.has(dot)
+                )
+            ) {
+                return;
+            }
+
+            if (
                 !dot.attackTargetDot ||
                 dot.attackCooldownLeft > 0 ||
                 dot.aimingTimeLeft > 0
@@ -634,7 +666,22 @@ export class Game {
                 dot.attackTargetDot.position,
                 DEFAULT_PROJECTILE,
             );
+
             dot.attackCooldownLeft = dot.attackCooldown;
+
+            if (dot.squad && dot.squad.allowShootOnce) {
+                dot.squad.dotsToShootOnce.delete(dot);
+
+                const noAttackTargetForTheRest = Array.from(
+                    dot.squad.dotsToShootOnce,
+                ).every((dot) => {
+                    return dot.attackTargetDot === null;
+                });
+
+                if (noAttackTargetForTheRest) {
+                    dot.squad.allowShootOnce = false;
+                }
+            }
         };
 
         const updateProjectile = (projectile: Projectile) => {

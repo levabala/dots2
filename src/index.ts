@@ -1,21 +1,24 @@
 import { Game } from "./Game";
-import { UI } from "./UI";
+import { UI } from "./UI/UI";
 import { RendererCanvasSimple } from "./Renderer";
 import { Logger } from "./Logger";
 import { VisualDebugger } from "./VisualDebugger";
 
-const width = Math.floor(window.document.body.offsetWidth - 8);
-const height = Math.floor(window.document.body.offsetHeight - 8);
 
 const container = document.createElement("div");
 container.style.position = 'relative';
+container.style.height = '100%';
+
+document.body.appendChild(container);
+
+const width = Math.floor(container.clientWidth) - 1;
+const height = Math.floor(container.clientHeight);
 
 const canvas = document.createElement("canvas");
 canvas.width = width;
 canvas.height = height;
 canvas.style.border = "solid gray 1px";
 
-document.body.appendChild(container);
 container.appendChild(canvas);
 
 const game = new Game(width, height);
@@ -23,7 +26,7 @@ const game = new Game(width, height);
 const isPauseRef = { current: false };
 
 const ui = new UI(
-    canvas,
+    container,
     game,
     isPauseRef,
     () => {
