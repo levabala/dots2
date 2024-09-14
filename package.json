@@ -7,7 +7,9 @@
     "tsc": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0"
   },
   "peerDependencies": {
     "typescript": "^5.5.4"
@@ -16,6 +18,8 @@
     "@eslint/js": "^9.9.1",
     "@types/eslint__js": "^8.42.3",
     "eslint": "^9.9.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "remeda": "^2.11.0",
     "typescript-eslint": "^8.3.0"
   }
