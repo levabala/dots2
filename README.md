@@ -13,3 +13,5 @@ TODO:
 - [ ] team ai
 - [ ] scene as an entity (just a Game instance?)
 - [ ] scene serialization
+- [ ] quadtree for intersection calculation optimization
+- [ ] rename class-files to PascalCase

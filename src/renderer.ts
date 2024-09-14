@@ -1,4 +1,5 @@
 import { DEFAULT_PROJECTILE } from "./consts";
+import type { DotsGrid } from "./dotsGrid";
 import type { Game, Dot, Projectile, Slot } from "./game";
 import type { SquadFrame, UI } from "./ui";
 import {
@@ -31,6 +32,8 @@ export class RendererCanvasSimple implements Renderer {
     lastRenderTimestamp: number | null = null;
     render() {
         this.ctx.clearRect(0, 0, this.width, this.height);
+
+        this.renderDotsGrid(this.game.dotsGrid);
 
         for (const dot of this.game.dots) {
             if (dot.attackTargetDot && dot.attackCooldownLeft === 0) {
@@ -295,5 +298,45 @@ export class RendererCanvasSimple implements Renderer {
         );
         this.ctx.closePath();
         this.ctx.fill();
+    }
+
+    renderDotsGrid(dotsGrid: DotsGrid) {
+        this.ctx.strokeStyle = "gray";
+        this.ctx.lineWidth = 0.5;
+
+        this.ctx.beginPath();
+
+        for (let col = 0; col < dotsGrid.dotsGridCols; col++) {
+            this.ctx.moveTo(col * dotsGrid.dotsGridSquadSize, 0);
+            this.ctx.lineTo(
+                col * dotsGrid.dotsGridSquadSize,
+                dotsGrid.dotsGridRows * dotsGrid.dotsGridSquadSize,
+            );
+        }
+
+        for (let row = 0; row < dotsGrid.dotsGridRows; row++) {
+            this.ctx.moveTo(0, row * dotsGrid.dotsGridSquadSize);
+            this.ctx.lineTo(
+                dotsGrid.dotsGridCols * dotsGrid.dotsGridSquadSize,
+                row * dotsGrid.dotsGridSquadSize,
+            );
+        }
+
+        this.ctx.closePath();
+
+        this.ctx.stroke();
+    }
+
+    private renderDotsGridTitles(dotsGrid: DotsGrid) {
+        this.ctx.font = "8px";
+        for (let row = 0; row < dotsGrid.dotsGridRows; row++) {
+            for (let col = 0; col < dotsGrid.dotsGridCols; col++) {
+                this.ctx.strokeText(
+                    dotsGrid.calcIndexFromXY(col, row).toString(),
+                    col * dotsGrid.dotsGridSquadSize + 5,
+                    row * dotsGrid.dotsGridSquadSize + 10,
+                );
+            }
+        }
     }
 }

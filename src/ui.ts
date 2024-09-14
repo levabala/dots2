@@ -29,6 +29,9 @@ export class UI {
     constructor(
         readonly element: HTMLElement,
         readonly game: Game,
+        readonly isRunningRef: { current: boolean },
+        readonly start: () => void,
+        readonly pause: () => void,
     ) {}
 
     init() {
@@ -48,6 +51,7 @@ export class UI {
             switch (e.button) {
                 case 0:
                     this.trySelectSquadFrame(e.offsetX, e.offsetY);
+                    this.trySelectDot(e.offsetX, e.offsetY);
                     break;
                 case 2:
                     this.handleRightButtonUp(e);
@@ -104,6 +108,8 @@ export class UI {
         this.startDestination(500, 100);
         this.adjustDestination(500, 600);
         this.commandMove();
+
+        // TODO: debug shooting to one's own team by adding dot click-to-console-log
 
         this.cancelSelection();
         this.clearDestination();
@@ -202,6 +208,15 @@ export class UI {
     handleKeypress(e: KeyboardEvent) {
         console.log(e);
         switch (e.code) {
+            case "KeyP": {
+                if (this.isRunningRef.current) {
+                    this.pause();
+                } else {
+                    this.start();
+                }
+                break;
+            }
+
             case "KeyS": {
                 this.createSquad();
                 break;
@@ -211,7 +226,20 @@ export class UI {
                 this.destroySquad();
                 break;
             }
+
+            case "KeyC": {
+                this.cancelAttackSelected();
+                break;
+            }
         }
+    }
+
+    cancelAttack(squadFrame: SquadFrame) {
+        this.game.cancelAttackSquad(squadFrame.squad);
+    }
+
+    cancelAttackSelected() {
+        this.squadFramesSelected.forEach(this.cancelAttack.bind(this));
     }
 
     attackSquad(squadFrameTarget: SquadFrame) {
@@ -233,6 +261,17 @@ export class UI {
         return null;
     }
 
+    getDotByPosition(x: number, y: number): Dot | null {
+        const point = { x, y };
+        for (const dot of this.game.dots) {
+            if (isPointInRect(point, dot.hitBox)) {
+                return dot;
+            }
+        }
+
+        return null;
+    }
+
     trySelectSquadFrame(x: number, y: number) {
         this.squadFramesSelected = [];
 
@@ -240,7 +279,21 @@ export class UI {
 
         if (squadFrameClicked) {
             this.squadFramesSelected.push(squadFrameClicked);
+            return { selected: true };
         }
+
+        return { selected: false };
+    }
+
+    trySelectDot(x: number, y: number) {
+        const dotClicked = this.getDotByPosition(x, y);
+
+        if (dotClicked) {
+            this.dotSelect(dotClicked);
+            return { selected: true };
+        }
+
+        return { selected: false };
     }
 
     createSquad() {
@@ -333,10 +386,11 @@ export class UI {
         );
 
         // Calculate the front direction angle from p1 to p2
-        const frontAngle = Math.atan2(
-            newFrame.p2.y - newFrame.p1.y,
-            newFrame.p2.x - newFrame.p1.x,
-        ) + Math.PI;
+        const frontAngle =
+            Math.atan2(
+                newFrame.p2.y - newFrame.p1.y,
+                newFrame.p2.x - newFrame.p1.x,
+            ) + Math.PI;
 
         // Update slot positions and angles based on the front direction of the frame
         oldSlots.forEach((slot, index) => {

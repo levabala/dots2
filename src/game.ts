@@ -1,4 +1,5 @@
 import { DEFAULT_PROJECTILE, DOT_HEIGHT, DOT_SPEED, DOT_WIDTH } from "./consts";
+import { DotsGrid } from "./dotsGrid";
 import {
     arePointsEqual,
     distanceBetween as getDistanceBetween,
@@ -12,6 +13,10 @@ import { randomInteger, times } from "remeda";
 export type Team = {
     index: number;
     name: string;
+
+    // TODO: implement
+    // dots: Set<Dot>;
+    // squads: Set<Squad>;
 };
 
 export type Dot = {
@@ -35,6 +40,7 @@ export type Dot = {
     team: Team;
     squad: Squad | null;
     slot: Slot | null;
+    gridSquareIndexes: number[];
 };
 
 export type Projectile = {
@@ -63,26 +69,51 @@ export type Squad = {
     team: Team;
 };
 
-export type GameEvent = { name: "squad-removed"; payload: { squad: Squad } };
+export type GameEvent =
+    | { name: "squad-removed"; payload: { squad: Squad } }
+    | { name: "dot-added"; payload: { dot: Dot } }
+    | { name: "dot-moved"; payload: { dot: Dot } }
+    | {
+          name: "dot-action-verbose";
+          payload: { dot: Dot; name: string; details?: object };
+      };
+
+export type GameEventFromName<Name extends GameEvent["name"]> = Extract<
+    GameEvent,
+    { name: Name }
+>;
+
 export type GameEventListener<Name extends GameEvent["name"]> = (
-    payload: Extract<GameEvent, { name: Name }>["payload"],
+    payload: GameEventFromName<Name>["payload"],
 ) => void;
 
 export class Game {
+    dotsGrid: DotsGrid;
+
     teams = new Set<Team>();
     dots = new Set<Dot>();
     squads: Squad[] = [];
     projectiles: Projectile[] = [];
+
     eventListeners: {
         [key in GameEvent["name"]]: Set<GameEventListener<key>>;
     } = {
         "squad-removed": new Set(),
+        "dot-added": new Set(),
+        "dot-moved": new Set(),
+        "dot-action-verbose": new Set(),
     };
 
     constructor(
         readonly width: number,
         readonly height: number,
-    ) {}
+    ) {
+        this.dotsGrid = new DotsGrid(
+            Math.max(DOT_WIDTH, DOT_HEIGHT) * 5,
+            width,
+            height,
+        );
+    }
 
     init() {
         const team1 = this.createTeam({ name: "red" });
@@ -108,10 +139,10 @@ export class Game {
 
     private emitEvent<Name extends GameEvent["name"]>(
         name: Name,
-        payload: Extract<GameEvent, { name: Name }>["payload"],
+        payload: GameEventFromName<Name>["payload"],
     ) {
         for (const listener of this.eventListeners[name]) {
-            listener(payload);
+            listener(payload as GameEventFromName<Name>["payload"]);
         }
     }
 
@@ -123,6 +154,10 @@ export class Game {
         squadTarget: Squad;
     }) {
         squadAttacker.attackTargetSquad = squadTarget;
+    }
+
+    cancelAttackSquad(squadAttacker: Squad) {
+        squadAttacker.attackTargetSquad = null;
     }
 
     shootProjectile(
@@ -157,6 +192,7 @@ export class Game {
 
     removeDot(dot: Dot) {
         this.dots.delete(dot);
+        this.dotsGrid.removeDot(dot);
 
         if (dot.slot) {
             dot.slot.dot = null;
@@ -298,12 +334,19 @@ export class Game {
         );
     }
 
+    addDot(dot: Dot) {
+        this.dots.add(dot);
+        this.dotsGrid.addDot(dot);
+
+        this.emitEvent("dot-added", { dot });
+    }
+
     addDotRandom(team: Team) {
         const position = {
             x: randomInteger(0, this.width),
             y: randomInteger(0, this.height),
         };
-        this.dots.add({
+        this.addDot({
             path: [],
             position,
             width: DOT_WIDTH,
@@ -324,6 +367,7 @@ export class Game {
             team,
             squad: null,
             slot: null,
+            gridSquareIndexes: [],
         });
     }
 
@@ -354,10 +398,7 @@ export class Game {
         }
     }
 
-    private checkHasShootIntersectionWithOwnSquad(
-        dot: Dot,
-        target: Dot,
-    ): boolean {
+    private checkHasShootIntersectionWithOwnSquad(dot: Dot, target: Dot): boolean {
         if (!dot.squad) {
             return false;
         }
@@ -366,18 +407,40 @@ export class Game {
             p1: dot.position,
             p2: target.position,
         };
-        for (const slot of dot.squad.slots) {
-            if (slot === dot.slot || !slot.dot) {
+
+        for (const dotAnother of this.dotsGrid.iterateDotsAlongLine(line)) {
+            if (dotAnother.squad !== dot.squad || dot === dotAnother) {
                 continue;
             }
 
-            const intersection = getIntersectionAny(line, slot.dot.hitBox);
+            const intersection = getIntersectionAny(line, dotAnother.hitBox);
             if (intersection) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    moveDot(dot: Dot, to: Point) {
+        dot.position.x = to.x;
+        dot.position.y = to.y;
+
+        dot.hitBox = this.calculateHitBox(
+            dot.position,
+            dot.angle,
+            dot.width,
+            dot.height,
+        );
+
+        this.dotsGrid.updateDot(dot);
+
+        dot.aimingTimeLeft = dot.aimingDuration;
+        if (dot.attackCooldownLeft > 0) {
+            dot.attackCooldownLeft = dot.attackCooldown;
+        }
+
+        this.emitEvent("dot-moved", { dot });
     }
 
     tick(timeDelta: number) {
@@ -403,22 +466,10 @@ export class Game {
             const dx = distanceMove * Math.cos(angle);
             const dy = distanceMove * Math.sin(angle);
 
-            dot.position.x += dx;
-            dot.position.y += dy;
-
-            dot.hitBox.p1.x += dx;
-            dot.hitBox.p2.x += dx;
-            dot.hitBox.p3.x += dx;
-            dot.hitBox.p4.x += dx;
-            dot.hitBox.p1.y += dy;
-            dot.hitBox.p2.y += dy;
-            dot.hitBox.p3.y += dy;
-            dot.hitBox.p4.y += dy;
-
-            dot.aimingTimeLeft = dot.aimingDuration;
-            if (dot.attackCooldownLeft > 0) {
-                dot.attackCooldownLeft = dot.attackCooldown;
-            }
+            this.moveDot(dot, {
+                x: dot.position.x + dx,
+                y: dot.position.y + dy,
+            });
 
             if (distanceToTarget <= distanceMove) {
                 dot.path.splice(0, 1);
@@ -483,7 +534,7 @@ export class Game {
                 const hasIntersection =
                     this.checkHasShootIntersectionWithOwnSquad(dot, slot.dot);
 
-                if (hasIntersection) {
+                if (hasIntersection !== false) {
                     continue;
                 }
 

@@ -1,4 +1,5 @@
 export type Point = { x: number; y: number };
+export type Line = { p1: Point; p2: Point };
 export type Rect = { p1: Point; p2: Point; p3: Point; p4: Point };
 
 export function orthogonalRect(p1: Point, p3: Point): Rect {
@@ -245,10 +246,117 @@ export function getIntersectionAny(
     return null;
 }
 
+export function roundSinCos(sincos: number) {
+    const epsilon = Number.EPSILON;
+    if (Math.abs(sincos) < epsilon) {
+        return 0;
+    } else if (Math.abs(sincos - 1) < epsilon) {
+        return 1;
+    } else if (Math.abs(sincos + 1) < epsilon) {
+        return -1;
+    }
+
+    return sincos;
+}
+
+export function roundAngle(angleRaw: number) {
+    const epsilon = Number.EPSILON;
+
+    if (Math.abs(angleRaw) < epsilon) {
+        return 0;
+    } else if (Math.abs(angleRaw - Math.PI * 2) < epsilon) {
+        return Math.PI * 2;
+    } else if (Math.abs(angleRaw - Math.PI / 2) < epsilon) {
+        return Math.PI / 2;
+    } else if (Math.abs(angleRaw - Math.PI) < epsilon) {
+        return Math.PI;
+    } else if (Math.abs(angleRaw - (3 * Math.PI) / 2) < epsilon) {
+        return (3 * Math.PI) / 2;
+    }
+
+    return angleRaw;
+}
+
+export enum Direction {
+    top = 0,
+    right = 1,
+    bottom = 2,
+    left = 3,
+}
+
+// chatgpt (c)
+export function getIntersectedSquareOrth(
+    point: Point,
+    angleRaw: number,
+    cosAngle: number,
+    sinAngle: number,
+    square: { top: number; right: number; bottom: number; left: number },
+): {
+    side: Direction.top | Direction.right | Direction.bottom | Direction.left;
+    intersection: Point;
+} {
+    let side1, side2, t1, t2, x1, x2, y1, y2;
+
+    const angle = angleRaw < 0 ? angleRaw + Math.PI * 2 : angleRaw;
+
+    // Determine which two sides to check based on the clockwise-oriented angle
+    if (angle >= 0 && angle < Math.PI / 2) {
+        // 0° to 90° (clockwise): Check right and bottom sides
+        side1 = Direction.right;
+        side2 = Direction.bottom;
+        t1 = cosAngle !== 0 ? (square.right - point.x) / cosAngle : Infinity;
+        t2 = sinAngle !== 0 ? (square.bottom - point.y) / sinAngle : Infinity;
+        x1 = square.right;
+        y1 = point.y + t1 * sinAngle;
+        x2 = point.x + t2 * cosAngle;
+        y2 = square.bottom;
+    } else if (angle >= Math.PI / 2 && angle < Math.PI) {
+        // 90° to 180° (clockwise): Check bottom and left sides
+        side1 = Direction.bottom;
+        side2 = Direction.left;
+        t1 = sinAngle !== 0 ? (square.bottom - point.y) / sinAngle : Infinity;
+        t2 = cosAngle !== 0 ? (square.left - point.x) / cosAngle : Infinity;
+        x1 = point.x + t1 * cosAngle;
+        y1 = square.bottom;
+        x2 = square.left;
+        y2 = point.y + t2 * sinAngle;
+    } else if (angle >= Math.PI && angle < (3 * Math.PI) / 2) {
+        // 180° to 270° (clockwise): Check left and top sides
+        side1 = Direction.left;
+        side2 = Direction.top;
+        t1 = cosAngle !== 0 ? (square.left - point.x) / cosAngle : Infinity;
+        t2 = sinAngle !== 0 ? (square.top - point.y) / sinAngle : Infinity;
+        x1 = square.left;
+        y1 = point.y + t1 * sinAngle;
+        x2 = point.x + t2 * cosAngle;
+        y2 = square.top;
+    } else {
+        // 270° to 360° (clockwise): Check top and right sides
+        side1 = Direction.top;
+        side2 = Direction.right;
+        t1 = sinAngle !== 0 ? (square.top - point.y) / sinAngle : Infinity;
+        t2 = cosAngle !== 0 ? (square.right - point.x) / cosAngle : Infinity;
+        x1 = point.x + t1 * cosAngle;
+        y1 = square.top;
+        x2 = square.right;
+        y2 = point.y + t2 * sinAngle;
+    }
+
+    // Determine which intersection is closer and return the corresponding side and intersection point
+    if (t1 < t2 && y1 >= square.top && y1 <= square.bottom) {
+        return { side: side1, intersection: { x: x1, y: y1 } };
+    } else {
+        return { side: side2, intersection: { x: x2, y: y2 } };
+    }
+}
+
 export function distanceBetween(p1: Point, p2: Point): number {
     return Math.hypot(p2.x - p1.x, p2.y - p1.y);
 }
 
 export function arePointsEqual(p1: Point, p2: Point) {
-    return Math.abs(p2.x - p1.x) < Number.EPSILON && Math.abs(p2.y - p1.y) < Number.EPSILON;
+    return (
+        Math.abs(p2.x - p1.x) < Number.EPSILON &&
+        Math.abs(p2.y - p1.y) < Number.EPSILON
+    );
 }
