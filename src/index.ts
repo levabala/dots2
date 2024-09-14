@@ -1,8 +1,8 @@
-import { Game } from "./game";
-import { UI } from "./ui";
-import { RendererCanvasSimple } from "./renderer";
-import { Logger } from "./logger";
-import { VisualDebugger } from "./visualDebugger";
+import { Game } from "./Game";
+import { UI } from "./UI";
+import { RendererCanvasSimple } from "./Renderer";
+import { Logger } from "./Logger";
+import { VisualDebugger } from "./VisualDebugger";
 
 const width = Math.floor(window.document.body.offsetWidth - 8);
 const height = Math.floor(window.document.body.offsetHeight - 8);

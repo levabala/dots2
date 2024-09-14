@@ -1,5 +1,5 @@
 import { DEFAULT_PROJECTILE, DOT_HEIGHT, DOT_SPEED, DOT_WIDTH } from "./consts";
-import { DotsGrid } from "./dotsGrid";
+import { DotsGrid } from "./DotsGrid";
 import {
     arePointsEqual,
     distanceBetween as getDistanceBetween,

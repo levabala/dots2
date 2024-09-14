@@ -1,4 +1,4 @@
-import type { Dot } from "./game";
+import type { Dot } from "./Game";
 import {
     Direction,
     getIntersectedSquareOrth,

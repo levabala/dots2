@@ -10,7 +10,7 @@ import {
     type Rect,
 } from "./utils";
 import { DOT_TARGET_MOVE_SPACE, DOT_WIDTH } from "./consts";
-import type { Dot, Game, Slot, Squad } from "./game";
+import type { Dot, Game, Slot, Squad } from "./Game";
 
 export type SquadFrame = { index: number; squad: Squad; frame: Rect };
 

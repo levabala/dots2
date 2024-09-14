@@ -1,4 +1,4 @@
-import type { Game, Dot } from "./game";
+import type { Game, Dot } from "./Game";
 
 export type DotWithNode = Dot & { node: HTMLDivElement };
 
