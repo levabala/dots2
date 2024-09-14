@@ -15,3 +15,4 @@ TODO:
 - [ ] scene serialization
 - [ ] quadtree for intersection calculation optimization
 - [ ] rename class-files to PascalCase
+- [ ] allow only same-team-squads (set a global currentTeam param based on the first dot selected)
