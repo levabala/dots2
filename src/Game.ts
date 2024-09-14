@@ -443,21 +443,17 @@ export class Game {
         }
     }
 
-    private checkHasShootIntersectionWithOwnSquad(
+    private checkHasShootIntersectionWithOwnTeam(
         dot: Dot,
         target: Dot,
     ): boolean {
-        if (!dot.squad) {
-            return false;
-        }
-
         const line = {
             p1: dot.position,
             p2: target.position,
         };
 
         for (const dotAnother of this.dotsGrid.iterateDotsAlongLine(line)) {
-            if (dotAnother.squad !== dot.squad || dot === dotAnother) {
+            if (dotAnother.team !== dot.team || dot === dotAnother) {
                 continue;
             }
 
@@ -556,7 +552,7 @@ export class Game {
 
                 if (
                     distance > dot.attackRange ||
-                    this.checkHasShootIntersectionWithOwnSquad(
+                    this.checkHasShootIntersectionWithOwnTeam(
                         dot,
                         dot.attackTargetDot,
                     )
@@ -584,7 +580,7 @@ export class Game {
                     }
 
                     const hasIntersection =
-                        this.checkHasShootIntersectionWithOwnSquad(
+                        this.checkHasShootIntersectionWithOwnTeam(
                             dot,
                             slot.dot,
                         );
@@ -693,7 +689,7 @@ export class Game {
                 return;
             }
 
-            const hasIntersection = this.checkHasShootIntersectionWithOwnSquad(
+            const hasIntersection = this.checkHasShootIntersectionWithOwnTeam(
                 dot,
                 dot.attackTargetDot,
             );
