@@ -3,7 +3,8 @@
   "module": "src/index.ts",
   "type": "module",
   "scripts": {
-    "build:dev": "bun build src/index.ts --outdir .build --target=browser --sourcemap=linked --watch"
+    "build:dev": "bun build src/index.ts --outdir .build --target=browser --sourcemap=linked --watch",
+    "tsc": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/bun": "latest"
