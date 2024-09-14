@@ -65,16 +65,16 @@ export class RendererCanvasSimple implements Renderer {
         }
 
         for (const squadFrame of this.ui.squadFrames) {
-            if (squadFrame.squad.attackTargetSquad) {
+            for (const squadTarget of squadFrame.squad.attackTargetSquads) {
                 const squadFrameTarget = this.ui.squadFrames.find(
-                    (sf) => sf.squad === squadFrame.squad.attackTargetSquad,
+                    (sf) => sf.squad === squadTarget,
                 );
-                if (squadFrameTarget) {
-                    this.renderSquadFrameAttackArrow(
-                        squadFrame,
-                        squadFrameTarget,
-                    );
+
+                if (!squadFrameTarget) {
+                    continue;
                 }
+
+                this.renderSquadFrameAttackArrow(squadFrame, squadFrameTarget);
             }
         }
 

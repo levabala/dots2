@@ -320,7 +320,13 @@ export class UI {
             !this.squadFramesSelected.includes(squadFrameClicked) &&
             squadFrameClicked.squad.team !== teamSelected
         ) {
-            this.attackSquad(squadFrameClicked);
+            if (!e.shiftKey) {
+                for (const squadFrame of this.squadFramesSelected) {
+                    this.cancelAttackAll(squadFrame);
+                }
+            }
+
+            this.attackSquadSelected(squadFrameClicked);
         } else {
             this.commandMove();
         }
@@ -355,19 +361,19 @@ export class UI {
         }
     }
 
-    cancelAttack(squadFrame: SquadFrame) {
-        this.game.cancelAttackSquad(squadFrame.squad);
+    cancelAttackAll(squadFrame: SquadFrame) {
+        this.game.cancelAttackSquadAll(squadFrame.squad);
 
         this.renderCommandPanel();
     }
 
     cancelAttackSelected() {
-        this.squadFramesSelected.forEach(this.cancelAttack.bind(this));
+        this.squadFramesSelected.forEach(this.cancelAttackAll.bind(this));
 
         this.renderCommandPanel();
     }
 
-    attackSquad(squadFrameTarget: SquadFrame) {
+    attackSquadSelected(squadFrameTarget: SquadFrame) {
         for (const squadFrame of this.squadFramesSelected) {
             this.game.attackSquad({
                 squadAttacker: squadFrame.squad,

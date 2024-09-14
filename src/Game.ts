@@ -37,6 +37,7 @@ export type Dot = {
     hitBox: Rect;
     health: number;
     angle: number;
+    removed: boolean;
 
     team: Team;
     squad: Squad | null;
@@ -57,22 +58,20 @@ export type Projectile = {
 export type Slot = {
     position: Point;
     angle: number;
-
     dot: Dot | null;
 };
 
 export type Squad = {
     key: string;
-
     index: number;
     slots: Slot[];
-    attackTargetSquad: Squad | null;
+    attackTargetSquads: Set<Squad>;
+    attackTargetedBySquads: Set<Squad>;
     allowAttack: boolean;
     allowShootOnce: boolean;
-
     dotsToShootOnce: Set<Dot>;
-
     team: Team;
+    removed: boolean;
 };
 
 export type GameEvent =
@@ -161,11 +160,24 @@ export class Game {
         squadAttacker: Squad;
         squadTarget: Squad;
     }) {
-        squadAttacker.attackTargetSquad = squadTarget;
+        squadAttacker.attackTargetSquads.add(squadTarget);
+        squadTarget.attackTargetedBySquads.add(squadAttacker);
     }
 
-    cancelAttackSquad(squadAttacker: Squad) {
-        squadAttacker.attackTargetSquad = null;
+    cancelAttackSquadAll(squadAttacker: Squad) {
+        for (const squadTarget of squadAttacker.attackTargetSquads) {
+            squadTarget.attackTargetedBySquads.delete(squadAttacker);
+        }
+
+        squadAttacker.attackTargetSquads.clear();
+
+        for (const slot of squadAttacker.slots) {
+            if (!slot.dot) {
+                continue;
+            }
+
+            slot.dot.attackTargetDot = null;
+        }
     }
 
     shootProjectile(
@@ -199,6 +211,8 @@ export class Game {
     }
 
     removeDot(dot: Dot) {
+        dot.removed = true;
+
         this.dots.delete(dot);
         this.dotsGrid.removeDot(dot);
 
@@ -297,11 +311,13 @@ export class Game {
             key: this.createSquadKey(),
             index: this.squads.length,
             slots,
-            attackTargetSquad: null,
+            attackTargetSquads: new Set(),
+            attackTargetedBySquads: new Set(),
             allowAttack: false,
             allowShootOnce: false,
             dotsToShootOnce: new Set(),
             team,
+            removed: false,
         };
         this.squads.push(squad);
 
@@ -318,6 +334,8 @@ export class Game {
     }
 
     removeSquad(squad: Squad) {
+        squad.removed = true;
+
         this.squads.splice(this.squads.indexOf(squad), 1);
 
         for (const slot of squad.slots) {
@@ -331,9 +349,17 @@ export class Game {
                 dot.attackTargetDot.attackTargetedByDots.delete(dot);
             }
 
+            for (const targeter of dot.attackTargetedByDots) {
+                targeter.attackTargetDot = null;
+            }
+
             dot.squad = null;
             dot.slot = null;
             dot.attackTargetDot = null;
+        }
+
+        for (const squadAttacker of squad.attackTargetedBySquads) {
+            squadAttacker.attackTargetSquads.delete(squad);
         }
 
         this.emitEvent("squad-removed", { squad });
@@ -381,6 +407,7 @@ export class Game {
             health: 2,
             angle: 0,
             hitBox: this.calculateHitBox(position, 0, DOT_WIDTH, DOT_HEIGHT),
+            removed: false,
 
             team,
             squad: null,
@@ -516,9 +543,12 @@ export class Game {
 
         const assignDotAttackTargetsBySquad = (
             dot: Dot,
-            squadTarget: Squad,
+            squadTargets: Set<Squad>,
         ) => {
-            if (dot.attackTargetDot?.squad === squadTarget) {
+            if (
+                dot.attackTargetDot?.squad &&
+                squadTargets.has(dot.attackTargetDot?.squad)
+            ) {
                 const distance = getDistanceBetween(
                     dot.position,
                     dot.attackTargetDot.position,
@@ -539,27 +569,32 @@ export class Game {
             }
 
             const dotPotentionalTargets = [];
-            for (const slot of squadTarget.slots) {
-                if (!slot.dot) {
-                    continue;
+            for (const squad of squadTargets) {
+                for (const slot of squad.slots) {
+                    if (!slot.dot) {
+                        continue;
+                    }
+
+                    const distance = getDistanceBetween(
+                        dot.position,
+                        slot.dot.position,
+                    );
+                    if (distance > dot.attackRange) {
+                        continue;
+                    }
+
+                    const hasIntersection =
+                        this.checkHasShootIntersectionWithOwnSquad(
+                            dot,
+                            slot.dot,
+                        );
+
+                    if (hasIntersection !== false) {
+                        continue;
+                    }
+
+                    dotPotentionalTargets.push(slot.dot);
                 }
-
-                const distance = getDistanceBetween(
-                    dot.position,
-                    slot.dot.position,
-                );
-                if (distance > dot.attackRange) {
-                    continue;
-                }
-
-                const hasIntersection =
-                    this.checkHasShootIntersectionWithOwnSquad(dot, slot.dot);
-
-                if (hasIntersection !== false) {
-                    continue;
-                }
-
-                dotPotentionalTargets.push(slot.dot);
             }
 
             if (!dotPotentionalTargets.length) {
@@ -585,6 +620,12 @@ export class Game {
             if (dot.attackTargetDot) {
                 dot.attackTargetDot.attackTargetedByDots.delete(dot);
             }
+
+            window.assert(
+                target.removed !== true,
+                "attack target dot must not be removed",
+                { dot, target },
+            );
 
             dot.attackTargetDot = target;
             target.attackTargetedByDots.add(dot);
@@ -744,7 +785,7 @@ export class Game {
         for (const squad of this.squads) {
             changePathToSquad(squad);
 
-            if (squad.attackTargetSquad) {
+            if (squad.attackTargetSquads.size) {
                 for (const slot of squad.slots) {
                     const dot = slot.dot;
 
@@ -759,7 +800,7 @@ export class Game {
                     if (dot.attackCooldownLeft === 0) {
                         assignDotAttackTargetsBySquad(
                             dot,
-                            squad.attackTargetSquad,
+                            squad.attackTargetSquads,
                         );
                     }
                 }

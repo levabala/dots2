@@ -4,10 +4,9 @@ import { RendererCanvasSimple } from "./Renderer";
 import { Logger } from "./Logger";
 import { VisualDebugger } from "./VisualDebugger";
 
-
 const container = document.createElement("div");
-container.style.position = 'relative';
-container.style.height = '100%';
+container.style.position = "relative";
+container.style.height = "100%";
 
 document.body.appendChild(container);
 
@@ -43,7 +42,11 @@ const logger = new Logger(game);
 const visualDebugger = new VisualDebugger(game, container);
 
 function panic(message: string, details?: object): never {
-    console.trace("Failed:", message, details);
+    if (!details) {
+        console.trace("Failed:", message);
+    } else {
+        console.trace("Failed:", message, details);
+    }
     console.log(game);
     console.log(ui);
     console.log(renderer);
@@ -76,7 +79,6 @@ function gameLoop() {
     }
 
     time = timeNew;
-    setTimeout(() => gameLoop(), 10);
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -92,3 +94,4 @@ ui.init();
 
 renderLoop();
 gameLoop();
+setInterval(gameLoop, 10);

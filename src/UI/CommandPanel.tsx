@@ -73,7 +73,9 @@ const CommandPanel: React.FC<{
                                     acc + (slot.dot !== null ? 1 : 0),
                                 0,
                             ),
-                            attacking: squad.attackTargetSquad?.key,
+                            attacking: Array.from(squad.attackTargetSquads).map(
+                                (squad) => squad.key,
+                            ),
                         };
                     }),
                     undefined,
