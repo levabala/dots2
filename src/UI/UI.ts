@@ -93,7 +93,10 @@ export class UI {
             isMouseDown = true;
             switch (e.button) {
                 case 0:
-                    this.startSelection(e.offsetX, e.offsetY);
+                    this.startSelection(
+                        { x: e.offsetX, y: e.offsetY },
+                        { deselectPrevious: !e.shiftKey },
+                    );
                     break;
                 case 2:
                     this.handleRightButtonDown(e);
@@ -103,7 +106,10 @@ export class UI {
         this.element.addEventListener("mouseup", (e) => {
             switch (e.button) {
                 case 0:
-                    this.trySelectSquadFrame(e.offsetX, e.offsetY);
+                    this.trySelectSquadFrame(
+                        { x: e.offsetX, y: e.offsetY },
+                        { deselectPrevious: !e.shiftKey },
+                    );
                     this.trySelectDot(e.offsetX, e.offsetY);
                     break;
                 case 2:
@@ -391,6 +397,7 @@ export class UI {
 
     selectSquadFrame(squadFrame: SquadFrame) {
         this.squadFramesSelected.push(squadFrame);
+
         this.selectTeam(squadFrame.squad.team);
     }
 
@@ -412,8 +419,13 @@ export class UI {
         this.deselectTeam();
     }
 
-    trySelectSquadFrame(x: number, y: number) {
-        this.deselectSquadFramesAll();
+    trySelectSquadFrame(
+        { x, y }: Point,
+        { deselectPrevious }: { deselectPrevious: boolean },
+    ) {
+        if (deselectPrevious) {
+            this.deselectSquadFramesAll();
+        }
 
         const squadFrameClicked = this.getSquadFrameByPosition(x, y);
 
@@ -578,9 +590,14 @@ export class UI {
         }));
     }
 
-    startSelection(x: number, y: number) {
-        this.dotsAllUnselect();
-        this.squadFramesSelected = [];
+    startSelection(
+        { x, y }: Point,
+        { deselectPrevious }: { deselectPrevious: boolean },
+    ) {
+        if (deselectPrevious) {
+            this.dotsAllUnselect();
+            this.squadFramesSelected = [];
+        }
 
         this.selectionStartPoint = { x, y };
     }

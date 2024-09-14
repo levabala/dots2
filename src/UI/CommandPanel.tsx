@@ -33,24 +33,22 @@ const CommandPanel: React.FC<{
     state: CommandPanelState;
     callbacks: CommandPanelCallbacks;
 }> = ({ state: { team, squads }, callbacks }) => {
-    let allowAttack: Presence = Presence.None;
-    for (const squad of squads) {
-        if (squad.allowAttack) {
-            allowAttack = Presence.All;
-        } else if (allowAttack === Presence.All) {
-            allowAttack = Presence.Some;
-            break;
-        }
+    let allowAttack: Presence;
+    if (squads.every((squad) => !squad.allowAttack)) {
+        allowAttack = Presence.None;
+    } else if (squads.every((squad) => squad.allowAttack)) {
+        allowAttack = Presence.All;
+    } else {
+        allowAttack = Presence.Some;
     }
 
     let allowShootOnce: Presence = Presence.None;
-    for (const squad of squads) {
-        if (squad.allowShootOnce) {
-            allowShootOnce = Presence.All;
-        } else if (allowShootOnce === Presence.All) {
-            allowShootOnce = Presence.Some;
-            break;
-        }
+    if (squads.every((squad) => !squad.allowShootOnce)) {
+        allowShootOnce = Presence.None;
+    } else if (squads.every((squad) => squad.allowShootOnce)) {
+        allowShootOnce = Presence.All;
+    } else {
+        allowShootOnce = Presence.Some;
     }
 
     return (
