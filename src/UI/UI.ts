@@ -9,7 +9,11 @@ import {
     type Point,
     type Rect,
 } from "../utils";
-import { DOT_TARGET_MOVE_SPACE, DOT_WIDTH } from "../consts";
+import {
+    DOT_TARGET_MOVE_SPACE,
+    DOT_WIDTH,
+    BETWEEN_SQUADS_GAP,
+} from "../consts";
 import type { Dot, Game, Slot, Squad, Team } from "../Game";
 import {
     CommandPanelUI,
@@ -678,6 +682,7 @@ export class UI {
         );
     }
 
+    // chatgpt (c)
     adjustDestination(x: number, y: number) {
         if (
             !this.destinationStartPoint ||
@@ -687,19 +692,26 @@ export class UI {
             return;
         }
 
-        const dotCountToMove = this.getDotCountForDestination();
-        const destinationRectArea = dotCountToMove * DOT_TARGET_MOVE_SPACE;
+        const totalDotsToMove = this.squadFramesSelected.reduce(
+            (sum, squadFrame) => sum + squadFrame.squad.slots.length,
+            0,
+        );
+
+        const totalGapsLength =
+            BETWEEN_SQUADS_GAP * (this.squadFramesSelected.length - 1);
 
         const frontLength = distanceBetween(
             { x, y },
             this.destinationStartPoint,
         );
 
-        if (frontLength < DOT_WIDTH) {
+        if (frontLength < DOT_WIDTH + totalGapsLength) {
             return;
         }
 
-        const sideLength = destinationRectArea / frontLength;
+        const availableFrontLength = frontLength - totalGapsLength;
+        const totalAreaNeeded = totalDotsToMove * DOT_TARGET_MOVE_SPACE;
+        const sideLength = totalAreaNeeded / availableFrontLength;
 
         const destinationRaw = orthogonalRect(
             {
@@ -722,6 +734,7 @@ export class UI {
             anchor: destinationRaw.p1,
             angle,
         });
+
         window.assert(
             Object.values(this.destination).every(
                 (p) => Number.isFinite(p.x) && Number.isFinite(p.y),
@@ -731,7 +744,7 @@ export class UI {
                 destination: this.destination,
                 destinationStartPoint: this.destinationStartPoint,
                 destinationRaw,
-                dotCountToMove,
+                totalDotsToMove,
             },
         );
     }
@@ -773,10 +786,58 @@ export class UI {
         }
     }
 
+    // chatgpt (c)
     commandMoveSquads(squadFrames: SquadFrame[], targetFrame: Rect) {
+        const N = squadFrames.length;
+        if (N === 0) return;
+
+        const totalLength = distanceBetween(targetFrame.p1, targetFrame.p2);
+        const sideLength = distanceBetween(targetFrame.p1, targetFrame.p4);
+        const density = DOT_TARGET_MOVE_SPACE; // Area per unit
+
+        const frontDirection = {
+            x: (targetFrame.p2.x - targetFrame.p1.x) / totalLength,
+            y: (targetFrame.p2.y - targetFrame.p1.y) / totalLength,
+        };
+
+        const sideDirection = {
+            x: targetFrame.p4.x - targetFrame.p1.x,
+            y: targetFrame.p4.y - targetFrame.p1.y,
+        };
+
+        let currentOffset = 0;
         for (const squadFrame of squadFrames) {
-            this.updateSlotPositionsAndReassignDots(squadFrame, targetFrame);
-            squadFrame.frame = targetFrame;
+            const squadUnits = squadFrame.squad.slots.length;
+
+            const squadArea = squadUnits * density;
+            const squadLength = squadArea / sideLength;
+
+            const start = {
+                x: targetFrame.p1.x + frontDirection.x * currentOffset,
+                y: targetFrame.p1.y + frontDirection.y * currentOffset,
+            };
+            const end = {
+                x: start.x + frontDirection.x * squadLength,
+                y: start.y + frontDirection.y * squadLength,
+            };
+
+            const squadRect: Rect = {
+                p1: start,
+                p2: end,
+                p3: {
+                    x: end.x + sideDirection.x,
+                    y: end.y + sideDirection.y,
+                },
+                p4: {
+                    x: start.x + sideDirection.x,
+                    y: start.y + sideDirection.y,
+                },
+            };
+
+            this.updateSlotPositionsAndReassignDots(squadFrame, squadRect);
+            squadFrame.frame = squadRect;
+
+            currentOffset += squadLength + BETWEEN_SQUADS_GAP;
         }
     }
 

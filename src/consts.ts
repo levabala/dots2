@@ -8,3 +8,4 @@ export const DEFAULT_PROJECTILE = {
     damage: 1,
     flyDistanceLeft: 1000,
 };
+export const BETWEEN_SQUADS_GAP = 30;
