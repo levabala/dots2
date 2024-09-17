@@ -1,3 +1,9 @@
+export type RectOrth = {
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
+};
 export type Point = { x: number; y: number };
 export type Line = { p1: Point; p2: Point };
 export type Rect = { p1: Point; p2: Point; p3: Point; p4: Point };
@@ -290,7 +296,7 @@ export function getIntersectedSquareOrth(
     angleRaw: number,
     cosAngle: number,
     sinAngle: number,
-    square: { top: number; right: number; bottom: number; left: number },
+    square: RectOrth,
 ): {
     side: Direction.top | Direction.right | Direction.bottom | Direction.left;
     intersection: Point;

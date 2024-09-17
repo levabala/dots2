@@ -9,3 +9,4 @@ export const DEFAULT_PROJECTILE = {
     flyDistanceLeft: 1000,
 };
 export const BETWEEN_SQUADS_GAP = 30;
+export const DOTS_GRID_SIZE = Math.max(DOT_WIDTH, DOT_HEIGHT) * 5;

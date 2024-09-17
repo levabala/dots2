@@ -21,10 +21,15 @@ import {
     type CommandPanelState,
 } from "./CommandPanel";
 import { isNonNull } from "remeda";
+import { ViewPort } from "./ViewPort";
 
 export type SquadFrame = { index: number; squad: Squad; frame: Rect };
 
 export class UI {
+    focusPoint: Point | null = null;
+
+    viewPort: ViewPort;
+
     dotsSelected = new Set<Dot>();
 
     selectionStartPoint: Point | null = null;
@@ -50,6 +55,17 @@ export class UI {
         readonly pause: () => void,
     ) {
         this.commandPanelUI = new CommandPanelUI(this.initCommandPanelNode());
+        this.viewPort = new ViewPort(
+            this.game.width,
+            this.game.height,
+            Math.PI / 2,
+            game.width / game.height,
+            700,
+            {
+                x: this.game.width / 2,
+                y: this.game.height / 2,
+            },
+        );
     }
 
     init() {
@@ -98,7 +114,10 @@ export class UI {
             switch (e.button) {
                 case 0:
                     this.startSelection(
-                        { x: e.offsetX, y: e.offsetY },
+                        this.viewPort.matrix.transformPointReverse({
+                            x: e.offsetX,
+                            y: e.offsetY,
+                        }),
                         { deselectPrevious: !e.shiftKey },
                     );
                     break;
@@ -111,10 +130,18 @@ export class UI {
             switch (e.button) {
                 case 0:
                     this.trySelectSquadFrame(
-                        { x: e.offsetX, y: e.offsetY },
+                        this.viewPort.matrix.transformPointReverse({
+                            x: e.offsetX,
+                            y: e.offsetY,
+                        }),
                         { deselectPrevious: !e.shiftKey },
                     );
-                    this.trySelectDot(e.offsetX, e.offsetY);
+                    this.trySelectDot(
+                        this.viewPort.matrix.transformPointReverse({
+                            x: e.offsetX,
+                            y: e.offsetY,
+                        }),
+                    );
                     break;
                 case 2:
                     this.handleRightButtonUp(e);
@@ -134,10 +161,20 @@ export class UI {
 
             switch (e.buttons) {
                 case 1:
-                    this.extendSelection(e.offsetX, e.offsetY);
+                    this.extendSelection(
+                        this.viewPort.matrix.transformPointReverse({
+                            x: e.offsetX,
+                            y: e.offsetY,
+                        }),
+                    );
                     break;
                 case 2:
-                    this.adjustDestination(e.offsetX, e.offsetY);
+                    this.adjustDestination(
+                        this.viewPort.matrix.transformPointReverse({
+                            x: e.offsetX,
+                            y: e.offsetY,
+                        }),
+                    );
                     break;
             }
         });
@@ -150,7 +187,36 @@ export class UI {
             this.cancelSelection.bind(this),
         );
         this.element.addEventListener("dblclick", this.markDotsAll.bind(this));
+        this.element.addEventListener("wheel", (e) =>
+            this.zoom(e.deltaY, { x: e.offsetX, y: e.offsetY }),
+        );
+
         window.addEventListener("keypress", this.handleKeypress.bind(this));
+    }
+
+    // chatgpt (c)
+    zoom(delta: number, anchor: Point) {
+        // Store the old view dimensions
+        const oldViewWidth = this.viewPort.rect.right - this.viewPort.rect.left;
+        const oldViewHeight = oldViewWidth / this.viewPort.aspectRatio;
+
+        // Update the view elevation (zoom level) using the addElevation method
+        this.viewPort.addElevation(delta); // Ensures viewElevation doesn't go below 100
+
+        // Calculate the new view dimensions
+        const newViewWidth = this.viewPort.rect.right - this.viewPort.rect.left;
+        const newViewHeight = newViewWidth / this.viewPort.aspectRatio;
+
+        // Compute the change in offset to keep the anchor point fixed
+        const deltaOffsetX =
+            (newViewWidth - oldViewWidth) *
+            (0.5 - anchor.x / this.viewPort.gameWidth);
+        const deltaOffsetY =
+            (newViewHeight - oldViewHeight) *
+            (0.5 - anchor.y / this.viewPort.gameHeight);
+
+        // Update the viewport offset using the translate method
+        this.viewPort.translate(deltaOffsetX, deltaOffsetY);
     }
 
     createTestSquads() {
@@ -162,8 +228,8 @@ export class UI {
 
         this.createSquad();
 
-        this.startDestination(500, 100);
-        this.adjustDestination(500, 600);
+        this.startDestination({ x: 500, y: 100 });
+        this.adjustDestination({ x: 500, y: 600 });
         this.commandMove();
 
         // TODO: debug shooting to one's own team by adding dot click-to-console-log
@@ -181,8 +247,8 @@ export class UI {
 
         this.createSquad();
 
-        this.startDestination(600, 600);
-        this.adjustDestination(600, 100);
+        this.startDestination({ x: 600, y: 600 });
+        this.adjustDestination({ x: 600, y: 100 });
         this.commandMove();
     }
 
@@ -289,8 +355,10 @@ export class UI {
         this.destinationStartPoint = null;
 
         const squadFrameClicked = this.getSquadFrameByPosition(
-            e.offsetX,
-            e.offsetY,
+            this.viewPort.matrix.transformPointReverse({
+                x: e.offsetX,
+                y: e.offsetY,
+            }),
         );
 
         const teamSelected = this.squadFramesSelected[0]?.squad.team;
@@ -303,13 +371,20 @@ export class UI {
             return;
         }
 
-        this.startDestination(e.offsetX, e.offsetY);
+        this.startDestination(
+            this.viewPort.matrix.transformPointReverse({
+                x: e.offsetX,
+                y: e.offsetY,
+            }),
+        );
     }
 
     handleRightButtonUp(e: MouseEvent) {
         const squadFrameClicked = this.getSquadFrameByPosition(
-            e.offsetX,
-            e.offsetY,
+            this.viewPort.matrix.transformPointReverse({
+                x: e.offsetX,
+                y: e.offsetY,
+            }),
         );
 
         const teamSelected = this.squadFramesSelected[0]?.squad.team;
@@ -384,7 +459,7 @@ export class UI {
         this.renderCommandPanel();
     }
 
-    getSquadFrameByPosition(x: number, y: number): SquadFrame | null {
+    getSquadFrameByPosition({ x, y }: Point): SquadFrame | null {
         for (const squadFrame of this.squadFrames) {
             if (isPointInRect({ x, y }, squadFrame.frame)) {
                 return squadFrame;
@@ -437,7 +512,7 @@ export class UI {
             this.deselectSquadFramesAll();
         }
 
-        const squadFrameClicked = this.getSquadFrameByPosition(x, y);
+        const squadFrameClicked = this.getSquadFrameByPosition({ x, y });
 
         if (squadFrameClicked) {
             this.selectSquadFrame(squadFrameClicked);
@@ -447,7 +522,7 @@ export class UI {
         return { selected: false };
     }
 
-    trySelectDot(x: number, y: number) {
+    trySelectDot({ x, y }: Point) {
         const dotClicked = this.getDotByPosition(x, y);
 
         if (dotClicked) {
@@ -612,7 +687,7 @@ export class UI {
         this.selectionStartPoint = { x, y };
     }
 
-    extendSelection(x: number, y: number) {
+    extendSelection({ x, y }: Point) {
         if (!this.selectionStartPoint) {
             return;
         }
@@ -665,7 +740,7 @@ export class UI {
         return this.dotsSelected.size;
     }
 
-    startDestination(x: number, y: number) {
+    startDestination({ x, y }: Point) {
         this.destinationStartPoint = { x, y };
         const dotCountToMove = this.getDotCountForDestination();
         const targetRect = this.createSquadSquare(
@@ -689,7 +764,7 @@ export class UI {
     }
 
     // chatgpt (c)
-    adjustDestination(x: number, y: number) {
+    adjustDestination({ x, y }: Point) {
         if (
             !this.destinationStartPoint ||
             (this.destinationStartPoint.x === x &&

@@ -1,5 +1,5 @@
 import { SQUAD_NAMES } from "./assets/squadNames";
-import { DEFAULT_PROJECTILE, DOT_HEIGHT, DOT_SPEED, DOT_WIDTH } from "./consts";
+import { DEFAULT_PROJECTILE, DOT_HEIGHT, DOT_SPEED, DOT_WIDTH, DOTS_GRID_SIZE } from "./consts";
 import { DotsGrid } from "./DotsGrid";
 import {
     arePointsEqual,
@@ -116,7 +116,7 @@ export class Game {
         readonly height: number,
     ) {
         this.dotsGrid = new DotsGrid(
-            Math.max(DOT_WIDTH, DOT_HEIGHT) * 5,
+            DOTS_GRID_SIZE,
             width,
             height,
         );

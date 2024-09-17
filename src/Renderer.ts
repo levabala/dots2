@@ -32,6 +32,7 @@ export class RendererCanvasSimple implements Renderer {
     lastRenderTimestamp: number | null = null;
     render() {
         this.ctx.clearRect(0, 0, this.width, this.height);
+        this.adjustViewport();
 
         this.renderDotsGrid(this.game.dotsGrid);
 
@@ -86,7 +87,16 @@ export class RendererCanvasSimple implements Renderer {
             this.renderDestination(this.ui.destination);
         }
 
+        if (this.ui.focusPoint) {
+            this.ctx.fillRect(this.ui.focusPoint.x, this.ui.focusPoint.y, 2, 2);
+        }
+
+        this.ctx.resetTransform();
         this.renderPerformance();
+    }
+
+    adjustViewport() {
+        this.ctx.setTransform(...this.ui.viewPort.matrix.value);
     }
 
     lastFPS: number[] = [];
@@ -97,7 +107,7 @@ export class RendererCanvasSimple implements Renderer {
             dateNow - (this.lastRenderTimestamp ?? dateNow);
         this.lastRenderTimestamp = dateNow;
 
-        const fps = 1000 / timeBetweenRenders;
+        const fps = timeBetweenRenders === 0 ? 69 : 1000 / timeBetweenRenders;
         this.lastFPS.push(fps);
 
         if (this.lastFPS.length > 100) {
