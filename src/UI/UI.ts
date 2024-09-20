@@ -56,14 +56,14 @@ export class UI {
     ) {
         this.commandPanelUI = new CommandPanelUI(this.initCommandPanelNode());
         this.viewPort = new ViewPort(
-            this.game.width,
-            this.game.height,
+            element.clientWidth,
+            element.clientHeight,
             Math.PI / 2,
-            game.width / game.height,
+            element.clientWidth / element.clientHeight,
             700,
             {
-                x: this.game.width / 2,
-                y: this.game.height / 2,
+                x: 1500,
+                y: 1500,
             },
         );
     }
@@ -210,10 +210,10 @@ export class UI {
         // Compute the change in offset to keep the anchor point fixed
         const deltaOffsetX =
             (newViewWidth - oldViewWidth) *
-            (0.5 - anchor.x / this.viewPort.gameWidth);
+            (0.5 - anchor.x / this.viewPort.canvasWidth);
         const deltaOffsetY =
             (newViewHeight - oldViewHeight) *
-            (0.5 - anchor.y / this.viewPort.gameHeight);
+            (0.5 - anchor.y / this.viewPort.canvasHeight);
 
         // Update the viewport offset using the translate method
         this.viewPort.translate(deltaOffsetX, deltaOffsetY);
@@ -228,8 +228,8 @@ export class UI {
 
         this.createSquad();
 
-        this.startDestination({ x: 500, y: 100 });
-        this.adjustDestination({ x: 500, y: 600 });
+        this.startDestination({ x: 1500, y: 1100 });
+        this.adjustDestination({ x: 1500, y: 1600 });
         this.commandMove();
 
         // TODO: debug shooting to one's own team by adding dot click-to-console-log
@@ -247,8 +247,8 @@ export class UI {
 
         this.createSquad();
 
-        this.startDestination({ x: 600, y: 600 });
-        this.adjustDestination({ x: 600, y: 100 });
+        this.startDestination({ x: 1600, y: 1600 });
+        this.adjustDestination({ x: 1600, y: 1100 });
         this.commandMove();
     }
 

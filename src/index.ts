@@ -20,7 +20,7 @@ canvas.style.border = "solid gray 1px";
 
 container.appendChild(canvas);
 
-const game = new Game(width, height);
+const game = new Game(10000, 10000);
 
 const isPauseRef = { current: false };
 

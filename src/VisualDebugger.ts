@@ -18,6 +18,7 @@ export class VisualDebugger {
         container.style.top = "0";
         container.style.right = "0";
         container.style.bottom = "0";
+        container.style.overflow = "hidden";
         container.style.pointerEvents = "none";
 
         anchorElement.appendChild(container);

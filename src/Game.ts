@@ -126,8 +126,8 @@ export class Game {
         const team1 = this.createTeam({ name: "red" });
         const team2 = this.createTeam({ name: "blue" });
 
-        times(500, () => this.addDotRandom(team1));
-        times(500, () => this.addDotRandom(team2));
+        times(1000, () => this.addDotRandom(team1));
+        times(1000, () => this.addDotRandom(team2));
     }
 
     addEventListener<Name extends GameEvent["name"]>(
@@ -387,8 +387,8 @@ export class Game {
 
     addDotRandom(team: Team) {
         const position = {
-            x: randomInteger(0, this.width),
-            y: randomInteger(0, this.height),
+            x: randomInteger(1000, 2000),
+            y: randomInteger(1000, 2000),
         };
         this.addDot({
             path: [],

@@ -12,8 +12,8 @@ export class ViewPort {
     matrix: TransformationMatrix;
 
     constructor(
-        readonly gameWidth: number,
-        readonly gameHeight: number,
+        readonly canvasWidth: number,
+        readonly canvasHeight: number,
         viewAngleHorizontal: number,
         aspectRatio: number,
         viewElevation: number,
@@ -45,8 +45,8 @@ export class ViewPort {
     }
 
     updateMatrix() {
-        const scaleX = this.gameWidth / (this.rect.right - this.rect.left);
-        const scaleY = this.gameHeight / (this.rect.bottom - this.rect.top);
+        const scaleX = this.canvasWidth / (this.rect.right - this.rect.left);
+        const scaleY = this.canvasHeight / (this.rect.bottom - this.rect.top);
 
         this.matrix
             .reset()
