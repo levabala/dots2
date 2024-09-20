@@ -1,6 +1,8 @@
 import { DEFAULT_PROJECTILE } from "./consts";
 import type { DotsGrid } from "./DotsGrid";
-import type { Game, Dot, Projectile, Slot } from "./Game";
+import type { BuildingBase, Buildings } from "./Game/Buildings";
+import type { Game, Dot, Projectile, Slot } from "./Game/Game";
+import { getPolygonCenter } from "./shapes";
 import type { SquadFrame, UI } from "./UI/UI";
 import {
     getIntersectionFirst,
@@ -35,6 +37,10 @@ export class RendererCanvasSimple implements Renderer {
         this.adjustViewport();
 
         this.renderDotsGrid(this.game.dotsGrid);
+
+        for (const building of this.game.buildings.buildings) {
+            this.renderBuilding(building);
+        }
 
         for (const dot of this.game.dots) {
             if (dot.attackTargetDot && dot.attackCooldownLeft === 0) {
@@ -124,12 +130,50 @@ export class RendererCanvasSimple implements Renderer {
 
         const str = `average: ${fpsAverage.toFixed(0)} lowest: ${fpsLowest.toFixed(0)}`;
 
-        this.ctx.strokeStyle = "white";
+        this.setupText({});
         this.ctx.lineWidth = 4;
+        this.ctx.strokeStyle = "white";
         this.ctx.strokeText(str, 2, 10);
-        this.ctx.fillStyle = "black";
+
         this.ctx.lineWidth = 6;
+        this.ctx.fillStyle = "black";
         this.ctx.fillText(str, 2, 10);
+    }
+
+    private setupText({
+        textAlign,
+        font,
+        textBaseline,
+    }: {
+        textAlign?: CanvasTextAlign;
+        font?: string;
+        textBaseline?: CanvasTextBaseline;
+    }) {
+        this.ctx.textAlign = textAlign ?? "left";
+        this.ctx.textBaseline = textBaseline ?? "top";
+        this.ctx.font = font ?? "10px sans-serif";
+    }
+
+    private renderBuilding(building: BuildingBase) {
+        this.ctx.strokeStyle = "black";
+        this.ctx.lineWidth = 1;
+
+        this.drawPolygon(building.frame);
+
+        this.ctx.stroke();
+
+        const center = getPolygonCenter(building.frame);
+
+        this.setupText({
+            font: "16px sans-serif",
+            textBaseline: "middle",
+            textAlign: "center",
+        });
+        this.ctx.fillStyle = this.getTeamColor(building.team?.index ?? -1);
+        this.ctx.fillText(building.kind, center.x, center.y);
+        this.ctx.strokeStyle = 'black';
+        this.ctx.lineWidth = 0.5;
+        this.ctx.strokeText(building.kind, center.x, center.y);
     }
 
     private getDotColor(dot: Dot) {
@@ -144,8 +188,8 @@ export class RendererCanvasSimple implements Renderer {
         return "black";
     }
 
-    private getDotTeamColor(dot: Dot) {
-        switch (dot.team.index) {
+    private getTeamColor(teamIndex: number) {
+        switch (teamIndex) {
             case 0:
                 return "red";
             case 1:
@@ -153,6 +197,10 @@ export class RendererCanvasSimple implements Renderer {
             default:
                 return "black";
         }
+    }
+
+    private getDotTeamColor(dot: Dot) {
+        return this.getTeamColor(dot.team.index);
     }
 
     renderSlot(slot: Slot) {
@@ -337,8 +385,8 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.stroke();
     }
 
-    private renderDotsGridTitles(dotsGrid: DotsGrid) {
-        this.ctx.font = "8px";
+    renderDotsGridTitles(dotsGrid: DotsGrid) {
+        this.setupText({ textAlign: "left", font: "8px" });
         for (let row = 0; row < dotsGrid.dotsGridRows; row++) {
             for (let col = 0; col < dotsGrid.dotsGridCols; col++) {
                 this.ctx.strokeText(

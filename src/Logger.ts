@@ -1,4 +1,4 @@
-import type { Game } from "./Game";
+import type { Game } from "./Game/Game";
 
 export type Log = {
     timestamp: Date;

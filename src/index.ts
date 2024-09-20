@@ -1,4 +1,4 @@
-import { Game } from "./Game";
+import { Game } from "./Game/Game";
 import { UI } from "./UI/UI";
 import { RendererCanvasSimple } from "./Renderer";
 import { Logger } from "./Logger";

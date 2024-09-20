@@ -1,6 +1,12 @@
-import { SQUAD_NAMES } from "./assets/squadNames";
-import { DEFAULT_PROJECTILE, DOT_HEIGHT, DOT_SPEED, DOT_WIDTH, DOTS_GRID_SIZE } from "./consts";
-import { DotsGrid } from "./DotsGrid";
+import { SQUAD_NAMES } from "../assets/squadNames";
+import {
+    DEFAULT_PROJECTILE,
+    DOT_HEIGHT,
+    DOT_SPEED,
+    DOT_WIDTH,
+    DOTS_GRID_SIZE,
+} from "../consts";
+import { DotsGrid } from "../DotsGrid";
 import {
     arePointsEqual,
     distanceBetween as getDistanceBetween,
@@ -8,8 +14,10 @@ import {
     rotatePoint,
     type Point,
     type Rect,
-} from "./utils";
+} from "../utils";
 import { randomInteger, times } from "remeda";
+import { Buildings } from "./Buildings";
+import { createPolygonOffset } from "../shapes";
 
 export type Team = {
     index: number;
@@ -20,29 +28,31 @@ export type Team = {
     // squads: Set<Squad>;
 };
 
-export type Dot = {
-    position: Point;
+export type DotTemplate = {
     width: number;
     height: number;
     speed: number;
-    path: Point[];
-    attackTargetedByDots: Set<Dot>;
-    attackTargetDot: Dot | null;
     attackRange: number;
     attackCooldown: number;
-    attackCooldownLeft: number;
     aimingDuration: number;
-    aimingTimeLeft: number;
-    aimingTarget: Dot | null;
     hitBox: Rect;
     health: number;
     angle: number;
-    removed: boolean;
+};
 
+export type Dot = DotTemplate & {
+    position: Point;
     team: Team;
+    removed: boolean;
     squad: Squad | null;
     slot: Slot | null;
     gridSquareIndexes: number[];
+    attackCooldownLeft: number;
+    aimingTimeLeft: number;
+    aimingTarget: Dot | null;
+    attackTargetedByDots: Set<Dot>;
+    attackTargetDot: Dot | null;
+    path: Point[];
 };
 
 export type Projectile = {
@@ -100,6 +110,7 @@ export class Game {
     dots = new Set<Dot>();
     squads: Squad[] = [];
     projectiles: Projectile[] = [];
+    buildings: Buildings;
 
     eventListeners: {
         [key in GameEvent["name"]]: Set<GameEventListener<key>>;
@@ -115,19 +126,52 @@ export class Game {
         readonly width: number,
         readonly height: number,
     ) {
-        this.dotsGrid = new DotsGrid(
-            DOTS_GRID_SIZE,
-            width,
-            height,
-        );
+        this.dotsGrid = new DotsGrid(DOTS_GRID_SIZE, width, height);
+        this.buildings = new Buildings();
     }
 
     init() {
         const team1 = this.createTeam({ name: "red" });
         const team2 = this.createTeam({ name: "blue" });
 
-        times(1000, () => this.addDotRandom(team1));
-        times(1000, () => this.addDotRandom(team2));
+        times(100, () => this.addDotRandom(team1));
+        times(100, () => this.addDotRandom(team2));
+
+        this.buildings.addBuilding({
+            kind: "barracks",
+            team: team1,
+            frame: createPolygonOffset(
+                [
+                    { x: 0, y: 0 },
+                    { x: 100, y: 0 },
+                    { x: 100, y: 80 },
+                    { x: 0, y: 80 },
+                ],
+                { x: 1000, y: 1000 },
+            ),
+            health: 100,
+            spawnDuration: 500,
+            spawnTimeLeft: 500,
+            spawnQueue: times(50, () => this.generateDotRandom()),
+        });
+
+        this.buildings.addBuilding({
+            kind: "barracks",
+            team: team2,
+            frame: createPolygonOffset(
+                [
+                    { x: 0, y: 0 },
+                    { x: 100, y: 0 },
+                    { x: 100, y: 80 },
+                    { x: 0, y: 80 },
+                ],
+                { x: 1700, y: 1000 },
+            ),
+            health: 100,
+            spawnDuration: 500,
+            spawnTimeLeft: 500,
+            spawnQueue: times(50, () => this.generateDotRandom()),
+        });
     }
 
     addEventListener<Name extends GameEvent["name"]>(
@@ -385,12 +429,12 @@ export class Game {
         this.emitEvent("dot-added", { dot });
     }
 
-    addDotRandom(team: Team) {
+    generateDotRandom(): Omit<Dot, "team"> {
         const position = {
             x: randomInteger(1000, 2000),
             y: randomInteger(1000, 2000),
         };
-        this.addDot({
+        return {
             path: [],
             position,
             width: DOT_WIDTH,
@@ -409,11 +453,14 @@ export class Game {
             hitBox: this.calculateHitBox(position, 0, DOT_WIDTH, DOT_HEIGHT),
             removed: false,
 
-            team,
             squad: null,
             slot: null,
             gridSquareIndexes: [],
-        });
+        };
+    }
+
+    addDotRandom(team: Team) {
+        this.addDot({ ...this.generateDotRandom(), team });
     }
 
     dotMoveTo(dot: Dot, destination: Point) {
@@ -829,6 +876,31 @@ export class Game {
             if (dot.path.length) {
                 moveByPath(dot);
             }
+        }
+
+        const buildingsProduction = this.buildings.tick(timeDelta);
+
+        for (const dotSpawned of buildingsProduction.dots) {
+            this.addDot({
+                ...dotSpawned,
+                path: [],
+                attackTargetDot: null,
+                attackCooldownLeft: 0,
+                attackTargetedByDots: new Set(),
+                aimingTimeLeft: dotSpawned.aimingDuration,
+                aimingTarget: null,
+                hitBox: this.calculateHitBox(
+                    dotSpawned.position,
+                    0,
+                    DOT_WIDTH,
+                    DOT_HEIGHT,
+                ),
+                removed: false,
+
+                squad: null,
+                slot: null,
+                gridSquareIndexes: [],
+            });
         }
     }
 }

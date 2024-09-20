@@ -14,7 +14,7 @@ import {
     DOT_WIDTH,
     BETWEEN_SQUADS_GAP,
 } from "../consts";
-import type { Dot, Game, Slot, Squad, Team } from "../Game";
+import type { Dot, Game, Slot, Squad, Team } from "../Game/Game";
 import {
     CommandPanelUI,
     type CommandPanelCallbacks,
@@ -63,7 +63,7 @@ export class UI {
             700,
             {
                 x: 1500,
-                y: 1500,
+                y: 1400,
             },
         );
     }
@@ -231,8 +231,6 @@ export class UI {
         this.startDestination({ x: 1500, y: 1100 });
         this.adjustDestination({ x: 1500, y: 1600 });
         this.commandMove();
-
-        // TODO: debug shooting to one's own team by adding dot click-to-console-log
 
         this.cancelSelection();
         this.clearDestination();

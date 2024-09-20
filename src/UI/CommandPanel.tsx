@@ -1,5 +1,5 @@
 import { createRoot, type Root } from "react-dom/client";
-import type { Squad, Team } from "../Game";
+import type { Squad, Team } from "../Game/Game";
 
 export type CommandPanelState = {
     team: Team | null;

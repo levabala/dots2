@@ -7,6 +7,7 @@ export type RectOrth = {
 export type Point = { x: number; y: number };
 export type Line = { p1: Point; p2: Point };
 export type Rect = { p1: Point; p2: Point; p3: Point; p4: Point };
+export type Polygon = Point[];
 
 export function orthogonalRect(p1: Point, p3: Point): Rect {
     return {
@@ -365,4 +366,51 @@ export function arePointsEqual(p1: Point, p2: Point) {
         Math.abs(p2.x - p1.x) < Number.EPSILON &&
         Math.abs(p2.y - p1.y) < Number.EPSILON
     );
+}
+
+const MAX_RANDOM_POINT_ATTEMPTS = 1000;
+
+// chatgpt (c)
+export function randomPointInPolygon(polygon: Polygon): Point {
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+
+    // Find bounding box of the polygon
+    for (const point of polygon) {
+        if (point.x < minX) minX = point.x;
+        if (point.x > maxX) maxX = point.x;
+        if (point.y < minY) minY = point.y;
+        if (point.y > maxY) maxY = point.y;
+    }
+
+    let attempts = 0;
+
+    // Loop until a point is found inside the polygon
+    while (true) {
+        const randomPoint = {
+            x: minX + Math.random() * (maxX - minX),
+            y: minY + Math.random() * (maxY - minY),
+        };
+
+        if (isPointInPolygon(randomPoint, polygon)) {
+            return randomPoint;
+        }
+
+        if (attempts++ >= MAX_RANDOM_POINT_ATTEMPTS) {
+            window.panic("Failed to find a random point in the polygon");
+        }
+    }
+}
+
+// chatgpt (c)
+function isPointInPolygon(point: Point, polygon: Polygon): boolean {
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const xi = polygon[i].x, yi = polygon[i].y;
+        const xj = polygon[j].x, yj = polygon[j].y;
+
+        const intersect = yi > point.y !== yj > point.y &&
+            point.x < ((xj - xi) * (point.y - yi)) / (yj - yi) + xi;
+        if (intersect) inside = !inside;
+    }
+    return inside;
 }
