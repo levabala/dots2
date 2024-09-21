@@ -43,6 +43,7 @@ export type Dot = DotTemplate & {
     attackTargetedByDots: Set<Dot>;
     attackTargetDot: Dot | null;
     path: Point[];
+    allowAttack: boolean;
 };
 
 export type ProjectileToShoot = {
@@ -152,6 +153,7 @@ export class DotsController {
             angle: 0,
             hitBox: this.calculateHitBox(position, 0, DOT_WIDTH, DOT_HEIGHT),
             removed: false,
+            allowAttack: true,
 
             squad: null,
             slot: null,
@@ -327,6 +329,13 @@ export class DotsController {
             dot.aimingTimeLeft = Math.max(dot.aimingTimeLeft - timeDelta, 0);
         };
 
+        const clearAttackTarget = (dot: Dot) => {
+            if (dot.attackTargetDot) {
+                dot.attackTargetDot.attackTargetedByDots.delete(dot);
+                dot.attackTargetDot = null;
+            }
+        };
+
         const tryShoot = (dot: Dot) => {
             if (
                 dot.squad &&
@@ -374,6 +383,8 @@ export class DotsController {
 
             if (dot.squad && dot.squad.allowShootOnce) {
                 dot.squad.dotsToShootOnce.delete(dot);
+                dot.allowAttack = false;
+                clearAttackTarget(dot);
 
                 const noAttackTargetForTheRest = Array.from(
                     dot.squad.dotsToShootOnce,
@@ -385,6 +396,148 @@ export class DotsController {
                     dot.squad.allowShootOnce = false;
                 }
             }
+        };
+
+        type DotWithDistance = Dot & { _targeting_distance: number };
+
+        const getDotPotentionalTargets = (dot: Dot): DotWithDistance[] => {
+            if (dot.squad && dot.squad.attackTargetSquads.size) {
+                const dotPotentionalTargets = [];
+
+                for (const squadTarget of dot.squad.attackTargetSquads) {
+                    for (const slotTarget of squadTarget.slots) {
+                        if (!slotTarget.dot) {
+                            continue;
+                        }
+
+                        const dotTarget = slotTarget.dot as DotWithDistance;
+
+                        dotTarget._targeting_distance = distanceBetween(
+                            dot.position,
+                            dotTarget.position,
+                        );
+
+                        if (dotTarget._targeting_distance > dot.attackRange) {
+                            continue;
+                        }
+
+                        dotPotentionalTargets.push(dotTarget);
+                    }
+                }
+
+                return dotPotentionalTargets;
+            }
+
+            const dotsInRange = this.dotsGrid.getDotsInRange(
+                dot.position,
+                dot.attackRange,
+                (d) => d.team !== dot.team,
+            );
+
+            for (const dotInRange of dotsInRange) {
+                const distance = distanceBetween(
+                    dot.position,
+                    dotInRange.position,
+                );
+
+                if (distance > dot.attackRange) {
+                    window.panic("distance must be less than attack range", {
+                        dot,
+                        dotInRange,
+                    });
+                }
+
+                (dotInRange as DotWithDistance)._targeting_distance = distance;
+            }
+
+            return dotsInRange as DotWithDistance[];
+        };
+
+        const assignDotAttackTarget = (dot: Dot) => {
+            const allowAttackSquad =
+                dot.squad !== null && dot.squad.allowAttack;
+
+            if (!dot.allowAttack && !allowAttackSquad) {
+                clearAttackTarget(dot);
+                return;
+            }
+
+            const dotPotentionalTargets = getDotPotentionalTargets(dot);
+
+            dotPotentionalTargets.sort(
+                (d1, d2) => d1._targeting_distance - d2._targeting_distance,
+            );
+
+            for (const dotTarget of dotPotentionalTargets) {
+                const hasIntersection =
+                    this.checkHasShootIntersectionWithOwnTeam(dot, dotTarget);
+
+                if (hasIntersection) {
+                    continue;
+                }
+
+                clearAttackTarget(dot);
+
+                window.assert(
+                    dotTarget.removed !== true,
+                    "attack target dot must not be removed",
+                    { dot, target: dotTarget },
+                );
+
+                dot.attackTargetDot = dotTarget;
+                dotTarget.attackTargetedByDots.add(dot);
+
+                return;
+            }
+
+            clearAttackTarget(dot);
+        };
+
+        const isBadTarget = (dot: Dot, dotTarget: Dot): boolean => {
+            if (!dot.attackTargetDot) {
+                return false;
+            }
+
+            if (
+                dot.squad !== null &&
+                dot.squad.attackTargetSquads.size > 0 &&
+                (dotTarget.squad === null ||
+                    !dot.squad.attackTargetSquads.has(dotTarget.squad))
+            ) {
+                return true;
+            }
+
+            if (
+                distanceBetween(dot.position, dot.attackTargetDot.position) >
+                dot.attackRange
+            ) {
+                return true;
+            }
+
+            if (
+                this.checkHasShootIntersectionWithOwnTeam(
+                    dot,
+                    dot.attackTargetDot,
+                )
+            ) {
+                return true;
+            }
+
+            return false;
+        };
+
+        const assignDotAttackTargetButTryNotToReassign = (dot: Dot) => {
+            if (dot.attackTargetDot) {
+                const gotBadTarget = isBadTarget(dot, dot.attackTargetDot);
+
+                if (gotBadTarget) {
+                    clearAttackTarget(dot);
+                }
+
+                return;
+            }
+
+            assignDotAttackTarget(dot);
         };
 
         const removeIfDead = (dot: Dot) => {
@@ -401,6 +554,18 @@ export class DotsController {
 
             proceedAiming(dot);
             proceedCooldown(dot);
+        }
+
+        for (const dot of this.dots) {
+            if (dot.path.length > 0) {
+                continue;
+            }
+
+            if (dot.attackCooldownLeft > 0) {
+                continue;
+            }
+
+            assignDotAttackTargetButTryNotToReassign(dot);
         }
 
         for (const dot of this.dots) {

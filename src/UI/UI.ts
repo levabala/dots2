@@ -324,6 +324,7 @@ export class UI {
                     squad.dotsToShootOnce = new Set(
                         squad.slots.map((slot) => slot.dot).filter(isNonNull),
                     );
+                    squad.dotsToShootOnce.forEach((dot) => dot.allowAttack = true);
                 } else {
                     squad.dotsToShootOnce.clear();
                 }

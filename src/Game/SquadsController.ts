@@ -1,5 +1,5 @@
 import { SQUAD_NAMES } from "../assets/squadNames";
-import { arePointsEqual, distanceBetween, type Point } from "../utils";
+import { arePointsEqual, type Point } from "../utils";
 import type { Dot } from "./DotsController";
 import type { Team } from "./TeamController";
 
@@ -115,6 +115,7 @@ export class SquadsController {
             dot.squad = null;
             dot.slot = null;
             dot.attackTargetDot = null;
+            dot.allowAttack = true;
         }
 
         for (const squadAttacker of squad.attackTargetedBySquads) {
@@ -147,6 +148,7 @@ export class SquadsController {
 
         slot.dot = dot;
         dot.slot = slot;
+        dot.allowAttack = false;
     }
 
     tick(_timeDelta: number): SquadsControllerTickEffects {
@@ -170,97 +172,6 @@ export class SquadsController {
                 slot.dot.path = [slot.position];
             }
         };
-
-        const assignDotAttackTargetsBySquad = (
-            dot: Dot,
-            squadTargets: Set<Squad>,
-        ) => {
-            if (
-                dot.attackTargetDot?.squad &&
-                squadTargets.has(dot.attackTargetDot?.squad)
-            ) {
-                const distance = distanceBetween(
-                    dot.position,
-                    dot.attackTargetDot.position,
-                );
-
-                if (
-                    distance > dot.attackRange ||
-                    this.checkHasShootIntersectionWithOwnTeam(
-                        dot,
-                        dot.attackTargetDot,
-                    )
-                ) {
-                    dot.attackTargetDot?.attackTargetedByDots.delete(dot);
-                    dot.attackTargetDot = null;
-                } else {
-                    return;
-                }
-            }
-
-            const dotPotentionalTargets = [];
-            for (const squad of squadTargets) {
-                for (const slot of squad.slots) {
-                    if (!slot.dot) {
-                        continue;
-                    }
-
-                    const distance = distanceBetween(
-                        dot.position,
-                        slot.dot.position,
-                    );
-                    if (distance > dot.attackRange) {
-                        continue;
-                    }
-
-                    const hasIntersection =
-                        this.checkHasShootIntersectionWithOwnTeam(
-                            dot,
-                            slot.dot,
-                        );
-
-                    if (hasIntersection !== false) {
-                        continue;
-                    }
-
-                    dotPotentionalTargets.push(slot.dot);
-                }
-            }
-
-            if (!dotPotentionalTargets.length) {
-                dot.attackTargetDot?.attackTargetedByDots.delete(dot);
-                dot.attackTargetDot = null;
-                return;
-            }
-
-            dotPotentionalTargets.sort(
-                (d1, d2) =>
-                    Math.hypot(
-                        d1.position.x - dot.position.x,
-                        d1.position.y - dot.position.y,
-                    ) -
-                    Math.hypot(
-                        d2.position.x - dot.position.x,
-                        d2.position.y - dot.position.y,
-                    ),
-            );
-
-            const target = dotPotentionalTargets[0];
-
-            if (dot.attackTargetDot) {
-                dot.attackTargetDot.attackTargetedByDots.delete(dot);
-            }
-
-            window.assert(
-                target.removed !== true,
-                "attack target dot must not be removed",
-                { dot, target },
-            );
-
-            dot.attackTargetDot = target;
-            target.attackTargetedByDots.add(dot);
-        };
-
         const removeSquadIfEmpty = (squad: Squad) => {
             const { isRemoved } = this.removeSquadIfEmpty(squad);
 
@@ -271,27 +182,6 @@ export class SquadsController {
 
         for (const squad of this.squads) {
             changePathToSquad(squad);
-
-            if (squad.attackTargetSquads.size) {
-                for (const slot of squad.slots) {
-                    const dot = slot.dot;
-
-                    if (!dot) {
-                        continue;
-                    }
-
-                    if (dot.path.length > 0) {
-                        continue;
-                    }
-
-                    if (dot.attackCooldownLeft === 0) {
-                        assignDotAttackTargetsBySquad(
-                            dot,
-                            squad.attackTargetSquads,
-                        );
-                    }
-                }
-            }
 
             this.fillEmptyFrontSlots(squad);
         }

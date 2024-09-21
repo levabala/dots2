@@ -1,6 +1,7 @@
 import type { Dot } from "./Game/DotsController";
 import {
     Direction,
+    distanceBetween,
     getIntersectedSquareOrth,
     roundAngle,
     roundSinCos,
@@ -180,5 +181,90 @@ export class DotsGrid {
                 return;
             }
         }
+    }
+
+    getDotsGridIndicesInRange(
+        point: Point,
+        range: number,
+    ): {
+        definitelyInRange: number[];
+        maybeInRange: number[];
+    } {
+        const gridRadiusForSure = Math.ceil(range / this.dotsGridSquadSize);
+
+        const center = this.calcIndexXY(point);
+        const fromX = center.x - gridRadiusForSure;
+        const fromY = center.y - gridRadiusForSure;
+        const toX = center.x + gridRadiusForSure;
+        const toY = center.y + gridRadiusForSure;
+
+        const dotsGridSquadDiagonalHalf = Math.sqrt(
+            this.dotsGridSquadSize ** 2 * 2,
+        );
+
+        const maybeInRange: number[] = [];
+        const definitelyInRange: number[] = [];
+
+        for (let x = fromX; x <= toX; x++) {
+            for (let y = fromY; y <= toY; y++) {
+                const index = this.calcIndexFromXY(x, y);
+
+                const squadCenter = {
+                    x: this.dotsGridSquadSize * x + this.dotsGridSquadSize / 2,
+                    y: this.dotsGridSquadSize * y + this.dotsGridSquadSize / 2,
+                };
+
+                const distance = distanceBetween(point, squadCenter);
+
+                const isMaybeInRange = distance >= (range - dotsGridSquadDiagonalHalf);
+
+                if (isMaybeInRange) {
+                    maybeInRange.push(index);
+                } else {
+                    definitelyInRange.push(index);
+                }
+            }
+        }
+
+        return { definitelyInRange, maybeInRange };
+    }
+
+    getDotsInRange(
+        point: Point,
+        range: number,
+        predicate?: (dot: Dot) => boolean,
+    ): Dot[] {
+        const dots = [];
+
+        const { definitelyInRange, maybeInRange } = this.getDotsGridIndicesInRange(
+            point,
+            range,
+        );
+
+        for (const index of definitelyInRange) {
+            for (const dot of this.dotsGrid[index]) {
+                if (predicate && !predicate(dot)) {
+                    continue;
+                }
+
+                dots.push(dot);
+            }
+        }
+
+        for (const index of maybeInRange) {
+            for (const dot of this.dotsGrid[index]) {
+                if (predicate && !predicate(dot)) {
+                    continue;
+                }
+
+                if (distanceBetween(point, dot.position) > range) {
+                    continue;
+                }
+
+                dots.push(dot);
+            }
+        }
+
+        return dots;
     }
 }
