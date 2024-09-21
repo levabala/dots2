@@ -18,6 +18,5 @@ export const SQUAD_NAMES = [
     "Void Stalkers",
     "Tempest Wardens",
     "Golden Griffins",
-    "Nebula Hunters"
+    "Nebula Hunters",
 ];
-

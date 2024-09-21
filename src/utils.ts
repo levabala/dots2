@@ -372,7 +372,10 @@ const MAX_RANDOM_POINT_ATTEMPTS = 1000;
 
 // chatgpt (c)
 export function randomPointInPolygon(polygon: Polygon): Point {
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    let minX = Infinity,
+        maxX = -Infinity,
+        minY = Infinity,
+        maxY = -Infinity;
 
     // Find bounding box of the polygon
     for (const point of polygon) {
@@ -405,10 +408,13 @@ export function randomPointInPolygon(polygon: Polygon): Point {
 function isPointInPolygon(point: Point, polygon: Polygon): boolean {
     let inside = false;
     for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-        const xi = polygon[i].x, yi = polygon[i].y;
-        const xj = polygon[j].x, yj = polygon[j].y;
+        const xi = polygon[i].x,
+            yi = polygon[i].y;
+        const xj = polygon[j].x,
+            yj = polygon[j].y;
 
-        const intersect = yi > point.y !== yj > point.y &&
+        const intersect =
+            yi > point.y !== yj > point.y &&
             point.x < ((xj - xi) * (point.y - yi)) / (yj - yi) + xi;
         if (intersect) inside = !inside;
     }

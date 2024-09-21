@@ -73,10 +73,11 @@ export class TransformationMatrix {
     // chatgpt (c)
     transformVectorReverse(vector: Point): Point {
         const { x, y } = vector;
-        const det = this.value[0] * this.value[3] - this.value[1] * this.value[2];
+        const det =
+            this.value[0] * this.value[3] - this.value[1] * this.value[2];
         return {
             x: (this.value[3] * x - this.value[2] * y) / det,
-            y: (this.value[0] * y - this.value[1] * x) / det
+            y: (this.value[0] * y - this.value[1] * x) / det,
         };
     }
 }

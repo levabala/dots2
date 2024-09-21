@@ -18,7 +18,6 @@ import type { Slot, Squad } from "./SquadsController";
 import type { Projectile } from "./ProjectilesController";
 import type { Team } from "./TeamController";
 
-
 export type DotTemplate = {
     width: number;
     height: number;
