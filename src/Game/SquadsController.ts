@@ -48,7 +48,7 @@ export class SquadsController {
             }
 
             const tail = squad.slots[tailIndex];
-            if (tail.dot === null) {
+            if (tail.dot === null || tail.dot.attackCooldownLeft > 0) {
                 tailIndex--;
                 continue;
             }

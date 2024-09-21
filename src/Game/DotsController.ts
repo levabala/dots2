@@ -380,6 +380,7 @@ export class DotsController {
             });
 
             dot.attackCooldownLeft = dot.attackCooldown;
+            dot.aimingTimeLeft = dot.aimingDuration;
 
             if (dot.squad && dot.squad.allowShootOnce) {
                 dot.squad.dotsToShootOnce.delete(dot);
