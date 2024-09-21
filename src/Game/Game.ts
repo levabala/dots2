@@ -6,6 +6,7 @@ import { DotsController } from "./DotsController";
 import { ProjectilesController } from "./ProjectilesController";
 import { SquadsController } from "./SquadsController";
 import { ResourcesController } from "./ResourcesController";
+import { TeamController } from "./TeamController";
 
 export type Team = {
     index: number;
@@ -100,9 +101,9 @@ export class Game {
     dotsController: DotsController;
     projectilesController: ProjectilesController;
     squadsController: SquadsController;
-    teams = new Set<Team>();
     buildings: BuildingsController;
     resourcesController: ResourcesController;
+    teamController: TeamController;
 
     eventListeners: {
         [key in GameEventTick["name"]]: Set<GameEventListener<key>>;
@@ -118,6 +119,7 @@ export class Game {
         readonly width: number,
         readonly height: number,
     ) {
+        this.teamController = new TeamController();
         this.dotsController = new DotsController(width, height);
         this.projectilesController = new ProjectilesController(
             this.dotsController.dots,
@@ -132,8 +134,11 @@ export class Game {
     }
 
     init() {
-        const team1 = this.createTeam({ name: "red" });
-        const team2 = this.createTeam({ name: "blue" });
+        const team1 = this.teamController.createTeam({ name: "red" });
+        const team2 = this.teamController.createTeam({ name: "blue" });
+
+        this.resourcesController.initTeamResourcesState(team1);
+        this.resourcesController.initTeamResourcesState(team2);
 
         this.resourcesController.changeFood(team1, 1000);
         this.resourcesController.changeFood(team2, 1000);
@@ -264,15 +269,6 @@ export class Game {
         }
     }
 
-    createTeam(teamParams: Omit<Team, "index" | "dotsCount">): Team {
-        const team = { ...teamParams, dotsCount: 0, index: this.teams.size };
-        this.teams.add(team);
-
-        this.resourcesController.initTeamResourcesState(team);
-
-        return team;
-    }
-
     dotMoveTo(dot: Dot, destination: Point) {
         dot.path = [destination];
     }
@@ -289,7 +285,7 @@ export class Game {
             );
         }
 
-        for (const team of this.teams) {
+        for (const team of this.teamController.teams) {
             this.resourcesController.setHousing(
                 team,
                 this.buildings.countHousing(team),
