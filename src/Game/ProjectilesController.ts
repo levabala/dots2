@@ -6,9 +6,13 @@ export type ProjectilesControllerTickEffects = {
 };
 
 export class ProjectilesController {
-    projectiles: Projectile[] = [];
+    projectiles = new Set<Projectile>();
 
     constructor(readonly dots: Set<Dot>) {}
+
+    removeProjectile(projectile: Projectile) {
+        this.projectiles.delete(projectile);
+    }
 
     shootProjectile(
         fromDot: Dot,
@@ -28,11 +32,11 @@ export class ProjectilesController {
             fromDot,
         };
 
-        this.projectiles.push(projectile);
+        this.projectiles.add(projectile);
     }
 
     hitProjectile(projectile: Projectile, dot: Dot): { isKilled: boolean } {
-        this.projectiles.splice(this.projectiles.indexOf(projectile), 1);
+        this.removeProjectile(projectile);
         dot.health -= projectile.damage;
 
         return { isKilled: dot.health <= 0 };
@@ -97,6 +101,12 @@ export class ProjectilesController {
 
             projectile.position.x += dx;
             projectile.position.y += dy;
+
+            projectile.flyDistanceLeft -= timeDelta;
+
+            if (projectile.flyDistanceLeft <= 0) {
+                this.removeProjectile(projectile);
+            }
         };
 
         for (const projectile of this.projectiles) {

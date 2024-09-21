@@ -6,7 +6,7 @@ export const DEFAULT_PROJECTILE = {
     radius: 4,
     speed: 1000 / 1000,
     damage: 1,
-    flyDistanceLeft: 1000,
+    flyDistanceLeft: 500,
 };
 export const BETWEEN_SQUADS_GAP = 30;
 export const DOTS_GRID_SIZE = Math.max(DOT_WIDTH, DOT_HEIGHT) * 5;
