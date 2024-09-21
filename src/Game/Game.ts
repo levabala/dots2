@@ -181,6 +181,21 @@ export class Game {
             health: 100,
             capacity: 110,
         });
+        this.buildings.addBuilding({
+            kind: "farm",
+            team: team1,
+            frame: createPolygonOffset(
+                [
+                    { x: 0, y: 0 },
+                    { x: 150, y: 0 },
+                    { x: 150, y: 150 },
+                    { x: 0, y: 150 },
+                ],
+                { x: 870, y: 1100 },
+            ),
+            health: 100,
+            foodPerSecond: 5,
+        });
 
         this.buildings.addBuilding({
             kind: "barracks",
