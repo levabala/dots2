@@ -64,6 +64,7 @@ const CommandPanel: React.FC<{
             <h3>Command Panel</h3>
             <div>{JSON.stringify(resources ? {
                 food: Math.ceil(resources.food),
+                foodCapacity: resources.foodCapacity,
                 housing: resources.housing,
             } : null, undefined, 2)}</div>
             <div>{JSON.stringify(team, undefined, 2)}</div>

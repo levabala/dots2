@@ -264,6 +264,10 @@ export class UI {
         this.startDestination({ x: 1600, y: 1600 });
         this.adjustDestination({ x: 1600, y: 1100 });
         this.commandMove();
+
+        this.cancelSelection();
+        this.squadFramesSelected.splice(0, this.squadFramesSelected.length);
+        this.selectSquadFrame(this.squadFrames[0]);
     }
 
     dotSelect(dot: Dot) {
@@ -301,6 +305,7 @@ export class UI {
             resources: teamToState
                 ? {
                       food: teamToState.food,
+                      foodCapacity: teamToState.foodCapacty,
                       housing: teamToState.housing,
                   }
                 : null,

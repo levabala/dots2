@@ -27,6 +27,7 @@ export type BuildingHouse = BuildingBase & {
 export type BuildingFarm = BuildingBase & {
     kind: "farm";
     foodPerSecond: number;
+    foodCapacity: number;
 }
 
 export type Building = BuildingBarracks | BuildingHouse | BuildingFarm;
@@ -80,6 +81,21 @@ export class BuildingsController {
         }
 
         count -= team.dotsCount;
+
+        return count;
+    }
+
+    countFoodCapacity(team: Team) {
+        let count = 0;
+        for (const building of this.buildings) {
+            if (building.team !== team) {
+                continue;
+            }
+
+            if (building.kind === "farm") {
+                count += building.foodCapacity;
+            }
+        }
 
         return count;
     }

@@ -140,9 +140,6 @@ export class Game {
         this.resourcesController.initTeamResourcesState(team1);
         this.resourcesController.initTeamResourcesState(team2);
 
-        this.resourcesController.changeFood(team1, 1000);
-        this.resourcesController.changeFood(team2, 1000);
-
         times(100, () => this.dotsController.addDotRandom(team1));
         times(100, () => this.dotsController.addDotRandom(team2));
 
@@ -195,6 +192,7 @@ export class Game {
             ),
             health: 100,
             foodPerSecond: 5,
+            foodCapacity: 100,
         });
 
         this.buildings.addBuilding({
@@ -304,6 +302,10 @@ export class Game {
             this.resourcesController.setHousing(
                 team,
                 this.buildings.countHousing(team),
+            );
+            this.resourcesController.setFoodCapacity(
+                team,
+                this.buildings.countFoodCapacity(team),
             );
         }
 
