@@ -5,6 +5,10 @@ import { createPolygonOffset } from "../shapes";
 import { DotsController } from "./DotsController";
 import { ProjectilesController } from "./ProjectilesController";
 import { SquadsController } from "./SquadsController";
+import {
+    ResourcesController,
+    type ResourcesState,
+} from "./ResourcesController";
 
 export type Team = {
     index: number;
@@ -72,13 +76,18 @@ export enum GameEventTickName {
     dotsAdded = "dots-added",
     dotsRemoved = "dots-removed",
     dotsMoved = "dots-moved",
+    resourcesChanged = "resources-changed",
 }
 
 export type GameEventTick =
     | { name: GameEventTickName.squadsRemoved; payload: { squads: Squad[] } }
     | { name: GameEventTickName.dotsAdded; payload: { dots: Dot[] } }
     | { name: GameEventTickName.dotsRemoved; payload: { dots: Dot[] } }
-    | { name: GameEventTickName.dotsMoved; payload: { dots: Dot[] } };
+    | { name: GameEventTickName.dotsMoved; payload: { dots: Dot[] } }
+    | {
+          name: GameEventTickName.resourcesChanged;
+          payload: null;
+      };
 
 export type GameEventFromName<Name extends GameEventTick["name"]> = Extract<
     GameEventTick,
@@ -95,6 +104,7 @@ export class Game {
     squadsController: SquadsController;
     teams = new Set<Team>();
     buildings: BuildingsController;
+    resourcesController: ResourcesController;
 
     eventListeners: {
         [key in GameEventTick["name"]]: Set<GameEventListener<key>>;
@@ -103,6 +113,7 @@ export class Game {
         [GameEventTickName.dotsAdded]: new Set(),
         [GameEventTickName.dotsRemoved]: new Set(),
         [GameEventTickName.dotsMoved]: new Set(),
+        [GameEventTickName.resourcesChanged]: new Set(),
     };
 
     constructor(
@@ -115,6 +126,7 @@ export class Game {
         );
         this.squadsController = new SquadsController(this.dotsController);
         this.buildings = new BuildingsController();
+        this.resourcesController = new ResourcesController({ food: 1000 });
     }
 
     init() {
@@ -142,6 +154,7 @@ export class Game {
             spawnQueue: times(50, () =>
                 this.dotsController.generateDotRandom(),
             ),
+            isSpawning: false,
         });
 
         this.buildings.addBuilding({
@@ -162,6 +175,7 @@ export class Game {
             spawnQueue: times(50, () =>
                 this.dotsController.generateDotRandom(),
             ),
+            isSpawning: false,
         });
     }
 
@@ -239,9 +253,16 @@ export class Game {
         }
 
         this.projectilesController.tick(timeDelta);
-        const buildingsProduction = this.buildings.tick(timeDelta);
+        const effectsBuildings = this.buildings.tick(timeDelta, {
+            availableFood: this.resourcesController.food,
+        });
 
-        for (const dotSpawned of buildingsProduction.dots) {
+        this.resourcesController.changeFood(
+            effectsBuildings.foodProduced - effectsBuildings.foodConsumed,
+        );
+        this.emitEvent(GameEventTickName.resourcesChanged, null);
+
+        for (const dotSpawned of effectsBuildings.dotsSpawned) {
             this.dotsController.addDot(this.dotsController.initDot(dotSpawned));
         }
 

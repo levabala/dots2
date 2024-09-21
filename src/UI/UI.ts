@@ -102,6 +102,10 @@ export class UI {
             this.renderCommandPanel(),
         );
 
+        this.game.addEventListener(GameEventTickName.resourcesChanged, () =>
+            this.renderCommandPanel(),
+        );
+
         this.game.addEventListener(
             GameEventTickName.squadsRemoved,
             ({ squads }) => {
@@ -282,6 +286,7 @@ export class UI {
                     ?.team ||
                 null,
             squads: this.squadFramesSelected.map((sf) => sf.squad),
+            resources: { food: this.game.resourcesController.food },
         };
     }
 

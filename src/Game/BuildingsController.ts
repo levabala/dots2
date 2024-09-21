@@ -1,3 +1,4 @@
+import { DOT_FOOD_COST } from "../consts";
 import { randomPointInPolygon, type Polygon } from "../utils";
 import type { Dot, DotTemplate, Team } from "./Game";
 
@@ -15,6 +16,7 @@ export type BuildingBarracks = BuildingBase & {
     spawnDuration: number;
     spawnTimeLeft: number;
     spawnQueue: DotTemplate[];
+    isSpawning: boolean;
 };
 
 export type BuildingHouse = BuildingBase & {
@@ -26,9 +28,14 @@ export type Building = BuildingBarracks | BuildingHouse;
 
 export type DotSpawned = DotTemplate & Pick<Dot, "position" | "team">;
 
-export type BuildingsProduction = {
-    dots: DotSpawned[];
-    food: number;
+export type BuildingsControllerTickEffects = {
+    dotsSpawned: DotSpawned[];
+    foodProduced: number;
+    foodConsumed: number;
+};
+
+export type BuildingsControllerArgs = {
+    availableFood: number;
 };
 
 export class BuildingsController {
@@ -44,19 +51,37 @@ export class BuildingsController {
         this.buildings.delete(building);
     }
 
-    tick(timeDelta: number): BuildingsProduction {
-        const production: BuildingsProduction = {
-            dots: [],
-            food: 0,
+    tick(
+        timeDelta: number,
+        args: BuildingsControllerArgs,
+    ): BuildingsControllerTickEffects {
+        const effects: BuildingsControllerTickEffects = {
+            dotsSpawned: [],
+            foodProduced: 0,
+            foodConsumed: 0,
+        };
+
+        const getFoodAvailable = () => {
+            return args.availableFood + effects.foodProduced - effects.foodConsumed;
         };
 
         const tickBarracks = (building: BuildingBarracks) => {
-            if (!building.team) {
+            if (!building.team || !building.spawnQueue.length) {
                 return;
             }
 
-            if (!building.spawnQueue.length) {
-                return;
+            if (!building.isSpawning) {
+                if (!building.spawnQueue.length) {
+                    return;
+                }
+
+                if (getFoodAvailable() < DOT_FOOD_COST) {
+                    return;
+                }
+
+                effects.foodConsumed += DOT_FOOD_COST;
+                building.isSpawning = true;
+                building.spawnTimeLeft = building.spawnDuration;
             }
 
             if (building.spawnTimeLeft > 0) {
@@ -66,7 +91,6 @@ export class BuildingsController {
                 );
                 return;
             }
-
             const dotTemplate = building.spawnQueue.shift();
 
             if (dotTemplate === undefined) {
@@ -79,9 +103,9 @@ export class BuildingsController {
                 team: building.team,
             };
 
-            production.dots.push(dot);
+            effects.dotsSpawned.push(dot);
 
-            building.spawnTimeLeft = building.spawnDuration;
+            building.isSpawning = false;
         };
 
         for (const building of this.buildings) {
@@ -92,6 +116,6 @@ export class BuildingsController {
             }
         }
 
-        return production;
+        return effects;
     }
 }

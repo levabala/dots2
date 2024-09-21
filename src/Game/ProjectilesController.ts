@@ -1,7 +1,7 @@
 import { distanceBetween, getIntersectionAny, type Point } from "../utils";
 import type { Dot, Projectile } from "./Game";
 
-export type DotsControllerTickEffects = {
+export type ProjectilesControllerTickEffects = {
     dotsKilled: Dot[];
 };
 
@@ -38,8 +38,8 @@ export class ProjectilesController {
         return { isKilled: dot.health <= 0 };
     }
 
-    tick(timeDelta: number): DotsControllerTickEffects {
-        const effects: DotsControllerTickEffects = {
+    tick(timeDelta: number): ProjectilesControllerTickEffects {
+        const effects: ProjectilesControllerTickEffects = {
             dotsKilled: [],
         };
 

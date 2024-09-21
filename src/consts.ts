@@ -10,3 +10,4 @@ export const DEFAULT_PROJECTILE = {
 };
 export const BETWEEN_SQUADS_GAP = 30;
 export const DOTS_GRID_SIZE = Math.max(DOT_WIDTH, DOT_HEIGHT) * 5;
+export const DOT_FOOD_COST = 10;

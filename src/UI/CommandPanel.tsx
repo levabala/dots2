@@ -1,9 +1,11 @@
 import { createRoot, type Root } from "react-dom/client";
 import type { Squad, Team } from "../Game/Game";
+import type { ResourcesState } from "../Game/ResourcesController";
 
 export type CommandPanelState = {
     team: Team | null;
     squads: Squad[];
+    resources: ResourcesState;
 };
 
 export type CommandPanelCallbacks = {
@@ -32,7 +34,7 @@ enum Presence {
 const CommandPanel: React.FC<{
     state: CommandPanelState;
     callbacks: CommandPanelCallbacks;
-}> = ({ state: { team, squads }, callbacks }) => {
+}> = ({ state: { team, squads, resources }, callbacks }) => {
     let allowAttack: Presence;
     if (squads.every((squad) => !squad.allowAttack)) {
         allowAttack = Presence.None;
@@ -60,6 +62,7 @@ const CommandPanel: React.FC<{
             }}
         >
             <h3>Command Panel</h3>
+            <div>{JSON.stringify(resources, undefined, 2)}</div>
             <div>{JSON.stringify(team, undefined, 2)}</div>
             <div>
                 {JSON.stringify(
