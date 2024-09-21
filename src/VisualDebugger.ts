@@ -1,4 +1,4 @@
-import type { Game, Dot } from "./Game/Game";
+import { type Game, type Dot, GameEventTickName } from "./Game/Game";
 
 export type DotWithNode = Dot & { node: HTMLDivElement };
 
@@ -23,22 +23,26 @@ export class VisualDebugger {
 
         anchorElement.appendChild(container);
 
-        game.addEventListener("dot-added", ({ dot }) => {
-            const node = document.createElement("div");
+        game.addEventListener(GameEventTickName.dotsAdded, ({ dots }) => {
+            for (const dot of dots) {
+                const node = document.createElement("div");
 
-            node.style.position = "absolute";
-            node.style.width = `${dot.width}px`;
-            node.style.height = `${dot.height}px`;
+                node.style.position = "absolute";
+                node.style.width = `${dot.width}px`;
+                node.style.height = `${dot.height}px`;
 
-            (dot as DotWithNode).node = node;
+                (dot as DotWithNode).node = node;
 
-            this.updateDotNode(dot as DotWithNode);
+                this.updateDotNode(dot as DotWithNode);
 
-            container.appendChild(node);
+                container.appendChild(node);
+            }
         });
 
-        game.addEventListener("dot-moved", ({ dot }) => {
-            this.dotsToUpdate.add(dot);
+        game.addEventListener(GameEventTickName.dotsMoved, ({ dots }) => {
+            for (const dot of dots) {
+                this.dotsToUpdate.add(dot);
+            }
         });
 
         setInterval(() => {

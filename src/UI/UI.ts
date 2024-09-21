@@ -14,7 +14,7 @@ import {
     DOT_WIDTH,
     BETWEEN_SQUADS_GAP,
 } from "../consts";
-import type { Dot, Game, Slot, Squad, Team } from "../Game/Game";
+import { GameEventTickName, type Dot, type Game, type Slot, type Squad, type Team } from "../Game/Game";
 import {
     CommandPanelUI,
     type CommandPanelCallbacks,
@@ -98,12 +98,17 @@ export class UI {
     }
 
     initGameEventListeners() {
-        this.game.addEventListener("dot-removed", () =>
+        this.game.addEventListener(GameEventTickName.dotsRemoved, () =>
             this.renderCommandPanel(),
         );
 
-        this.game.addEventListener("squad-removed", ({ squad }) =>
-            this.removeSquadFrameBySquad(squad),
+        this.game.addEventListener(
+            GameEventTickName.squadsRemoved,
+            ({ squads }) => {
+                for (const squad of squads) {
+                    this.removeSquadFrameBySquad(squad);
+                }
+            },
         );
     }
 
@@ -220,7 +225,7 @@ export class UI {
     }
 
     createTestSquads() {
-        for (const dot of this.game.dots) {
+        for (const dot of this.game.dotsController.dots) {
             if (dot.team.name === "red") {
                 this.dotsSelected.add(dot);
             }
@@ -237,7 +242,7 @@ export class UI {
         this.dotsAllUnselect();
         this.squadFramesSelected.splice(0, this.squadFramesSelected.length);
 
-        for (const dot of this.game.dots) {
+        for (const dot of this.game.dotsController.dots) {
             if (dot.team.name === "blue") {
                 this.dotsSelected.add(dot);
             }
@@ -257,9 +262,9 @@ export class UI {
     }
 
     dotSelectAllWithoutSquad() {
-        this.dotsSelected = new Set(this.game.dots);
+        this.dotsSelected = new Set(this.game.dotsController.dots);
 
-        for (const squad of this.game.squads) {
+        for (const squad of this.game.squadsController.squads) {
             for (const slot of squad.slots) {
                 if (slot.dot) {
                     this.dotsSelected.delete(slot.dot);
@@ -469,7 +474,7 @@ export class UI {
 
     getDotByPosition(x: number, y: number): Dot | null {
         const point = { x, y };
-        for (const dot of this.game.dots) {
+        for (const dot of this.game.dotsController.dots) {
             if (isPointInRect(point, dot.hitBox)) {
                 return dot;
             }
@@ -552,7 +557,7 @@ export class UI {
 
         const team = dots[0].team;
 
-        const squad = this.game.createSquad(slots, team);
+        const squad = this.game.squadsController.createSquad(slots, team);
 
         const squadFrame = { index: this.squadFrames.length, squad, frame };
         this.squadFrames.push(squadFrame);
@@ -568,7 +573,8 @@ export class UI {
         }
 
         for (const squadFrame of this.squadFramesSelected) {
-            this.game.removeSquad(squadFrame.squad);
+            this.game.squadsController.removeSquad(squadFrame.squad);
+            this.removeSquadFrameBySquad(squadFrame.squad);
         }
 
         this.deselectSquadFramesAll();
@@ -580,7 +586,7 @@ export class UI {
                 return;
             }
 
-            this.game.assignDotToSlot(dots[index], slot);
+            this.game.squadsController.assignDotToSlot(dots[index], slot);
         }
     }
 
@@ -652,7 +658,10 @@ export class UI {
                 });
 
                 if (closestSlot !== slot) {
-                    this.game.assignDotToSlot(slot.dot, closestSlot);
+                    this.game.squadsController.assignDotToSlot(
+                        slot.dot,
+                        closestSlot,
+                    );
                     slot.dot = null;
                 }
             }
@@ -833,10 +842,10 @@ export class UI {
             return;
         }
 
-        for (const dot of this.game.dots) {
+        for (const dot of this.game.dotsController.dots) {
             if (
                 isPointInRect(dot.position, this.selection) &&
-                !this.game.isInSquad(dot)
+                !this.game.squadsController.isInSquad(dot)
             ) {
                 this.dotSelect(dot);
             }

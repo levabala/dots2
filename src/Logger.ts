@@ -10,15 +10,7 @@ export class Logger {
     logArray: Log[] = [];
     watchTargets: object[] = [];
 
-    constructor(readonly game: Game) {
-        this.game.addEventListener("dot-action-verbose", ({ dot, name, details }) => {
-            if (!this.watchTargets.includes(dot)) {
-                return;
-            }
-
-            this.log({ name, details: { dot, ...details } });
-        });
-    }
+    constructor(readonly game: Game) {}
 
     log(data: Omit<Log, "timestamp">) {
         this.logArray.push({

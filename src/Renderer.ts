@@ -36,25 +36,25 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.clearRect(0, 0, this.width, this.height);
         this.adjustViewport();
 
-        this.renderDotsGrid(this.game.dotsGrid);
+        this.renderDotsGrid(this.game.dotsController.dotsGrid);
 
         for (const building of this.game.buildings.buildings) {
             this.renderBuilding(building);
         }
 
-        for (const dot of this.game.dots) {
+        for (const dot of this.game.dotsController.dots) {
             if (dot.attackTargetDot && dot.attackCooldownLeft === 0) {
                 this.renderDotAttackTargetArrow(dot, dot.attackTargetDot);
             }
         }
 
-        for (const squad of this.game.squads) {
+        for (const squad of this.game.squadsController.squads) {
             for (const slot of squad.slots) {
                 this.renderSlot(slot);
             }
         }
 
-        for (const dot of this.game.dots) {
+        for (const dot of this.game.dotsController.dots) {
             if (dot.attackCooldownLeft === 0) {
                 this.renderDotWeaponRaised(dot);
             }
@@ -67,7 +67,7 @@ export class RendererCanvasSimple implements Renderer {
             this.renderSquadFrames(squadFrame, isSelected);
         }
 
-        for (const projectile of this.game.projectiles) {
+        for (const projectile of this.game.projectilesController.projectiles) {
             this.renderProjectile(projectile);
         }
 
