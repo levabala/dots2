@@ -2,10 +2,8 @@ import { DOT_FOOD_COST } from "../consts";
 import { randomPointInPolygon, type Polygon } from "../utils";
 import type { Dot, DotTemplate, Team } from "./Game";
 
-export type BuildingKind = "house" | "barracks" | "farm";
-
 export type BuildingBase = {
-    kind: BuildingKind;
+    kind: string;
     frame: Polygon;
     health: number;
     team: Team;
@@ -28,9 +26,20 @@ export type BuildingFarm = BuildingBase & {
     kind: "farm";
     foodPerSecond: number;
     foodCapacity: number;
-}
+};
 
-export type Building = BuildingBarracks | BuildingHouse | BuildingFarm;
+export type BuildingGranary = BuildingBase & {
+    kind: "granary";
+    foodCapacity: number;
+};
+
+export type Building =
+    | BuildingBarracks
+    | BuildingHouse
+    | BuildingFarm
+    | BuildingGranary;
+
+export type BuildingKind = Building["kind"];
 
 export type DotSpawned = DotTemplate & Pick<Dot, "position" | "team">;
 
@@ -92,7 +101,7 @@ export class BuildingsController {
                 continue;
             }
 
-            if (building.kind === "farm") {
+            if (building.kind === "farm" || building.kind === "granary") {
                 count += building.foodCapacity;
             }
         }
@@ -200,7 +209,7 @@ export class BuildingsController {
             const foodProduced = building.foodPerSecond * (timeDelta / 1000);
 
             getResourcesChange(building.team).foodProduced += foodProduced;
-        }
+        };
 
         for (const building of this.buildings) {
             switch (building.kind) {
