@@ -7,7 +7,6 @@ import {
     DOTS_GRID_SIZE,
 } from "../consts";
 import { DotsGrid } from "../DotsGrid";
-import type { Dot, Projectile, Slot, Team } from "./Game";
 import {
     distanceBetween,
     getIntersectionAny,
@@ -15,6 +14,37 @@ import {
     type Rect,
     rotatePoint,
 } from "../utils";
+import type { Slot, Squad } from "./SquadsController";
+import type { Projectile } from "./ProjectilesController";
+import type { Team } from "./TeamController";
+
+
+export type DotTemplate = {
+    width: number;
+    height: number;
+    speed: number;
+    attackRange: number;
+    attackCooldown: number;
+    aimingDuration: number;
+    hitBox: Rect;
+    health: number;
+    angle: number;
+};
+
+export type Dot = DotTemplate & {
+    position: Point;
+    team: Team;
+    removed: boolean;
+    squad: Squad | null;
+    slot: Slot | null;
+    gridSquareIndexes: number[];
+    attackCooldownLeft: number;
+    aimingTimeLeft: number;
+    aimingTarget: Dot | null;
+    attackTargetedByDots: Set<Dot>;
+    attackTargetDot: Dot | null;
+    path: Point[];
+};
 
 export type ProjectileToShoot = {
     fromDot: Dot;

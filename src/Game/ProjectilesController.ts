@@ -1,5 +1,15 @@
 import { distanceBetween, getIntersectionAny, type Point } from "../utils";
-import type { Dot, Projectile } from "./Game";
+import type { Dot } from "./DotsController";
+
+export type Projectile = {
+    position: Point;
+    angle: number;
+    speed: number;
+    damage: number;
+    flyDistanceLeft: number;
+    fromDot: Dot;
+    radius: number;
+};
 
 export type ProjectilesControllerTickEffects = {
     dotsKilled: Dot[];

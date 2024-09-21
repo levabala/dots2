@@ -1,4 +1,8 @@
-import type { Team } from "./Game";
+export type Team = {
+    index: number;
+    name: string;
+    dotsCount: number;
+};
 
 export class TeamController {
     teams = new Set<Team>();

@@ -1,4 +1,5 @@
-import { type Game, type Dot, GameEventTickName } from "./Game/Game";
+import { type Game, GameEventTickName } from "./Game";
+import type { Dot } from "./Game/DotsController";
 
 export type DotWithNode = Dot & { node: HTMLDivElement };
 

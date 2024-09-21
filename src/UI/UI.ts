@@ -14,14 +14,7 @@ import {
     DOT_WIDTH,
     BETWEEN_SQUADS_GAP,
 } from "../consts";
-import {
-    GameEventTickName,
-    type Dot,
-    type Game,
-    type Slot,
-    type Squad,
-    type Team,
-} from "../Game/Game";
+import { GameEventTickName, type Game } from "../Game/Game";
 import {
     CommandPanelUI,
     type CommandPanelCallbacks,
@@ -29,6 +22,9 @@ import {
 } from "./CommandPanel";
 import { isNonNull } from "remeda";
 import { ViewPort } from "./ViewPort";
+import type { Dot } from "../Game/DotsController";
+import type { Squad, Slot } from "../Game/SquadsController";
+import type { Team } from "../Game/TeamController";
 
 export type SquadFrame = { index: number; squad: Squad; frame: Rect };
 
@@ -305,7 +301,7 @@ export class UI {
             resources: teamToState
                 ? {
                       food: teamToState.food,
-                      foodCapacity: teamToState.foodCapacty,
+                      foodCapacity: teamToState.foodCapacity,
                       housing: teamToState.housing,
                   }
                 : null,

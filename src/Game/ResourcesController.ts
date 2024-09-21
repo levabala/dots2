@@ -1,4 +1,4 @@
-import type { Team } from "./Game";
+import type { Team } from "./TeamController";
 
 export type ResourcesState = {
     food: number;

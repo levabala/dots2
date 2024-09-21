@@ -1,6 +1,7 @@
 import { createRoot, type Root } from "react-dom/client";
-import type { Squad, Team } from "../Game/Game";
 import type { ResourcesState } from "../Game/ResourcesController";
+import type { Squad } from "../Game/SquadsController";
+import type { Team } from "../Game/TeamController";
 
 export type CommandPanelState = {
     team: Team | null;
@@ -62,11 +63,19 @@ const CommandPanel: React.FC<{
             }}
         >
             <h3>Command Panel</h3>
-            <div>{JSON.stringify(resources ? {
-                food: Math.ceil(resources.food),
-                foodCapacity: resources.foodCapacity,
-                housing: resources.housing,
-            } : null, undefined, 2)}</div>
+            <div>
+                {JSON.stringify(
+                    resources
+                        ? {
+                              food: Math.ceil(resources.food),
+                              foodCapacity: resources.foodCapacity,
+                              housing: resources.housing,
+                          }
+                        : null,
+                    undefined,
+                    2,
+                )}
+            </div>
             <div>{JSON.stringify(team, undefined, 2)}</div>
             <div>
                 {JSON.stringify(

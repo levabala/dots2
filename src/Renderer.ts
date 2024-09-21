@@ -1,7 +1,10 @@
 import { DEFAULT_PROJECTILE } from "./consts";
 import type { DotsGrid } from "./DotsGrid";
-import type { BuildingBase, BuildingsController } from "./Game/BuildingsController";
-import type { Game, Dot, Projectile, Slot } from "./Game/Game";
+import type { Game } from "./Game";
+import type { BuildingBase } from "./Game/BuildingsController";
+import type { Dot } from "./Game/DotsController";
+import type { Projectile } from "./Game/ProjectilesController";
+import type { Slot } from "./Game/SquadsController";
 import { getPolygonCenter } from "./shapes";
 import type { SquadFrame, UI } from "./UI/UI";
 import {
@@ -171,7 +174,7 @@ export class RendererCanvasSimple implements Renderer {
         });
         this.ctx.fillStyle = this.getTeamColor(building.team?.index ?? -1);
         this.ctx.fillText(building.kind, center.x, center.y);
-        this.ctx.strokeStyle = 'black';
+        this.ctx.strokeStyle = "black";
         this.ctx.lineWidth = 0.5;
         this.ctx.strokeText(building.kind, center.x, center.y);
     }

@@ -1,74 +1,12 @@
-import { type Point, type Rect } from "../utils";
+import { type Point } from "../utils";
 import { times } from "remeda";
 import { BuildingsController } from "./BuildingsController";
 import { createPolygonOffset } from "../shapes";
-import { DotsController } from "./DotsController";
+import { DotsController, type Dot } from "./DotsController";
 import { ProjectilesController } from "./ProjectilesController";
-import { SquadsController } from "./SquadsController";
+import { SquadsController, type Squad } from "./SquadsController";
 import { ResourcesController } from "./ResourcesController";
 import { TeamController } from "./TeamController";
-
-export type Team = {
-    index: number;
-    name: string;
-    dotsCount: number;
-};
-
-export type DotTemplate = {
-    width: number;
-    height: number;
-    speed: number;
-    attackRange: number;
-    attackCooldown: number;
-    aimingDuration: number;
-    hitBox: Rect;
-    health: number;
-    angle: number;
-};
-
-export type Dot = DotTemplate & {
-    position: Point;
-    team: Team;
-    removed: boolean;
-    squad: Squad | null;
-    slot: Slot | null;
-    gridSquareIndexes: number[];
-    attackCooldownLeft: number;
-    aimingTimeLeft: number;
-    aimingTarget: Dot | null;
-    attackTargetedByDots: Set<Dot>;
-    attackTargetDot: Dot | null;
-    path: Point[];
-};
-
-export type Projectile = {
-    position: Point;
-    angle: number;
-    speed: number;
-    damage: number;
-    flyDistanceLeft: number;
-    fromDot: Dot;
-    radius: number;
-};
-
-export type Slot = {
-    position: Point;
-    angle: number;
-    dot: Dot | null;
-};
-
-export type Squad = {
-    key: string;
-    index: number;
-    slots: Slot[];
-    attackTargetSquads: Set<Squad>;
-    attackTargetedBySquads: Set<Squad>;
-    allowAttack: boolean;
-    allowShootOnce: boolean;
-    dotsToShootOnce: Set<Dot>;
-    team: Team;
-    removed: boolean;
-};
 
 export enum GameEventTickName {
     squadsRemoved = "squads-removed",

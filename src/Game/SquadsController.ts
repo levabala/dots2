@@ -1,6 +1,26 @@
 import { SQUAD_NAMES } from "../assets/squadNames";
-import { arePointsEqual, distanceBetween } from "../utils";
-import type { Squad, Dot, Slot, Team } from "./Game";
+import { arePointsEqual, distanceBetween, type Point } from "../utils";
+import type { Dot } from "./DotsController";
+import type { Team } from "./TeamController";
+
+export type Squad = {
+    key: string;
+    index: number;
+    slots: Slot[];
+    attackTargetSquads: Set<Squad>;
+    attackTargetedBySquads: Set<Squad>;
+    allowAttack: boolean;
+    allowShootOnce: boolean;
+    dotsToShootOnce: Set<Dot>;
+    team: Team;
+    removed: boolean;
+};
+
+export type Slot = {
+    position: Point;
+    angle: number;
+    dot: Dot | null;
+};
 
 export type SquadsControllerTickEffects = {
     squadsRemoved: Squad[];
