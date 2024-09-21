@@ -1,6 +1,5 @@
 import { SQUAD_NAMES } from "../assets/squadNames";
 import { arePointsEqual, distanceBetween } from "../utils";
-import type { DotsController } from "./DotsController";
 import type { Squad, Dot, Slot, Team } from "./Game";
 
 export type SquadsControllerTickEffects = {
@@ -10,7 +9,13 @@ export type SquadsControllerTickEffects = {
 export class SquadsController {
     squads: Squad[] = [];
 
-    constructor(readonly dotsController: DotsController) {}
+    constructor(
+        // TODO: remove this dependency
+        readonly checkHasShootIntersectionWithOwnTeam: (
+            dot: Dot,
+            target: Dot,
+        ) => boolean,
+    ) {}
 
     fillEmptyFrontSlots(squad: Squad) {
         let headIndex = 0;
@@ -95,8 +100,6 @@ export class SquadsController {
         for (const squadAttacker of squad.attackTargetedBySquads) {
             squadAttacker.attackTargetSquads.delete(squad);
         }
-
-        // this.emitEvent("squad-removed", { squad });
     }
 
     isInSquad(dot: Dot) {
@@ -163,7 +166,7 @@ export class SquadsController {
 
                 if (
                     distance > dot.attackRange ||
-                    this.dotsController.checkHasShootIntersectionWithOwnTeam(
+                    this.checkHasShootIntersectionWithOwnTeam(
                         dot,
                         dot.attackTargetDot,
                     )
@@ -191,7 +194,7 @@ export class SquadsController {
                     }
 
                     const hasIntersection =
-                        this.dotsController.checkHasShootIntersectionWithOwnTeam(
+                        this.checkHasShootIntersectionWithOwnTeam(
                             dot,
                             slot.dot,
                         );
@@ -271,14 +274,6 @@ export class SquadsController {
             }
 
             this.fillEmptyFrontSlots(squad);
-
-            for (const slot of squad.slots) {
-                if (!slot.dot) {
-                    continue;
-                }
-
-                this.dotsController.syncDotAndSlotAngle(slot.dot, slot);
-            }
         }
 
         for (const squad of this.squads) {

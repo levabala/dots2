@@ -5,10 +5,7 @@ import { createPolygonOffset } from "../shapes";
 import { DotsController } from "./DotsController";
 import { ProjectilesController } from "./ProjectilesController";
 import { SquadsController } from "./SquadsController";
-import {
-    ResourcesController,
-    type ResourcesState,
-} from "./ResourcesController";
+import { ResourcesController } from "./ResourcesController";
 
 export type Team = {
     index: number;
@@ -124,7 +121,11 @@ export class Game {
         this.projectilesController = new ProjectilesController(
             this.dotsController.dots,
         );
-        this.squadsController = new SquadsController(this.dotsController);
+        this.squadsController = new SquadsController(
+            this.dotsController.checkHasShootIntersectionWithOwnTeam.bind(
+                this.dotsController,
+            ),
+        );
         this.buildings = new BuildingsController();
         this.resourcesController = new ResourcesController({ food: 1000 });
     }

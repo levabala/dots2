@@ -388,6 +388,14 @@ export class DotsController {
             removeIfDead(dot);
         }
 
+        for (const dot of this.dots) {
+            if (!dot.slot) {
+                continue;
+            }
+
+            this.syncDotAndSlotAngle(dot, dot.slot);
+        }
+
         return effects;
     }
 }
