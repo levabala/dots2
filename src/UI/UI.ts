@@ -441,6 +441,13 @@ export class UI {
                 this.cancelAttackSelected();
                 break;
             }
+
+            case "KeyA": {
+                for (const squadFrame of this.squadFramesSelected) {
+                    squadFrame.squad.allowAttack = !squadFrame.squad.allowAttack;
+                }
+                break;
+            }
         }
     }
 
