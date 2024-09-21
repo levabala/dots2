@@ -14,7 +14,14 @@ import {
     DOT_WIDTH,
     BETWEEN_SQUADS_GAP,
 } from "../consts";
-import { GameEventTickName, type Dot, type Game, type Slot, type Squad, type Team } from "../Game/Game";
+import {
+    GameEventTickName,
+    type Dot,
+    type Game,
+    type Slot,
+    type Squad,
+    type Team,
+} from "../Game/Game";
 import {
     CommandPanelUI,
     type CommandPanelCallbacks,
@@ -278,15 +285,25 @@ export class UI {
     }
 
     createCommandPanelState(): CommandPanelState {
+        const team =
+            (this.squadFramesSelected[0]?.squad as Squad | undefined)?.team ||
+            (this.dotsSelected.values().next()?.value as Dot | undefined)
+                ?.team ||
+            null;
+
+        const teamToState = team
+            ? this.game.resourcesController.teamToState.get(team)
+            : null;
+
         return {
-            team:
-                (this.squadFramesSelected[0]?.squad as Squad | undefined)
-                    ?.team ||
-                (this.dotsSelected.values().next()?.value as Dot | undefined)
-                    ?.team ||
-                null,
+            team,
             squads: this.squadFramesSelected.map((sf) => sf.squad),
-            resources: { food: this.game.resourcesController.food },
+            resources: teamToState
+                ? {
+                      food: teamToState.food,
+                      housing: teamToState.housing,
+                  }
+                : null,
         };
     }
 
@@ -444,7 +461,8 @@ export class UI {
 
             case "KeyA": {
                 for (const squadFrame of this.squadFramesSelected) {
-                    squadFrame.squad.allowAttack = !squadFrame.squad.allowAttack;
+                    squadFrame.squad.allowAttack =
+                        !squadFrame.squad.allowAttack;
                 }
                 break;
             }

@@ -30,12 +30,23 @@ export type DotSpawned = DotTemplate & Pick<Dot, "position" | "team">;
 
 export type BuildingsControllerTickEffects = {
     dotsSpawned: DotSpawned[];
-    foodProduced: number;
-    foodConsumed: number;
+    resourcesChangeByMap: Map<
+        Team,
+        {
+            foodProduced: number;
+            foodConsumed: number;
+        }
+    >;
 };
 
 export type BuildingsControllerArgs = {
-    availableFood: number;
+    teamToResources: Map<
+        Team,
+        {
+            food: number;
+            housing: number;
+        }
+    >;
 };
 
 export class BuildingsController {
@@ -51,18 +62,70 @@ export class BuildingsController {
         this.buildings.delete(building);
     }
 
+    countHousing(team: Team) {
+        let count = 0;
+        for (const building of this.buildings) {
+            if (building.team !== team) {
+                continue;
+            }
+
+            if (building.kind === "house") {
+                count += building.capacity;
+            }
+        }
+
+        count -= team.dotsCount;
+
+        return count;
+    }
+
     tick(
         timeDelta: number,
         args: BuildingsControllerArgs,
     ): BuildingsControllerTickEffects {
-        const effects: BuildingsControllerTickEffects = {
-            dotsSpawned: [],
+        const effectsInitial = {
             foodProduced: 0,
             foodConsumed: 0,
         };
 
-        const getFoodAvailable = () => {
-            return args.availableFood + effects.foodProduced - effects.foodConsumed;
+        const effects: BuildingsControllerTickEffects = {
+            dotsSpawned: [],
+            resourcesChangeByMap: new Map(),
+        };
+
+        for (const team of args.teamToResources.keys()) {
+            effects.resourcesChangeByMap.set(team, { ...effectsInitial });
+        }
+
+        const getResources = (team: Team) => {
+            const resources = args.teamToResources.get(team);
+
+            if (resources === undefined) {
+                window.panic("team must have resources", {
+                    team,
+                });
+            }
+
+            return resources;
+        };
+
+        const getResourcesChange = (team: Team) => {
+            const resourcesChangeBy = effects.resourcesChangeByMap.get(team);
+
+            if (resourcesChangeBy === undefined) {
+                window.panic("team must have effects", {
+                    team,
+                });
+            }
+
+            return resourcesChangeBy;
+        };
+
+        const getFoodAvailable = (team: Team) => {
+            const resources = getResources(team);
+            const effects = getResourcesChange(team);
+
+            return resources.food + effects.foodProduced - effects.foodConsumed;
         };
 
         const tickBarracks = (building: BuildingBarracks) => {
@@ -75,11 +138,15 @@ export class BuildingsController {
                     return;
                 }
 
-                if (getFoodAvailable() < DOT_FOOD_COST) {
+                if (getFoodAvailable(building.team) < DOT_FOOD_COST) {
                     return;
                 }
 
-                effects.foodConsumed += DOT_FOOD_COST;
+                if (getResources(building.team).housing < 1) {
+                    return;
+                }
+
+                getResourcesChange(building.team).foodConsumed += DOT_FOOD_COST;
                 building.isSpawning = true;
                 building.spawnTimeLeft = building.spawnDuration;
             }

@@ -10,6 +10,7 @@ import { ResourcesController } from "./ResourcesController";
 export type Team = {
     index: number;
     name: string;
+    dotsCount: number;
 };
 
 export type DotTemplate = {
@@ -127,12 +128,15 @@ export class Game {
             ),
         );
         this.buildings = new BuildingsController();
-        this.resourcesController = new ResourcesController({ food: 1000 });
+        this.resourcesController = new ResourcesController();
     }
 
     init() {
         const team1 = this.createTeam({ name: "red" });
         const team2 = this.createTeam({ name: "blue" });
+
+        this.resourcesController.changeFood(team1, 1000);
+        this.resourcesController.changeFood(team2, 1000);
 
         times(100, () => this.dotsController.addDotRandom(team1));
         times(100, () => this.dotsController.addDotRandom(team2));
@@ -157,6 +161,21 @@ export class Game {
             ),
             isSpawning: false,
         });
+        this.buildings.addBuilding({
+            kind: "house",
+            team: team1,
+            frame: createPolygonOffset(
+                [
+                    { x: 0, y: 0 },
+                    { x: 50, y: 0 },
+                    { x: 50, y: 50 },
+                    { x: 0, y: 50 },
+                ],
+                { x: 900, y: 1000 },
+            ),
+            health: 100,
+            capacity: 110,
+        });
 
         this.buildings.addBuilding({
             kind: "barracks",
@@ -177,6 +196,21 @@ export class Game {
                 this.dotsController.generateDotRandom(),
             ),
             isSpawning: false,
+        });
+        this.buildings.addBuilding({
+            kind: "house",
+            team: team2,
+            frame: createPolygonOffset(
+                [
+                    { x: 0, y: 0 },
+                    { x: 50, y: 0 },
+                    { x: 50, y: 50 },
+                    { x: 0, y: 50 },
+                ],
+                { x: 1850, y: 1000 },
+            ),
+            health: 100,
+            capacity: 110,
         });
     }
 
@@ -230,9 +264,11 @@ export class Game {
         }
     }
 
-    createTeam(teamParams: Omit<Team, "index">): Team {
-        const team = { ...teamParams, index: this.teams.size };
+    createTeam(teamParams: Omit<Team, "index" | "dotsCount">): Team {
+        const team = { ...teamParams, dotsCount: 0, index: this.teams.size };
         this.teams.add(team);
+
+        this.resourcesController.initTeamResourcesState(team);
 
         return team;
     }
@@ -253,14 +289,28 @@ export class Game {
             );
         }
 
+        for (const team of this.teams) {
+            this.resourcesController.setHousing(
+                team,
+                this.buildings.countHousing(team),
+            );
+        }
+
         this.projectilesController.tick(timeDelta);
         const effectsBuildings = this.buildings.tick(timeDelta, {
-            availableFood: this.resourcesController.food,
+            teamToResources: new Map(this.resourcesController.teamToState),
         });
 
-        this.resourcesController.changeFood(
-            effectsBuildings.foodProduced - effectsBuildings.foodConsumed,
-        );
+        for (const [
+            team,
+            resourcesChange,
+        ] of effectsBuildings.resourcesChangeByMap) {
+            this.resourcesController.changeFood(
+                team,
+                resourcesChange.foodProduced - resourcesChange.foodConsumed,
+            );
+        }
+
         this.emitEvent(GameEventTickName.resourcesChanged, null);
 
         for (const dotSpawned of effectsBuildings.dotsSpawned) {

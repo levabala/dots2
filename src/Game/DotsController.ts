@@ -79,6 +79,8 @@ export class DotsController {
     addDot(dot: Dot) {
         this.dots.add(dot);
         this.dotsGrid.addDot(dot);
+
+        dot.team.dotsCount++;
     }
 
     removeDot(dot: Dot) {
@@ -94,6 +96,8 @@ export class DotsController {
         for (const targeter of dot.attackTargetedByDots) {
             targeter.attackTargetDot = null;
         }
+
+        dot.team.dotsCount--;
     }
 
     generateDotRandom(): Omit<Dot, "team"> {

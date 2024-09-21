@@ -5,7 +5,7 @@ import type { ResourcesState } from "../Game/ResourcesController";
 export type CommandPanelState = {
     team: Team | null;
     squads: Squad[];
-    resources: ResourcesState;
+    resources: ResourcesState | null;
 };
 
 export type CommandPanelCallbacks = {
