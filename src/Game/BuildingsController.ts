@@ -31,7 +31,7 @@ export type BuildingsProduction = {
     food: number;
 };
 
-export class Buildings {
+export class BuildingsController {
     buildings = new Set<Building>();
 
     constructor() {}
@@ -73,7 +73,8 @@ export class Buildings {
                 window.panic("spawned with empty queue");
             }
 
-            const dot: DotSpawned = { ...dotTemplate,
+            const dot: DotSpawned = {
+                ...dotTemplate,
                 position: randomPointInPolygon(building.frame),
                 team: building.team,
             };

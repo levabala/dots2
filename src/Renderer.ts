@@ -1,6 +1,6 @@
 import { DEFAULT_PROJECTILE } from "./consts";
 import type { DotsGrid } from "./DotsGrid";
-import type { BuildingBase, Buildings } from "./Game/Buildings";
+import type { BuildingBase, BuildingsController } from "./Game/BuildingsController";
 import type { Game, Dot, Projectile, Slot } from "./Game/Game";
 import { getPolygonCenter } from "./shapes";
 import type { SquadFrame, UI } from "./UI/UI";

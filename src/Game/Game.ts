@@ -16,7 +16,7 @@ import {
     type Rect,
 } from "../utils";
 import { randomInteger, times } from "remeda";
-import { Buildings } from "./Buildings";
+import { BuildingsController } from "./BuildingsController";
 import { createPolygonOffset } from "../shapes";
 
 export type Team = {
@@ -110,7 +110,7 @@ export class Game {
     dots = new Set<Dot>();
     squads: Squad[] = [];
     projectiles: Projectile[] = [];
-    buildings: Buildings;
+    buildings: BuildingsController;
 
     eventListeners: {
         [key in GameEvent["name"]]: Set<GameEventListener<key>>;
@@ -127,7 +127,7 @@ export class Game {
         readonly height: number,
     ) {
         this.dotsGrid = new DotsGrid(DOTS_GRID_SIZE, width, height);
-        this.buildings = new Buildings();
+        this.buildings = new BuildingsController();
     }
 
     init() {
