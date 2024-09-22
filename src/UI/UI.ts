@@ -8,7 +8,6 @@ import {
     rotateRect,
     sortRectPoints,
     type Point,
-    type Polygon,
     type Rect,
 } from "../utils";
 import {
@@ -62,7 +61,7 @@ export class UI {
 
     constructor(
         readonly element: HTMLElement,
-        readonly game: Game,
+        private readonly game: Game,
         readonly isRunningRef: { current: boolean },
         readonly start: () => void,
         readonly pause: () => void,
@@ -84,8 +83,6 @@ export class UI {
     init() {
         this.initUserEventListeners();
         this.initGameEventListeners();
-
-        this.createTestSquads();
 
         this.renderCommandPanel();
     }
@@ -285,41 +282,6 @@ export class UI {
 
         // Update the viewport offset using the translate method
         this.viewPort.translate(deltaOffsetX, deltaOffsetY);
-    }
-
-    createTestSquads() {
-        for (const dot of this.game.dotsController.dots) {
-            if (dot.team.name === "red") {
-                this.dotsSelected.add(dot);
-            }
-        }
-
-        this.createSquad();
-
-        this.startDestination({ x: 1500, y: 1100 });
-        this.adjustDestination({ x: 1500, y: 1600 });
-        this.commandMove();
-
-        this.cancelSelection();
-        this.clearDestination();
-        this.dotsAllUnselect();
-        this.squadFramesSelected.splice(0, this.squadFramesSelected.length);
-
-        for (const dot of this.game.dotsController.dots) {
-            if (dot.team.name === "blue") {
-                this.dotsSelected.add(dot);
-            }
-        }
-
-        this.createSquad();
-
-        this.startDestination({ x: 1600, y: 1600 });
-        this.adjustDestination({ x: 1600, y: 1100 });
-        this.commandMove();
-
-        this.cancelSelection();
-        this.squadFramesSelected.splice(0, this.squadFramesSelected.length);
-        this.selectSquadFrame(this.squadFrames[0]);
     }
 
     dotSelect(dot: Dot) {

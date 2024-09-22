@@ -3,6 +3,7 @@ import { UI } from "./UI/UI";
 import { RendererCanvasSimple } from "./Renderer";
 import { Logger } from "./Logger";
 import { VisualDebugger } from "./VisualDebugger";
+import { sceneTwoSquads, sceneTwoTeamsSomeBuildings } from "./scenes";
 
 const container = document.createElement("div");
 container.style.position = "relative";
@@ -89,8 +90,10 @@ function gameLoop() {
 (window as any).visualDebugger = visualDebugger;
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-game.init();
 ui.init();
+
+sceneTwoTeamsSomeBuildings(game);
+sceneTwoSquads(ui);
 
 renderLoop();
 gameLoop();
