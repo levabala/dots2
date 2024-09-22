@@ -1,6 +1,5 @@
 import { DOT_COST_COINS, DOT_COST_FOOD } from "../consts";
 import { randomPointInPolygon, type Point, type Polygon } from "../utils";
-import type { BuildingConfig } from "./buildingsConfigs";
 import type { DotTemplate, Dot } from "./DotsController";
 import type { ResourcesState } from "./ResourcesController";
 import type { Team } from "./TeamController";
@@ -288,6 +287,16 @@ export class BuildingsController {
 
             getResourcesChange(building.team).woodProduced += woodProduced;
         };
+
+        const removeIfDead = (building: Building) => {
+            if (building.health <= 0) {
+                this.removeBuilding(building);
+            }
+        };
+
+        for (const building of this.buildings) {
+            removeIfDead(building);
+        }
 
         for (const building of this.buildings) {
             switch (building.kind) {

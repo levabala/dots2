@@ -16,7 +16,7 @@ export const BUILDINGS_CONFIGS: {
             { x: 50, y: 40 },
             { x: -50, y: 40 },
         ],
-        health: 100,
+        health: 10,
         spawnDuration: 500,
         spawnTimeLeft: 500,
         spawnQueue: [],

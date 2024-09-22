@@ -217,16 +217,19 @@ export class RendererCanvasSimple implements Renderer {
 
         const center = getPolygonCenter(building.frame);
 
+        const lineHeight = 18;
         this.setupText({
             font: "16px sans-serif",
             textBaseline: "middle",
             textAlign: "center",
         });
         this.ctx.fillStyle = this.getTeamColor(building.team?.index ?? -1);
-        this.ctx.fillText(building.kind, center.x, center.y);
+        this.ctx.fillText(building.kind, center.x, center.y - lineHeight / 2);
+        this.ctx.fillText(`${building.health}`, center.x, center.y + lineHeight / 2);
         this.ctx.strokeStyle = "black";
         this.ctx.lineWidth = 0.5;
-        this.ctx.strokeText(building.kind, center.x, center.y);
+        this.ctx.strokeText(building.kind, center.x, center.y - lineHeight / 2);
+        this.ctx.strokeText(`${building.health}`, center.x, center.y + lineHeight / 2);
     }
 
     private getDotColor(dot: Dot) {

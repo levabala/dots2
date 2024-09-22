@@ -605,6 +605,10 @@ export class DotsController {
                 return false;
             }
 
+            if (buildingTarget.health <= 0) {
+                return true;
+            }
+
             if (
                 dot.squad === null ||
                 !dot.squad.attackTargetBuildings.has(buildingTarget)

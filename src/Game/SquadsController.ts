@@ -69,7 +69,7 @@ export class SquadsController {
             attackTargetBuildings: new Set(),
             attackTargetSquads: new Set(),
             attackTargetedBySquads: new Set(),
-            allowAttack: false,
+            allowAttack: true,
             allowShootOnce: false,
             dotsToShootOnce: new Set(),
             team,
@@ -169,11 +169,25 @@ export class SquadsController {
                 slot.dot.path = [slot.position];
             }
         };
+
         const removeSquadIfEmpty = (squad: Squad) => {
             const { isRemoved } = this.removeSquadIfEmpty(squad);
 
             if (isRemoved) {
                 effects.squadsRemoved.push(squad);
+            }
+        };
+
+        const removeAttackTargetBuildingIfDead = (squad: Squad) => {
+            const buildingsToRemove: Building[] = [];
+            for (const building of squad.attackTargetBuildings) {
+                if (building.health <= 0) {
+                    buildingsToRemove.push(building);
+                }
+            }
+
+            for (const building of buildingsToRemove) {
+                squad.attackTargetBuildings.delete(building);
             }
         };
 
@@ -185,6 +199,10 @@ export class SquadsController {
 
         for (const squad of this.squads) {
             removeSquadIfEmpty(squad);
+        }
+
+        for (const squad of this.squads) {
+            removeAttackTargetBuildingIfDead(squad);
         }
 
         return effects;
