@@ -1,5 +1,6 @@
 import {
     distanceBetween,
+    isPointInPolygon,
     isPointInRect,
     orthogonalRect,
     randomPointInRect,
@@ -7,6 +8,7 @@ import {
     rotateRect,
     sortRectPoints,
     type Point,
+    type Polygon,
     type Rect,
 } from "../utils";
 import {
@@ -454,12 +456,11 @@ export class UI {
     handleRightButtonDown(e: MouseEvent) {
         this.destinationStartPoint = null;
 
-        const squadFrameClicked = this.getSquadFrameByPosition(
-            this.viewPort.matrix.transformPointReverse({
-                x: e.offsetX,
-                y: e.offsetY,
-            }),
-        );
+        const clickPoint = this.viewPort.matrix.transformPointReverse({
+            x: e.offsetX,
+            y: e.offsetY,
+        });
+        const squadFrameClicked = this.getSquadFrameByPosition(clickPoint);
 
         const teamSelected = this.squadFramesSelected[0]?.squad.team;
 
@@ -468,6 +469,12 @@ export class UI {
             !this.squadFramesSelected.includes(squadFrameClicked) &&
             teamSelected !== squadFrameClicked.squad.team
         ) {
+            return;
+        }
+
+        const building = this.getBuildingByPosition(clickPoint);
+
+        if (building) {
             return;
         }
 
@@ -480,12 +487,11 @@ export class UI {
     }
 
     handleRightButtonUp(e: MouseEvent) {
-        const squadFrameClicked = this.getSquadFrameByPosition(
-            this.viewPort.matrix.transformPointReverse({
-                x: e.offsetX,
-                y: e.offsetY,
-            }),
-        );
+        const clickPoint = this.viewPort.matrix.transformPointReverse({
+            x: e.offsetX,
+            y: e.offsetY,
+        });
+        const squadFrameClicked = this.getSquadFrameByPosition(clickPoint);
 
         const teamSelected = this.squadFramesSelected[0]?.squad.team;
 
@@ -502,9 +508,17 @@ export class UI {
             }
 
             this.attackSquadSelected(squadFrameClicked);
-        } else {
-            this.commandMove();
+            return;
         }
+
+        const building = this.getBuildingByPosition(clickPoint);
+
+        if (building) {
+            this.attackBuildingBySquadSelected(building);
+            return;
+        }
+
+        this.commandMove();
     }
 
     handleKeypress(e: KeyboardEvent) {
@@ -567,10 +581,32 @@ export class UI {
         this.renderCommandPanel();
     }
 
+    attackBuildingBySquadSelected(buildingTarget: Building) {
+        for (const squadFrame of this.squadFramesSelected) {
+            this.game.attackBuilding({
+                squadAttacker: squadFrame.squad,
+                buildingTarget,
+            });
+        }
+
+        this.renderCommandPanel();
+    }
+
     getSquadFrameByPosition({ x, y }: Point): SquadFrame | null {
         for (const squadFrame of this.squadFrames) {
             if (isPointInRect({ x, y }, squadFrame.frame)) {
                 return squadFrame;
+            }
+        }
+
+        return null;
+    }
+
+    getBuildingByPosition({ x, y }: Point): Building | null {
+        const point = { x, y };
+        for (const building of this.game.buildingsController.buildings) {
+            if (isPointInPolygon(point, building.frame)) {
+                return building;
             }
         }
 

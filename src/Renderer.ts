@@ -1,14 +1,15 @@
 import { DEFAULT_PROJECTILE } from "./consts";
 import type { DotsGrid } from "./DotsGrid";
 import type { Game } from "./Game";
-import type { BuildingBase } from "./Game/BuildingsController";
+import type { Building, BuildingBase } from "./Game/BuildingsController";
 import type { Dot } from "./Game/DotsController";
 import type { Projectile } from "./Game/ProjectilesController";
 import type { Slot } from "./Game/SquadsController";
 import { getPolygonCenter } from "./shapes";
 import type { SquadFrame, UI } from "./UI/UI";
 import {
-    getIntersectionFirst,
+    getIntersectionFirstPolygon,
+    getIntersectionFirstRect,
     getRectCenter,
     rotatePoint,
     type Point,
@@ -50,8 +51,22 @@ export class RendererCanvasSimple implements Renderer {
         }
 
         for (const dot of this.game.dotsController.dots) {
-            if (dot.attackTargetDot && dot.attackCooldownLeft === 0) {
-                this.renderDotAttackTargetArrow(dot, dot.attackTargetDot);
+            if (
+                (dot.attackTargetDot || dot.attackTargetBuilding) &&
+                dot.attackCooldownLeft === 0
+            ) {
+                const attackTargetPosition =
+                    dot.attackTargetBuilding?.center ||
+                    dot.attackTargetDot?.position;
+
+                if (!attackTargetPosition) {
+                    window.panic("attack target position must be valid", {
+                        dot,
+                        attackTargetPosition,
+                    });
+                }
+
+                this.renderDotAttackTargetArrow(dot, attackTargetPosition);
             }
         }
 
@@ -84,11 +99,20 @@ export class RendererCanvasSimple implements Renderer {
                     (sf) => sf.squad === squadTarget,
                 );
 
-                if (!squadFrameTarget) {
-                    continue;
+                if (squadFrameTarget) {
+                    this.renderSquadFrameAttackArrowToSquad(
+                        squadFrame,
+                        squadFrameTarget,
+                    );
                 }
+            }
 
-                this.renderSquadFrameAttackArrow(squadFrame, squadFrameTarget);
+            for (const buildingTarget of squadFrame.squad
+                .attackTargetBuildings) {
+                this.renderSquadFrameAttackArrowToBuilding(
+                    squadFrame,
+                    buildingTarget,
+                );
             }
         }
 
@@ -335,33 +359,62 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.closePath();
     }
 
-    renderDotAttackTargetArrow(dotFrom: Dot, dotTo: Dot) {
+    renderDotAttackTargetArrow(dotFrom: Dot, pointTo: Point) {
         this.ctx.lineWidth = 0.5;
         this.ctx.strokeStyle = "palevioletred";
 
-        this.drawArrow(dotFrom.position, dotTo.position, 7);
+        this.drawArrow(dotFrom.position, pointTo, 7);
 
         this.ctx.stroke();
     }
 
-    renderSquadFrameAttackArrow(
+    renderSquadFrameAttackArrowToSquad(
         squadFrameFrom: SquadFrame,
         squadFrameTo: SquadFrame,
     ) {
         this.ctx.lineWidth = 2;
         this.ctx.strokeStyle = "red";
 
-        const centerFrom = getRectCenter(squadFrameFrom.frame);
-        const centerTo = getRectCenter(squadFrameTo.frame);
+        const from = getRectCenter(squadFrameFrom.frame);
+        const to = getRectCenter(squadFrameTo.frame);
 
-        const lineCenterToCenter = { p1: centerFrom, p2: centerTo };
-        const start = getIntersectionFirst(
+        const lineCenterToCenter = { p1: from, p2: to };
+        const start = getIntersectionFirstRect(
             lineCenterToCenter,
             squadFrameFrom.frame,
         );
-        const end = getIntersectionFirst(
+        const end = getIntersectionFirstRect(
             lineCenterToCenter,
             squadFrameTo.frame,
+        );
+
+        if (!start || !end) {
+            return;
+        }
+
+        this.drawArrow(start, end, 10);
+
+        this.ctx.stroke();
+    }
+
+    renderSquadFrameAttackArrowToBuilding(
+        squadFrameFrom: SquadFrame,
+        buildingTo: Building,
+    ) {
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeStyle = "red";
+
+        const from = getRectCenter(squadFrameFrom.frame);
+        const to = getPolygonCenter(buildingTo.frame);
+
+        const lineCenterToCenter = { p1: from, p2: to };
+        const start = getIntersectionFirstRect(
+            lineCenterToCenter,
+            squadFrameFrom.frame,
+        );
+        const end = getIntersectionFirstPolygon(
+            lineCenterToCenter,
+            buildingTo.frame,
         );
 
         if (!start || !end) {

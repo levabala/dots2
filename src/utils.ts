@@ -111,6 +111,67 @@ export function rotatePoint(
 }
 
 // chatgpt (c)
+export function getIntersectionFirstPolygon(
+    line: { p1: Point; p2: Point },
+    polygon: Polygon,
+): Point | null {
+    function getIntersection(
+        p1: Point,
+        p2: Point,
+        p3: Point,
+        p4: Point,
+    ): Point | null {
+        const denom =
+            (p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y);
+        if (denom === 0) return null; // Lines are parallel
+
+        const ua =
+            ((p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x)) /
+            denom;
+        const ub =
+            ((p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x)) /
+            denom;
+
+        if (ua >= 0 && ua <= 1 && ub >= 0 && ub <= 1) {
+            const x = p1.x + ua * (p2.x - p1.x);
+            const y = p1.y + ua * (p2.y - p1.y);
+            return { x, y };
+        }
+
+        return null; // No intersection
+    }
+
+    const sides = [];
+    for (let i = 0; i < polygon.length; i++) {
+        const p1 = polygon[i];
+        const p2 = polygon[(i + 1) % polygon.length];
+
+        sides.push({ p1, p2 });
+    }
+
+    let closestIntersection: Point | null = null;
+    let minDistSquared = Infinity;
+
+    for (const side of sides) {
+        const intersection = getIntersection(
+            line.p1,
+            line.p2,
+            side.p1,
+            side.p2,
+        );
+        if (intersection) {
+            const distSquared = distanceBetween(line.p1, intersection);
+            if (distSquared < minDistSquared) {
+                minDistSquared = distSquared;
+                closestIntersection = intersection;
+            }
+        }
+    }
+
+    return closestIntersection;
+}
+
+// chatgpt (c)
 export function rotateRect({
     rect,
     anchor,
@@ -141,69 +202,22 @@ export function getRectCenter(rect: Rect): Point {
     };
 }
 
-// chatgpt (c)
-export function getIntersectionFirst(
+export function getIntersectionFirstRect(
     line: { p1: Point; p2: Point },
     rect: Rect,
 ): Point | null {
-    function getIntersection(
-        p1: Point,
-        p2: Point,
-        p3: Point,
-        p4: Point,
-    ): Point | null {
-        const denom =
-            (p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y);
-        if (denom === 0) return null; // Lines are parallel
-
-        const ua =
-            ((p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x)) /
-            denom;
-        const ub =
-            ((p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x)) /
-            denom;
-
-        if (ua >= 0 && ua <= 1 && ub >= 0 && ub <= 1) {
-            const x = p1.x + ua * (p2.x - p1.x);
-            const y = p1.y + ua * (p2.y - p1.y);
-            return { x, y };
-        }
-
-        return null; // No intersection
-    }
-
-    const sides = [
-        { p1: rect.p1, p2: rect.p2 },
-        { p1: rect.p2, p2: rect.p3 },
-        { p1: rect.p3, p2: rect.p4 },
-        { p1: rect.p4, p2: rect.p1 },
-    ];
-
-    let closestIntersection: Point | null = null;
-    let minDistSquared = Infinity;
-
-    for (const side of sides) {
-        const intersection = getIntersection(
-            line.p1,
-            line.p2,
-            side.p1,
-            side.p2,
-        );
-        if (intersection) {
-            const distSquared = distanceBetween(line.p1, intersection);
-            if (distSquared < minDistSquared) {
-                minDistSquared = distSquared;
-                closestIntersection = intersection;
-            }
-        }
-    }
-
-    return closestIntersection;
+    return getIntersectionFirstPolygon(line, [
+        rect.p1,
+        rect.p2,
+        rect.p3,
+        rect.p4,
+    ]);
 }
 
-export function getIntersectionAny(
+// chatgpt (c)
+export function getIntersectionAnyPolygon(
     line: { p1: Point; p2: Point },
-    rect: Rect,
+    polygon: Polygon,
 ): Point | null {
     function getIntersection(
         p1: Point,
@@ -231,12 +245,14 @@ export function getIntersectionAny(
         return null; // No intersection
     }
 
-    const sides = [
-        { p1: rect.p1, p2: rect.p2 },
-        { p1: rect.p2, p2: rect.p3 },
-        { p1: rect.p3, p2: rect.p4 },
-        { p1: rect.p4, p2: rect.p1 },
-    ];
+
+    const sides = [];
+    for (let i = 0; i < polygon.length; i++) {
+        const p1 = polygon[i];
+        const p2 = polygon[(i + 1) % polygon.length];
+
+        sides.push({ p1, p2 });
+    }
 
     for (const side of sides) {
         const intersection = getIntersection(
@@ -251,6 +267,18 @@ export function getIntersectionAny(
     }
 
     return null;
+}
+
+export function getIntersectionAnyRect(
+    line: { p1: Point; p2: Point },
+    rect: Rect,
+): Point | null {
+    return getIntersectionAnyPolygon(line, [
+        rect.p1,
+        rect.p2,
+        rect.p3,
+        rect.p4,
+    ]);
 }
 
 export function roundSinCos(sincos: number) {
@@ -405,7 +433,7 @@ export function randomPointInPolygon(polygon: Polygon): Point {
 }
 
 // chatgpt (c)
-function isPointInPolygon(point: Point, polygon: Polygon): boolean {
+export function isPointInPolygon(point: Point, polygon: Polygon): boolean {
     let inside = false;
     for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
         const xi = polygon[i].x,

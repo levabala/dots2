@@ -9,7 +9,7 @@ import {
 import { DotsGrid } from "../DotsGrid";
 import {
     distanceBetween,
-    getIntersectionAny,
+    getIntersectionAnyRect,
     type Point,
     type Rect,
     rotatePoint,
@@ -17,6 +17,7 @@ import {
 import type { Slot, Squad } from "./SquadsController";
 import type { Projectile } from "./ProjectilesController";
 import type { Team } from "./TeamController";
+import type { Building } from "./BuildingsController";
 
 export type DotTemplate = {
     width: number;
@@ -39,9 +40,10 @@ export type Dot = DotTemplate & {
     gridSquareIndexes: number[];
     attackCooldownLeft: number;
     aimingTimeLeft: number;
-    aimingTarget: Dot | null;
+    aimingTargetDot: Dot | null;
     attackTargetedByDots: Set<Dot>;
     attackTargetDot: Dot | null;
+    attackTargetBuilding: Building | null;
     path: Point[];
     allowAttack: boolean;
 };
@@ -83,6 +85,8 @@ export class DotsController {
             | "gridSquareIndexes"
             | "removed"
             | "allowAttack"
+            | "aimingTargetDot"
+            | "attackTargetBuilding"
         >,
     ): Dot {
         return {
@@ -91,8 +95,9 @@ export class DotsController {
             attackTargetDot: null,
             attackCooldownLeft: 0,
             attackTargetedByDots: new Set(),
+            attackTargetBuilding: null,
             aimingTimeLeft: dotPartial.aimingDuration,
-            aimingTarget: null,
+            aimingTargetDot: null,
             hitBox: this.calculateHitBox(
                 dotPartial.position,
                 0,
@@ -148,9 +153,10 @@ export class DotsController {
             attackCooldown: 3000,
             attackCooldownLeft: 0,
             attackTargetedByDots: new Set(),
+            attackTargetBuilding: null,
             aimingDuration: 1000,
             aimingTimeLeft: 1000,
-            aimingTarget: null,
+            aimingTargetDot: null,
             health: 2,
             angle: 0,
             hitBox: this.calculateHitBox(position, 0, DOT_WIDTH, DOT_HEIGHT),
@@ -239,10 +245,10 @@ export class DotsController {
         };
     }
 
-    checkHasShootIntersectionWithOwnTeam(dot: Dot, target: Dot): boolean {
+    checkHasShootIntersectionWithOwnTeam(dot: Dot, target: Point): boolean {
         const line = {
             p1: dot.position,
-            p2: target.position,
+            p2: target,
         };
 
         for (const dotAnother of this.dotsGrid.iterateDotsAlongLine(line)) {
@@ -250,7 +256,10 @@ export class DotsController {
                 continue;
             }
 
-            const intersection = getIntersectionAny(line, dotAnother.hitBox);
+            const intersection = getIntersectionAnyRect(
+                line,
+                dotAnother.hitBox,
+            );
             if (intersection) {
                 return true;
             }
@@ -305,36 +314,56 @@ export class DotsController {
         };
 
         const abortAiming = (dot: Dot) => {
-            dot.aimingTarget = dot.attackTargetDot;
+            dot.aimingTargetDot = dot.attackTargetDot;
             dot.aimingTimeLeft = dot.aimingDuration;
         };
 
         const proceedAiming = (dot: Dot) => {
-            if (!dot.attackTargetDot || dot.attackCooldownLeft > 0) {
+            if (
+                (!dot.attackTargetDot && !dot.attackTargetBuilding) ||
+                dot.attackCooldownLeft > 0
+            ) {
                 abortAiming(dot);
                 return;
             }
 
+            const attackTargetPosition =
+                dot.attackTargetBuilding?.center ||
+                dot.attackTargetDot?.position;
+
+            if (!attackTargetPosition) {
+                window.panic("attack target position must be valid", {
+                    dot,
+                    attackTargetPosition,
+                });
+            }
+
             const distance = distanceBetween(
                 dot.position,
-                dot.attackTargetDot.position,
+                attackTargetPosition,
             );
             if (distance > dot.attackRange) {
                 abortAiming(dot);
                 return;
             }
 
-            if (dot.aimingTarget !== dot.attackTargetDot) {
+            if (dot.aimingTargetDot !== dot.attackTargetDot) {
                 abortAiming(dot);
             }
 
             dot.aimingTimeLeft = Math.max(dot.aimingTimeLeft - timeDelta, 0);
         };
 
-        const clearAttackTarget = (dot: Dot) => {
+        const clearAttackTargetDot = (dot: Dot) => {
             if (dot.attackTargetDot) {
                 dot.attackTargetDot.attackTargetedByDots.delete(dot);
                 dot.attackTargetDot = null;
+            }
+        };
+
+        const clearAttackTargetBuilding = (dot: Dot) => {
+            if (dot.attackTargetBuilding) {
+                dot.attackTargetBuilding = null;
             }
         };
 
@@ -351,16 +380,27 @@ export class DotsController {
             }
 
             if (
-                !dot.attackTargetDot ||
+                (!dot.attackTargetDot && !dot.attackTargetBuilding) ||
                 dot.attackCooldownLeft > 0 ||
                 dot.aimingTimeLeft > 0
             ) {
                 return;
             }
 
+            const attackTargetPosition =
+                dot.attackTargetBuilding?.center ||
+                dot.attackTargetDot?.position;
+
+            if (!attackTargetPosition) {
+                window.panic("attack target position must be valid", {
+                    dot,
+                    attackTargetPosition,
+                });
+            }
+
             const distance = distanceBetween(
                 dot.position,
-                dot.attackTargetDot.position,
+                attackTargetPosition,
             );
             if (distance > dot.attackRange) {
                 return;
@@ -368,7 +408,7 @@ export class DotsController {
 
             const hasIntersection = this.checkHasShootIntersectionWithOwnTeam(
                 dot,
-                dot.attackTargetDot,
+                attackTargetPosition,
             );
 
             if (hasIntersection) {
@@ -377,7 +417,7 @@ export class DotsController {
 
             effects.projectilesToShoot.push({
                 fromDot: dot,
-                toPoint: dot.attackTargetDot.position,
+                toPoint: attackTargetPosition,
                 params: DEFAULT_PROJECTILE,
             });
 
@@ -387,7 +427,7 @@ export class DotsController {
             if (dot.squad && dot.squad.allowShootOnce) {
                 dot.squad.dotsToShootOnce.delete(dot);
                 dot.allowAttack = false;
-                clearAttackTarget(dot);
+                clearAttackTargetDot(dot);
 
                 const noAttackTargetForTheRest = Array.from(
                     dot.squad.dotsToShootOnce,
@@ -461,7 +501,32 @@ export class DotsController {
                 dot.squad !== null && dot.squad.allowAttack;
 
             if (!dot.allowAttack && !allowAttackSquad) {
-                clearAttackTarget(dot);
+                clearAttackTargetDot(dot);
+                return;
+            }
+
+            if (dot.squad && dot.squad.attackTargetBuildings.size) {
+                const buildingTarget = Array.from(
+                    dot.squad.attackTargetBuildings,
+                ).find((building) => {
+                    return (
+                        building.health > 0 &&
+                        distanceBetween(dot.position, building.center) <=
+                            dot.attackRange &&
+                        !this.checkHasShootIntersectionWithOwnTeam(
+                            dot,
+                            building.center,
+                        )
+                    );
+                });
+
+                if (!buildingTarget) {
+                    clearAttackTargetBuilding(dot);
+                    return;
+                }
+
+                clearAttackTargetDot(dot);
+                dot.attackTargetBuilding = buildingTarget;
                 return;
             }
 
@@ -473,13 +538,16 @@ export class DotsController {
 
             for (const dotTarget of dotPotentionalTargets) {
                 const hasIntersection =
-                    this.checkHasShootIntersectionWithOwnTeam(dot, dotTarget);
+                    this.checkHasShootIntersectionWithOwnTeam(
+                        dot,
+                        dotTarget.position,
+                    );
 
                 if (hasIntersection) {
                     continue;
                 }
 
-                clearAttackTarget(dot);
+                clearAttackTargetDot(dot);
 
                 window.assert(
                     dotTarget.removed !== true,
@@ -493,10 +561,10 @@ export class DotsController {
                 return;
             }
 
-            clearAttackTarget(dot);
+            clearAttackTargetDot(dot);
         };
 
-        const isBadTarget = (dot: Dot, dotTarget: Dot): boolean => {
+        const isBadTargetDot = (dot: Dot, dotTarget: Dot): boolean => {
             if (!dot.attackTargetDot) {
                 return false;
             }
@@ -520,7 +588,41 @@ export class DotsController {
             if (
                 this.checkHasShootIntersectionWithOwnTeam(
                     dot,
-                    dot.attackTargetDot,
+                    dot.attackTargetDot.position,
+                )
+            ) {
+                return true;
+            }
+
+            return false;
+        };
+
+        const isBadTargetBuilding = (
+            dot: Dot,
+            buildingTarget: Building,
+        ): boolean => {
+            if (!dot.attackTargetBuilding) {
+                return false;
+            }
+
+            if (
+                dot.squad === null ||
+                !dot.squad.attackTargetBuildings.has(buildingTarget)
+            ) {
+                return true;
+            }
+
+            if (
+                distanceBetween(dot.position, dot.attackTargetBuilding.center) >
+                dot.attackRange
+            ) {
+                return true;
+            }
+
+            if (
+                this.checkHasShootIntersectionWithOwnTeam(
+                    dot,
+                    dot.attackTargetBuilding.center,
                 )
             ) {
                 return true;
@@ -530,11 +632,19 @@ export class DotsController {
         };
 
         const assignDotAttackTargetButTryNotToReassign = (dot: Dot) => {
+            if (dot.attackTargetBuilding) {
+                if (isBadTargetBuilding(dot, dot.attackTargetBuilding)) {
+                    clearAttackTargetBuilding(dot);
+                }
+
+                return;
+            }
+
             if (dot.attackTargetDot) {
-                const gotBadTarget = isBadTarget(dot, dot.attackTargetDot);
+                const gotBadTarget = isBadTargetDot(dot, dot.attackTargetDot);
 
                 if (gotBadTarget) {
-                    clearAttackTarget(dot);
+                    clearAttackTargetDot(dot);
                 }
 
                 return;

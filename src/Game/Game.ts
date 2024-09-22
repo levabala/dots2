@@ -60,15 +60,12 @@ export class Game {
     ) {
         this.teamController = new TeamController();
         this.dotsController = new DotsController(width, height);
+        this.buildingsController = new BuildingsController();
         this.projectilesController = new ProjectilesController(
             this.dotsController.dots,
+            this.buildingsController.buildings,
         );
-        this.squadsController = new SquadsController(
-            this.dotsController.checkHasShootIntersectionWithOwnTeam.bind(
-                this.dotsController,
-            ),
-        );
-        this.buildingsController = new BuildingsController();
+        this.squadsController = new SquadsController();
         this.resourcesController = new ResourcesController();
     }
 
@@ -189,12 +186,23 @@ export class Game {
         squadTarget.attackTargetedBySquads.add(squadAttacker);
     }
 
+    attackBuilding({
+        squadAttacker,
+        buildingTarget,
+    }: {
+        squadAttacker: Squad;
+        buildingTarget: Building;
+    }) {
+        squadAttacker.attackTargetBuildings.add(buildingTarget);
+    }
+
     cancelAttackSquadAll(squadAttacker: Squad) {
         for (const squadTarget of squadAttacker.attackTargetSquads) {
             squadTarget.attackTargetedBySquads.delete(squadAttacker);
         }
 
         squadAttacker.attackTargetSquads.clear();
+        squadAttacker.attackTargetBuildings.clear();
 
         for (const slot of squadAttacker.slots) {
             if (!slot.dot) {
@@ -202,6 +210,7 @@ export class Game {
             }
 
             slot.dot.attackTargetDot = null;
+            slot.dot.attackTargetBuilding = null;
         }
     }
 

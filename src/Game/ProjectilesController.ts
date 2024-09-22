@@ -1,4 +1,10 @@
-import { distanceBetween, getIntersectionAny, type Point } from "../utils";
+import {
+    distanceBetween,
+    getIntersectionAnyPolygon,
+    getIntersectionAnyRect,
+    type Point,
+} from "../utils";
+import type { Building } from "./BuildingsController";
 import type { Dot } from "./DotsController";
 
 export type Projectile = {
@@ -13,12 +19,16 @@ export type Projectile = {
 
 export type ProjectilesControllerTickEffects = {
     dotsKilled: Dot[];
+    buildingsKilled: Building[];
 };
 
 export class ProjectilesController {
     projectiles = new Set<Projectile>();
 
-    constructor(readonly dots: Set<Dot>) {}
+    constructor(
+        readonly dots: Set<Dot>,
+        readonly buildings: Set<Building>,
+    ) {}
 
     removeProjectile(projectile: Projectile) {
         this.projectiles.delete(projectile);
@@ -45,16 +55,29 @@ export class ProjectilesController {
         this.projectiles.add(projectile);
     }
 
-    hitProjectile(projectile: Projectile, dot: Dot): { isKilled: boolean } {
+    hitProjectileDot(projectile: Projectile, dot: Dot): { isKilled: boolean } {
         this.removeProjectile(projectile);
         dot.health -= projectile.damage;
 
         return { isKilled: dot.health <= 0 };
     }
 
+    hitProjectileBuilding(
+        projectile: Projectile,
+        building: Building,
+    ): {
+        isKilled: boolean;
+    } {
+        this.removeProjectile(projectile);
+        building.health -= projectile.damage;
+
+        return { isKilled: building.health <= 0 };
+    }
+
     tick(timeDelta: number): ProjectilesControllerTickEffects {
         const effects: ProjectilesControllerTickEffects = {
             dotsKilled: [],
+            buildingsKilled: [],
         };
 
         const updateProjectile = (projectile: Projectile) => {
@@ -71,14 +94,38 @@ export class ProjectilesController {
                 },
             };
 
-            let closestIntersection: { dot: Dot; distance: number } | null =
-                null;
+            let closestIntersection:
+                | { building: Building; dot?: never; distance: number }
+                | { building?: never; dot: Dot; distance: number }
+                | null = null;
+            for (const building of this.buildings) {
+                const intersection = getIntersectionAnyPolygon(
+                    line,
+                    building.frame,
+                );
+
+                if (!intersection) {
+                    continue;
+                }
+
+                const distance = distanceBetween(
+                    projectile.position,
+                    intersection,
+                );
+                if (
+                    closestIntersection === null ||
+                    distance > closestIntersection.distance
+                ) {
+                    closestIntersection = { building, distance };
+                }
+            }
+
             for (const dot of this.dots) {
                 if (dot === projectile.fromDot) {
                     continue;
                 }
 
-                const intersection = getIntersectionAny(line, dot.hitBox);
+                const intersection = getIntersectionAnyRect(line, dot.hitBox);
 
                 if (!intersection) {
                     continue;
@@ -96,14 +143,27 @@ export class ProjectilesController {
                 }
             }
 
-            if (closestIntersection) {
-                const { isKilled } = this.hitProjectile(
+            if (closestIntersection !== null) {
+                if (closestIntersection.dot) {
+                    const { isKilled } = this.hitProjectileDot(
+                        projectile,
+                        closestIntersection.dot,
+                    );
+
+                    if (isKilled) {
+                        effects.dotsKilled.push(closestIntersection.dot);
+                    }
+
+                    return;
+                }
+
+                const { isKilled } = this.hitProjectileBuilding(
                     projectile,
-                    closestIntersection.dot,
+                    closestIntersection.building,
                 );
 
                 if (isKilled) {
-                    effects.dotsKilled.push(closestIntersection.dot);
+                    effects.buildingsKilled.push(closestIntersection.building);
                 }
 
                 return;

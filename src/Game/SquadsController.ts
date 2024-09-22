@@ -1,5 +1,6 @@
 import { SQUAD_NAMES } from "../assets/squadNames";
 import { arePointsEqual, type Point } from "../utils";
+import type { Building } from "./BuildingsController";
 import type { Dot } from "./DotsController";
 import type { Team } from "./TeamController";
 
@@ -7,6 +8,7 @@ export type Squad = {
     key: string;
     index: number;
     slots: Slot[];
+    attackTargetBuildings: Set<Building>;
     attackTargetSquads: Set<Squad>;
     attackTargetedBySquads: Set<Squad>;
     allowAttack: boolean;
@@ -29,13 +31,7 @@ export type SquadsControllerTickEffects = {
 export class SquadsController {
     squads: Squad[] = [];
 
-    constructor(
-        // TODO: remove this dependency
-        readonly checkHasShootIntersectionWithOwnTeam: (
-            dot: Dot,
-            target: Dot,
-        ) => boolean,
-    ) {}
+    constructor() {}
 
     fillEmptyFrontSlots(squad: Squad) {
         let headIndex = 0;
@@ -70,6 +66,7 @@ export class SquadsController {
             key: this.createSquadKey(),
             index: this.squads.length,
             slots,
+            attackTargetBuildings: new Set(),
             attackTargetSquads: new Set(),
             attackTargetedBySquads: new Set(),
             allowAttack: false,
