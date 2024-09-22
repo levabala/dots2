@@ -80,7 +80,6 @@ const CommandPanel: React.FC<{
                 style={{
                     display: "flex",
                     flexDirection: "row",
-                    overflow: "hidden",
                     gap: 4,
                     flexGrow: 1,
                 }}
@@ -179,7 +178,7 @@ const CommandPanel: React.FC<{
                             onClick={() =>
                                 callbacks.selectBuilding("lumberMill")
                             }
-                            title={JSON.stringify(
+                            data-tooltip={JSON.stringify(
                                 BUILDINGS_CONFIGS.lumberMill.cost,
                                 undefined,
                                 2,
@@ -189,7 +188,7 @@ const CommandPanel: React.FC<{
                         </button>
                         <button
                             onClick={() => callbacks.selectBuilding("barracks")}
-                            title={JSON.stringify(
+                            data-tooltip={JSON.stringify(
                                 BUILDINGS_CONFIGS.barracks.cost,
                                 undefined,
                                 2,
@@ -199,7 +198,7 @@ const CommandPanel: React.FC<{
                         </button>
                         <button
                             onClick={() => callbacks.selectBuilding("house")}
-                            title={JSON.stringify(
+                            data-tooltip={JSON.stringify(
                                 BUILDINGS_CONFIGS.house.cost,
                                 undefined,
                                 2,
@@ -209,7 +208,7 @@ const CommandPanel: React.FC<{
                         </button>
                         <button
                             onClick={() => callbacks.selectBuilding("farm")}
-                            title={JSON.stringify(
+                            data-tooltip={JSON.stringify(
                                 BUILDINGS_CONFIGS.farm.cost,
                                 undefined,
                                 2,
@@ -219,7 +218,7 @@ const CommandPanel: React.FC<{
                         </button>
                         <button
                             onClick={() => callbacks.selectBuilding("granary")}
-                            title={JSON.stringify(
+                            data-tooltip={JSON.stringify(
                                 BUILDINGS_CONFIGS.granary.cost,
                                 undefined,
                                 2,
@@ -263,5 +262,5 @@ const CommandPanel: React.FC<{
                 </div>
             </div>
         </div>
-    );
+    )
 };
