@@ -474,7 +474,7 @@ export class UI {
 
         const building = this.getBuildingByPosition(clickPoint);
 
-        if (building) {
+        if (building && building.team !== this.currentTeam) {
             return;
         }
 
@@ -513,7 +513,7 @@ export class UI {
 
         const building = this.getBuildingByPosition(clickPoint);
 
-        if (building) {
+        if (building && building.team !== this.currentTeam) {
             this.attackBuildingBySquadSelected(building);
             return;
         }
