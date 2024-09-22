@@ -6,6 +6,7 @@ export type ResourcesState = {
     housing: number;
     wood: number;
     woodCapacity: number;
+    coins: number;
 };
 
 export class ResourcesController {
@@ -20,6 +21,7 @@ export class ResourcesController {
             housing: 0,
             wood: 0,
             woodCapacity: 0,
+            coins: 0,
         });
     }
 
@@ -30,6 +32,26 @@ export class ResourcesController {
 
         window.assert(state.food >= 0, "food must be positive", {
             food: state.food,
+        });
+    }
+
+    changeWood(team: Team, woodDelta: number) {
+        const state = this.getState(team);
+
+        state.wood = Math.min(state.wood + woodDelta, state.woodCapacity);
+
+        window.assert(state.wood >= 0, "wood must be positive", {
+            wood: state.wood,
+        });
+    }
+
+    changeCoins(team: Team, coinsDelta: number) {
+        const state = this.getState(team);
+
+        state.coins = state.coins + coinsDelta;
+
+        window.assert(state.coins >= 0, "coins must be positive", {
+            coins: state.coins,
         });
     }
 
@@ -45,7 +67,19 @@ export class ResourcesController {
         state.foodCapacity = foodCapacity;
     }
 
-    private getState(team: Team) {
+    setWoodCapacity(team: Team, woodCapacity: number) {
+        const state = this.getState(team);
+
+        state.woodCapacity = woodCapacity;
+    }
+
+    setCoins(team: Team, coins: number) {
+        const state = this.getState(team);
+
+        state.coins = coins;
+    }
+
+    getState(team: Team) {
         const state = this.teamToState.get(team);
 
         if (state === undefined) {

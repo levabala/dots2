@@ -21,6 +21,10 @@ export const BUILDINGS_CONFIGS: {
         spawnTimeLeft: 500,
         spawnQueue: [],
         isSpawning: false,
+        cost: {
+            wood: 50,
+            coins: 100,
+        },
     },
     house: {
         kind: "house",
@@ -32,6 +36,10 @@ export const BUILDINGS_CONFIGS: {
         ],
         health: 100,
         capacity: 110,
+        cost: {
+            wood: 20,
+            coins: 20,
+        },
     },
     farm: {
         kind: "farm",
@@ -44,6 +52,11 @@ export const BUILDINGS_CONFIGS: {
         health: 100,
         foodPerSecond: 5,
         foodCapacity: 100,
+        cost: {
+            wood: 80,
+
+            coins: 50,
+        },
     },
     granary: {
         kind: "granary",
@@ -55,5 +68,25 @@ export const BUILDINGS_CONFIGS: {
         ],
         health: 100,
         foodCapacity: 100,
+        cost: {
+            wood: 80,
+            coins: 50,
+        },
+    },
+    lumberMill: {
+        kind: "lumberMill",
+        frameRelative: [
+            { x: -50, y: -50 },
+            { x: 50, y: -50 },
+            { x: 50, y: 50 },
+            { x: -50, y: 50 },
+        ],
+        health: 100,
+        woodPerSecond: 5,
+        woodCapacity: 100,
+        cost: {
+            wood: 0,
+            coins: 20,
+        },
     },
 };

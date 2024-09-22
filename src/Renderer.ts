@@ -41,7 +41,7 @@ export class RendererCanvasSimple implements Renderer {
 
         this.renderDotsGrid(this.game.dotsController.dotsGrid);
 
-        for (const building of this.game.buildings.buildings) {
+        for (const building of this.game.buildingsController.buildings) {
             this.renderBuilding(building);
         }
 

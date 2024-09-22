@@ -1,6 +1,6 @@
 import { type Point } from "../utils";
 import { times } from "remeda";
-import { BuildingsController } from "./BuildingsController";
+import { BuildingsController, type Building } from "./BuildingsController";
 import { createPolygonOffset } from "../shapes";
 import { DotsController, type Dot } from "./DotsController";
 import { ProjectilesController } from "./ProjectilesController";
@@ -40,7 +40,7 @@ export class Game {
     dotsController: DotsController;
     projectilesController: ProjectilesController;
     squadsController: SquadsController;
-    buildings: BuildingsController;
+    buildingsController: BuildingsController;
     resourcesController: ResourcesController;
     teamController: TeamController;
 
@@ -68,7 +68,7 @@ export class Game {
                 this.dotsController,
             ),
         );
-        this.buildings = new BuildingsController();
+        this.buildingsController = new BuildingsController();
         this.resourcesController = new ResourcesController();
     }
 
@@ -79,11 +79,14 @@ export class Game {
         this.resourcesController.initTeamResourcesState(team1);
         this.resourcesController.initTeamResourcesState(team2);
 
+        this.resourcesController.setCoins(team1, 1000);
+        this.resourcesController.setCoins(team2, 1000);
+
         times(100, () => this.dotsController.addDotRandom(team1));
         times(100, () => this.dotsController.addDotRandom(team2));
 
         const center1 = { x: 1000, y: 1000 };
-        this.buildings.addBuilding({
+        this.buildingsController.addBuilding({
             ...BUILDINGS_CONFIGS.barracks,
             team: team1,
             frame: createPolygonOffset(
@@ -93,7 +96,7 @@ export class Game {
             center: center1,
         });
         const center2 = { x: 900, y: 1000 };
-        this.buildings.addBuilding({
+        this.buildingsController.addBuilding({
             ...BUILDINGS_CONFIGS.house,
             team: team1,
             frame: createPolygonOffset(
@@ -103,7 +106,7 @@ export class Game {
             center: center1,
         });
         const center3 = { x: 870, y: 1100 };
-        this.buildings.addBuilding({
+        this.buildingsController.addBuilding({
             ...BUILDINGS_CONFIGS.farm,
             kind: "farm",
             team: team1,
@@ -113,9 +116,20 @@ export class Game {
             ),
             center: center3,
         });
+        const center6 = { x: 870, y: 1300 };
+        this.buildingsController.addBuilding({
+            ...BUILDINGS_CONFIGS.lumberMill,
+            kind: "lumberMill",
+            team: team1,
+            frame: createPolygonOffset(
+                BUILDINGS_CONFIGS.lumberMill.frameRelative,
+                center6,
+            ),
+            center: center6,
+        });
 
         const center4 = { x: 1700, y: 1000 };
-        this.buildings.addBuilding({
+        this.buildingsController.addBuilding({
             ...BUILDINGS_CONFIGS.barracks,
             kind: "barracks",
             team: team2,
@@ -129,7 +143,7 @@ export class Game {
             ),
         });
         const center5 = { x: 1850, y: 1000 };
-        this.buildings.addBuilding({
+        this.buildingsController.addBuilding({
             ...BUILDINGS_CONFIGS.house,
             kind: "house",
             team: team2,
@@ -195,6 +209,24 @@ export class Game {
         dot.path = [destination];
     }
 
+    tryBuild(building: Building) {
+        const resources = this.resourcesController.getState(building.team);
+
+        if (!this.buildingsController.canBuild(building, resources)) {
+            return false;
+        }
+
+        this.buildingsController.addBuilding(building);
+
+        this.resourcesController.changeWood(building.team, -building.cost.wood);
+        this.resourcesController.changeCoins(
+            building.team,
+            -building.cost.coins,
+        );
+
+        return true;
+    }
+
     tick(timeDelta: number) {
         const effectsSquads = this.squadsController.tick(timeDelta);
         const effectsDots = this.dotsController.tick(timeDelta);
@@ -210,15 +242,19 @@ export class Game {
         for (const team of this.teamController.teams) {
             this.resourcesController.setHousing(
                 team,
-                this.buildings.countHousing(team),
+                this.buildingsController.countHousing(team),
             );
             this.resourcesController.setFoodCapacity(
                 team,
-                this.buildings.countFoodCapacity(team),
+                this.buildingsController.countFoodCapacity(team),
+            );
+            this.resourcesController.setWoodCapacity(
+                team,
+                this.buildingsController.countWoodCapacity(team),
             );
         }
 
-        for (const building of this.buildings.buildings) {
+        for (const building of this.buildingsController.buildings) {
             if (building.kind === "barracks") {
                 if (building.spawnQueue.length === 0) {
                     building.spawnQueue.push(
@@ -229,7 +265,7 @@ export class Game {
         }
 
         this.projectilesController.tick(timeDelta);
-        const effectsBuildings = this.buildings.tick(timeDelta, {
+        const effectsBuildings = this.buildingsController.tick(timeDelta, {
             teamToResources: new Map(this.resourcesController.teamToState),
         });
 
@@ -240,6 +276,14 @@ export class Game {
             this.resourcesController.changeFood(
                 team,
                 resourcesChange.foodProduced - resourcesChange.foodConsumed,
+            );
+            this.resourcesController.changeWood(
+                team,
+                resourcesChange.woodProduced - resourcesChange.woodConsumed,
+            );
+            this.resourcesController.changeCoins(
+                team,
+                resourcesChange.coinsProduced - resourcesChange.coinsConsumed,
             );
         }
 

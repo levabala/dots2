@@ -3,11 +3,18 @@ import type { ResourcesState } from "../Game/ResourcesController";
 import type { Squad } from "../Game/SquadsController";
 import type { Team } from "../Game/TeamController";
 import type { BuildingKind } from "../Game/BuildingsController";
+import { BUILDINGS_CONFIGS } from "../Game/buildingsConfigs";
+
+export type CommandPanelLog = {
+    timestamp: Date;
+    content: string;
+};
 
 export type CommandPanelState = {
     team: Team | null;
     squads: Squad[];
     resources: ResourcesState | null;
+    logs: CommandPanelLog[];
 };
 
 export type CommandPanelCallbacks = {
@@ -37,7 +44,7 @@ enum Presence {
 const CommandPanel: React.FC<{
     state: CommandPanelState;
     callbacks: CommandPanelCallbacks;
-}> = ({ state: { team, squads, resources }, callbacks }) => {
+}> = ({ state: { team, squads, resources, logs }, callbacks }) => {
     let allowAttack: Presence;
     if (squads.every((squad) => !squad.allowAttack)) {
         allowAttack = Presence.None;
@@ -83,7 +90,7 @@ const CommandPanel: React.FC<{
                         display: "flex",
                         flexDirection: "column",
                         gap: 4,
-                        flexGrow: 1,
+                        width: "70%",
                     }}
                 >
                     <div
@@ -99,9 +106,12 @@ const CommandPanel: React.FC<{
                             {JSON.stringify(
                                 resources
                                     ? {
-                                          food: Math.ceil(resources.food),
-                                          foodCapacity: resources.foodCapacity,
                                           housing: resources.housing,
+                                          woodCapacity: resources.woodCapacity,
+                                          wood: Math.ceil(resources.wood),
+                                          coins: resources.coins,
+                                          foodCapacity: resources.foodCapacity,
+                                          food: Math.ceil(resources.food),
                                       }
                                     : null,
                                 undefined,
@@ -161,21 +171,95 @@ const CommandPanel: React.FC<{
                         </div>
                     )}
                 </div>
-                <div>
-                    <button
-                        onClick={() => callbacks.selectBuilding("barracks")}
+                <div
+                    style={{ display: "flex", flexDirection: "column", gap: 4 }}
+                >
+                    <div>
+                        <button
+                            onClick={() =>
+                                callbacks.selectBuilding("lumberMill")
+                            }
+                            title={JSON.stringify(
+                                BUILDINGS_CONFIGS.lumberMill.cost,
+                                undefined,
+                                2,
+                            )}
+                        >
+                            Lumbermill
+                        </button>
+                        <button
+                            onClick={() => callbacks.selectBuilding("barracks")}
+                            title={JSON.stringify(
+                                BUILDINGS_CONFIGS.barracks.cost,
+                                undefined,
+                                2,
+                            )}
+                        >
+                            Barracks
+                        </button>
+                        <button
+                            onClick={() => callbacks.selectBuilding("house")}
+                            title={JSON.stringify(
+                                BUILDINGS_CONFIGS.house.cost,
+                                undefined,
+                                2,
+                            )}
+                        >
+                            House
+                        </button>
+                        <button
+                            onClick={() => callbacks.selectBuilding("farm")}
+                            title={JSON.stringify(
+                                BUILDINGS_CONFIGS.farm.cost,
+                                undefined,
+                                2,
+                            )}
+                        >
+                            Farm
+                        </button>
+                        <button
+                            onClick={() => callbacks.selectBuilding("granary")}
+                            title={JSON.stringify(
+                                BUILDINGS_CONFIGS.granary.cost,
+                                undefined,
+                                2,
+                            )}
+                        >
+                            Granary
+                        </button>
+                    </div>
+                    <div
+                        style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            border: "solid black 1px",
+                            flexGrow: 1,
+                            overflow: "hidden",
+                        }}
                     >
-                        Barracks
-                    </button>
-                    <button onClick={() => callbacks.selectBuilding("house")}>
-                        House
-                    </button>
-                    <button onClick={() => callbacks.selectBuilding("farm")}>
-                        Farm
-                    </button>
-                    <button onClick={() => callbacks.selectBuilding("granary")}>
-                        Granary
-                    </button>
+                        Logs:
+                        <div
+                            style={{
+                                overflow: "scroll",
+                                flexGrow: 1,
+                            }}
+                        >
+                            {logs.map((log) => (
+                                <div>
+                                    <span>
+                                        {log.timestamp.toLocaleString("en-US", {
+                                            hour12: false,
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                            second: "2-digit",
+                                        })}
+                                    </span>
+                                    {" - "}
+                                    <span>{log.content}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

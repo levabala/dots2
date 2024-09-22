@@ -1,8 +1,13 @@
-import { DOT_FOOD_COST } from "../consts";
-import { createPolygonOffset } from "../shapes";
+import { DOT_COST_COINS, DOT_COST_FOOD } from "../consts";
 import { randomPointInPolygon, type Point, type Polygon } from "../utils";
 import type { DotTemplate, Dot } from "./DotsController";
+import type { ResourcesState } from "./ResourcesController";
 import type { Team } from "./TeamController";
+
+export type BuildingCost = {
+    coins: number;
+    wood: number;
+};
 
 export type BuildingBase = {
     kind: string;
@@ -11,6 +16,7 @@ export type BuildingBase = {
     center: Point;
     health: number;
     team: Team;
+    cost: BuildingCost;
 };
 
 export type BuildingBarracks = BuildingBase & {
@@ -37,11 +43,18 @@ export type BuildingGranary = BuildingBase & {
     foodCapacity: number;
 };
 
+export type BuildingLumberMill = BuildingBase & {
+    kind: "lumberMill";
+    woodPerSecond: number;
+    woodCapacity: number;
+};
+
 export type Building =
     | BuildingBarracks
     | BuildingHouse
     | BuildingFarm
-    | BuildingGranary;
+    | BuildingGranary
+    | BuildingLumberMill;
 
 export type BuildingKind = Building["kind"];
 
@@ -54,6 +67,10 @@ export type BuildingsControllerTickEffects = {
         {
             foodProduced: number;
             foodConsumed: number;
+            woodProduced: number;
+            woodConsumed: number;
+            coinsProduced: number;
+            coinsConsumed: number;
         }
     >;
 };
@@ -64,6 +81,8 @@ export type BuildingsControllerArgs = {
         {
             food: number;
             housing: number;
+            wood: number;
+            coins: number;
         }
     >;
 };
@@ -72,6 +91,13 @@ export class BuildingsController {
     buildings = new Set<Building>();
 
     constructor() {}
+
+    canBuild(building: Building, resources: ResourcesState) {
+        return (
+            building.cost.wood <= resources.woodCapacity &&
+            building.cost.coins <= resources.coins
+        );
+    }
 
     addBuilding(building: Building) {
         this.buildings.add(building);
@@ -113,6 +139,21 @@ export class BuildingsController {
         return count;
     }
 
+    countWoodCapacity(team: Team) {
+        let count = 0;
+        for (const building of this.buildings) {
+            if (building.team !== team) {
+                continue;
+            }
+
+            if (building.kind === "lumberMill") {
+                count += building.woodCapacity;
+            }
+        }
+
+        return count;
+    }
+
     tick(
         timeDelta: number,
         args: BuildingsControllerArgs,
@@ -120,6 +161,10 @@ export class BuildingsController {
         const effectsInitial = {
             foodProduced: 0,
             foodConsumed: 0,
+            woodProduced: 0,
+            woodConsumed: 0,
+            coinsProduced: 0,
+            coinsConsumed: 0,
         };
 
         const effects: BuildingsControllerTickEffects = {
@@ -162,6 +207,22 @@ export class BuildingsController {
             return resources.food + effects.foodProduced - effects.foodConsumed;
         };
 
+        // const getWoodAvailable = (team: Team) => {
+        //     const resources = getResources(team);
+        //     const effects = getResourcesChange(team);
+
+        //     return resources.wood + effects.woodProduced - effects.woodConsumed;
+        // };
+
+        const getCoinsAvailable = (team: Team) => {
+            const resources = getResources(team);
+            const effects = getResourcesChange(team);
+
+            return (
+                resources.coins + effects.coinsProduced - effects.coinsConsumed
+            );
+        };
+
         const tickBarracks = (building: BuildingBarracks) => {
             if (!building.spawnQueue.length) {
                 return;
@@ -172,7 +233,11 @@ export class BuildingsController {
                     return;
                 }
 
-                if (getFoodAvailable(building.team) < DOT_FOOD_COST) {
+                if (getFoodAvailable(building.team) < DOT_COST_FOOD) {
+                    return;
+                }
+
+                if (getCoinsAvailable(building.team) < DOT_COST_COINS) {
                     return;
                 }
 
@@ -180,7 +245,9 @@ export class BuildingsController {
                     return;
                 }
 
-                getResourcesChange(building.team).foodConsumed += DOT_FOOD_COST;
+                getResourcesChange(building.team).foodConsumed += DOT_COST_FOOD;
+                getResourcesChange(building.team).coinsConsumed +=
+                    DOT_COST_COINS;
                 building.isSpawning = true;
                 building.spawnTimeLeft = building.spawnDuration;
             }
@@ -215,6 +282,12 @@ export class BuildingsController {
             getResourcesChange(building.team).foodProduced += foodProduced;
         };
 
+        const tickLumberMill = (building: BuildingLumberMill) => {
+            const woodProduced = building.woodPerSecond * (timeDelta / 1000);
+
+            getResourcesChange(building.team).woodProduced += woodProduced;
+        };
+
         for (const building of this.buildings) {
             switch (building.kind) {
                 case "barracks":
@@ -222,6 +295,9 @@ export class BuildingsController {
                     break;
                 case "farm":
                     tickFarm(building);
+                    break;
+                case "lumberMill":
+                    tickLumberMill(building);
                     break;
             }
         }

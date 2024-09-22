@@ -1,5 +1,4 @@
 import {
-    assertUnreachable,
     distanceBetween,
     isPointInRect,
     orthogonalRect,
@@ -19,6 +18,7 @@ import { GameEventTickName, type Game } from "../Game/Game";
 import {
     CommandPanelUI,
     type CommandPanelCallbacks,
+    type CommandPanelLog,
     type CommandPanelState,
 } from "./CommandPanel";
 import { isNonNull } from "remeda";
@@ -55,6 +55,8 @@ export class UI {
     currentTeam: Team | null = null;
 
     buildingPlacingGhost: Building | null = null;
+
+    logs: CommandPanelLog[] = [];
 
     constructor(
         readonly element: HTMLElement,
@@ -158,10 +160,15 @@ export class UI {
             switch (e.button) {
                 case 0:
                     if (this.buildingPlacingGhost) {
-                        this.game.buildings.addBuilding(
+                        const success = this.game.tryBuild(
                             this.buildingPlacingGhost,
                         );
                         this.buildingPlacingGhost = null;
+
+                        if (!success) {
+                            this.addLog("Building can't be placed");
+                        }
+
                         return;
                     }
 
@@ -244,6 +251,13 @@ export class UI {
         );
 
         window.addEventListener("keypress", this.handleKeypress.bind(this));
+    }
+
+    addLog(content: string) {
+        this.logs.push({
+            timestamp: new Date(),
+            content,
+        });
     }
 
     // chatgpt (c)
@@ -345,8 +359,10 @@ export class UI {
                       housing: teamToState.housing,
                       wood: teamToState.wood,
                       woodCapacity: teamToState.woodCapacity,
+                      coins: teamToState.coins,
                   }
                 : null,
+            logs: this.logs,
         };
     }
 
