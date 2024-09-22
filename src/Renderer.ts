@@ -176,7 +176,7 @@ export class RendererCanvasSimple implements Renderer {
             textBaseline: "middle",
             textAlign: "center",
         });
-        this.ctx.fillStyle = 'gray';
+        this.ctx.fillStyle = "gray";
         this.ctx.fillText(building.kind, center.x, center.y);
         this.ctx.strokeStyle = "black";
         this.ctx.lineWidth = 0.5;

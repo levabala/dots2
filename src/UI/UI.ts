@@ -158,7 +158,9 @@ export class UI {
             switch (e.button) {
                 case 0:
                     if (this.buildingPlacingGhost) {
-                        this.game.buildings.addBuilding(this.buildingPlacingGhost);
+                        this.game.buildings.addBuilding(
+                            this.buildingPlacingGhost,
+                        );
                         this.buildingPlacingGhost = null;
                         return;
                     }

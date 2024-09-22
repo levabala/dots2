@@ -216,7 +216,8 @@ export class DotsGrid {
 
                 const distance = distanceBetween(point, squadCenter);
 
-                const isMaybeInRange = distance >= (range - dotsGridSquadDiagonalHalf);
+                const isMaybeInRange =
+                    distance >= range - dotsGridSquadDiagonalHalf;
 
                 if (isMaybeInRange) {
                     maybeInRange.push(index);
@@ -236,10 +237,8 @@ export class DotsGrid {
     ): Dot[] {
         const dots = [];
 
-        const { definitelyInRange, maybeInRange } = this.getDotsGridIndicesInRange(
-            point,
-            range,
-        );
+        const { definitelyInRange, maybeInRange } =
+            this.getDotsGridIndicesInRange(point, range);
 
         for (const index of definitelyInRange) {
             for (const dot of this.dotsGrid[index]) {
