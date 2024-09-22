@@ -212,7 +212,7 @@ export class Game {
     tryBuild(building: Building) {
         const resources = this.resourcesController.getState(building.team);
 
-        if (!this.buildingsController.canBuild(building, resources)) {
+        if (!BuildingsController.canBuild(building.cost, resources)) {
             return false;
         }
 

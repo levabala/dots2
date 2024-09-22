@@ -1,5 +1,6 @@
 import { DOT_COST_COINS, DOT_COST_FOOD } from "../consts";
 import { randomPointInPolygon, type Point, type Polygon } from "../utils";
+import type { BuildingConfig } from "./buildingsConfigs";
 import type { DotTemplate, Dot } from "./DotsController";
 import type { ResourcesState } from "./ResourcesController";
 import type { Team } from "./TeamController";
@@ -92,10 +93,10 @@ export class BuildingsController {
 
     constructor() {}
 
-    canBuild(building: Building, resources: ResourcesState) {
+    static canBuild(buildingCost: BuildingCost, resources: ResourcesState) {
         return (
-            building.cost.wood <= resources.woodCapacity &&
-            building.cost.coins <= resources.coins
+            buildingCost.wood <= resources.wood &&
+            buildingCost.coins <= resources.coins
         );
     }
 

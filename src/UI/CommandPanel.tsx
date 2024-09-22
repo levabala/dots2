@@ -2,7 +2,10 @@ import { createRoot, type Root } from "react-dom/client";
 import type { ResourcesState } from "../Game/ResourcesController";
 import type { Squad } from "../Game/SquadsController";
 import type { Team } from "../Game/TeamController";
-import type { BuildingKind } from "../Game/BuildingsController";
+import {
+    BuildingsController,
+    type BuildingKind,
+} from "../Game/BuildingsController";
 import { BUILDINGS_CONFIGS } from "../Game/buildingsConfigs";
 
 export type CommandPanelLog = {
@@ -183,6 +186,13 @@ const CommandPanel: React.FC<{
                                 undefined,
                                 2,
                             )}
+                            disabled={
+                                resources === null ||
+                                !BuildingsController.canBuild(
+                                    BUILDINGS_CONFIGS.lumberMill.cost,
+                                    resources,
+                                )
+                            }
                         >
                             Lumbermill
                         </button>
@@ -193,6 +203,13 @@ const CommandPanel: React.FC<{
                                 undefined,
                                 2,
                             )}
+                            disabled={
+                                resources === null ||
+                                !BuildingsController.canBuild(
+                                    BUILDINGS_CONFIGS.barracks.cost,
+                                    resources,
+                                )
+                            }
                         >
                             Barracks
                         </button>
@@ -203,6 +220,13 @@ const CommandPanel: React.FC<{
                                 undefined,
                                 2,
                             )}
+                            disabled={
+                                resources === null ||
+                                !BuildingsController.canBuild(
+                                    BUILDINGS_CONFIGS.house.cost,
+                                    resources,
+                                )
+                            }
                         >
                             House
                         </button>
@@ -213,6 +237,13 @@ const CommandPanel: React.FC<{
                                 undefined,
                                 2,
                             )}
+                            disabled={
+                                resources === null ||
+                                !BuildingsController.canBuild(
+                                    BUILDINGS_CONFIGS.farm.cost,
+                                    resources,
+                                )
+                            }
                         >
                             Farm
                         </button>
@@ -223,6 +254,13 @@ const CommandPanel: React.FC<{
                                 undefined,
                                 2,
                             )}
+                            disabled={
+                                resources === null ||
+                                !BuildingsController.canBuild(
+                                    BUILDINGS_CONFIGS.granary.cost,
+                                    resources,
+                                )
+                            }
                         >
                             Granary
                         </button>
@@ -262,5 +300,5 @@ const CommandPanel: React.FC<{
                 </div>
             </div>
         </div>
-    )
+    );
 };
