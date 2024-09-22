@@ -1,4 +1,5 @@
 import {
+    assertUnreachable,
     distanceBetween,
     isPointInRect,
     orthogonalRect,
@@ -25,6 +26,9 @@ import { ViewPort } from "./ViewPort";
 import type { Dot } from "../Game/DotsController";
 import type { Squad, Slot } from "../Game/SquadsController";
 import type { Team } from "../Game/TeamController";
+import type { Building, BuildingKind } from "../Game/BuildingsController";
+import { createPolygonOffset } from "../shapes";
+import { BUILDINGS_CONFIGS } from "../Game/buildingsConfigs";
 
 export type SquadFrame = { index: number; squad: Squad; frame: Rect };
 
@@ -49,6 +53,8 @@ export class UI {
     commandPanelUI: CommandPanelUI;
 
     currentTeam: Team | null = null;
+
+    buildingPlacingGhost: Building | null = null;
 
     constructor(
         readonly element: HTMLElement,
@@ -90,10 +96,16 @@ export class UI {
 
         this.element.appendChild(node);
 
+        node.addEventListener("mousemove", (e) => {
+            e.stopPropagation();
+        });
         node.addEventListener("mousedown", (e) => {
             e.stopPropagation();
         });
         node.addEventListener("mouseup", (e) => {
+            e.stopPropagation();
+        });
+        node.addEventListener("wheel", (e) => {
             e.stopPropagation();
         });
 
@@ -122,6 +134,10 @@ export class UI {
     initUserEventListeners() {
         let isMouseDown = false;
         this.element.addEventListener("mousedown", (e) => {
+            if (this.buildingPlacingGhost) {
+                return;
+            }
+
             isMouseDown = true;
             switch (e.button) {
                 case 0:
@@ -141,6 +157,12 @@ export class UI {
         this.element.addEventListener("mouseup", (e) => {
             switch (e.button) {
                 case 0:
+                    if (this.buildingPlacingGhost) {
+                        this.game.buildings.addBuilding(this.buildingPlacingGhost);
+                        this.buildingPlacingGhost = null;
+                        return;
+                    }
+
                     this.trySelectSquadFrame(
                         this.viewPort.matrix.transformPointReverse({
                             x: e.offsetX,
@@ -156,6 +178,11 @@ export class UI {
                     );
                     break;
                 case 2:
+                    if (this.buildingPlacingGhost) {
+                        this.buildingPlacingGhost = null;
+                        return;
+                    }
+
                     this.handleRightButtonUp(e);
                     break;
             }
@@ -168,6 +195,17 @@ export class UI {
         });
         this.element.addEventListener("mousemove", (e) => {
             if (!isMouseDown) {
+                if (this.buildingPlacingGhost) {
+                    this.buildingPlacingGhost.center =
+                        this.viewPort.matrix.transformPointReverse({
+                            x: e.offsetX,
+                            y: e.offsetY,
+                        });
+                    this.buildingPlacingGhost.frame = createPolygonOffset(
+                        this.buildingPlacingGhost.frameRelative,
+                        this.buildingPlacingGhost.center,
+                    );
+                }
                 return;
             }
 
@@ -303,6 +341,8 @@ export class UI {
                       food: teamToState.food,
                       foodCapacity: teamToState.foodCapacity,
                       housing: teamToState.housing,
+                      wood: teamToState.wood,
+                      woodCapacity: teamToState.woodCapacity,
                   }
                 : null,
         };
@@ -324,13 +364,28 @@ export class UI {
                     squad.dotsToShootOnce = new Set(
                         squad.slots.map((slot) => slot.dot).filter(isNonNull),
                     );
-                    squad.dotsToShootOnce.forEach((dot) => dot.allowAttack = true);
+                    squad.dotsToShootOnce.forEach(
+                        (dot) => (dot.allowAttack = true),
+                    );
                 } else {
                     squad.dotsToShootOnce.clear();
                 }
             }
 
             this.renderCommandPanel();
+        },
+        selectBuilding: (buildingKind: BuildingKind) => {
+            if (!this.currentTeam) {
+                return;
+            }
+
+            this.buildingPlacingGhost = {
+                ...BUILDINGS_CONFIGS[buildingKind],
+                kind: buildingKind,
+                team: this.currentTeam,
+                frame: BUILDINGS_CONFIGS.barracks.frameRelative,
+                center: { x: 0, y: 0 },
+            } as Building;
         },
     };
 

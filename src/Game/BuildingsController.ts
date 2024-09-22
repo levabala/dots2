@@ -1,11 +1,14 @@
 import { DOT_FOOD_COST } from "../consts";
-import { randomPointInPolygon, type Polygon } from "../utils";
+import { createPolygonOffset } from "../shapes";
+import { randomPointInPolygon, type Point, type Polygon } from "../utils";
 import type { DotTemplate, Dot } from "./DotsController";
 import type { Team } from "./TeamController";
 
 export type BuildingBase = {
     kind: string;
+    frameRelative: Polygon;
     frame: Polygon;
+    center: Point;
     health: number;
     team: Team;
 };

@@ -7,6 +7,7 @@ import { ProjectilesController } from "./ProjectilesController";
 import { SquadsController, type Squad } from "./SquadsController";
 import { ResourcesController } from "./ResourcesController";
 import { TeamController } from "./TeamController";
+import { BUILDINGS_CONFIGS } from "./buildingsConfigs";
 
 export enum GameEventTickName {
     squadsRemoved = "squads-removed",
@@ -81,92 +82,47 @@ export class Game {
         times(100, () => this.dotsController.addDotRandom(team1));
         times(100, () => this.dotsController.addDotRandom(team2));
 
+        const center1 = { x: 1000, y: 1000 };
         this.buildings.addBuilding({
-            kind: "barracks",
+            ...BUILDINGS_CONFIGS.barracks,
             team: team1,
-            frame: createPolygonOffset(
-                [
-                    { x: 0, y: 0 },
-                    { x: 100, y: 0 },
-                    { x: 100, y: 80 },
-                    { x: 0, y: 80 },
-                ],
-                { x: 1000, y: 1000 },
-            ),
-            health: 100,
-            spawnDuration: 500,
-            spawnTimeLeft: 500,
-            spawnQueue: times(50, () =>
-                this.dotsController.generateDotRandom(),
-            ),
-            isSpawning: false,
+            frame: createPolygonOffset(BUILDINGS_CONFIGS.barracks.frameRelative, center1),
+            center: center1,
         });
+        const center2 = { x: 900, y: 1000 };
         this.buildings.addBuilding({
-            kind: "house",
+            ...BUILDINGS_CONFIGS.house,
             team: team1,
-            frame: createPolygonOffset(
-                [
-                    { x: 0, y: 0 },
-                    { x: 50, y: 0 },
-                    { x: 50, y: 50 },
-                    { x: 0, y: 50 },
-                ],
-                { x: 900, y: 1000 },
-            ),
-            health: 100,
-            capacity: 110,
+            frame: createPolygonOffset(BUILDINGS_CONFIGS.house.frameRelative, center2),
+            center: center1,
         });
+        const center3 = { x: 870, y: 1100 };
         this.buildings.addBuilding({
+            ...BUILDINGS_CONFIGS.farm,
             kind: "farm",
             team: team1,
-            frame: createPolygonOffset(
-                [
-                    { x: 0, y: 0 },
-                    { x: 150, y: 0 },
-                    { x: 150, y: 150 },
-                    { x: 0, y: 150 },
-                ],
-                { x: 870, y: 1100 },
-            ),
-            health: 100,
-            foodPerSecond: 5,
-            foodCapacity: 100,
+            frame: createPolygonOffset(BUILDINGS_CONFIGS.farm.frameRelative, center3),
+            center: center3,
         });
 
+        const center4 = { x: 1700, y: 1000 };
         this.buildings.addBuilding({
+            ...BUILDINGS_CONFIGS.barracks,
             kind: "barracks",
             team: team2,
-            frame: createPolygonOffset(
-                [
-                    { x: 0, y: 0 },
-                    { x: 100, y: 0 },
-                    { x: 100, y: 80 },
-                    { x: 0, y: 80 },
-                ],
-                { x: 1700, y: 1000 },
-            ),
-            health: 100,
-            spawnDuration: 500,
-            spawnTimeLeft: 500,
+            frame: createPolygonOffset(BUILDINGS_CONFIGS.barracks.frameRelative, center4),
+            center: center4,
             spawnQueue: times(50, () =>
                 this.dotsController.generateDotRandom(),
             ),
-            isSpawning: false,
         });
+        const center5 = { x: 1850, y: 1000 };
         this.buildings.addBuilding({
+            ...BUILDINGS_CONFIGS.house,
             kind: "house",
             team: team2,
-            frame: createPolygonOffset(
-                [
-                    { x: 0, y: 0 },
-                    { x: 50, y: 0 },
-                    { x: 50, y: 50 },
-                    { x: 0, y: 50 },
-                ],
-                { x: 1850, y: 1000 },
-            ),
-            health: 100,
-            capacity: 110,
+            frame: createPolygonOffset(BUILDINGS_CONFIGS.house.frameRelative, center5),
+            center: center5,
         });
     }
 

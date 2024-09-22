@@ -45,6 +45,10 @@ export class RendererCanvasSimple implements Renderer {
             this.renderBuilding(building);
         }
 
+        if (this.ui.buildingPlacingGhost) {
+            this.renderBuildingGhost(this.ui.buildingPlacingGhost);
+        }
+
         for (const dot of this.game.dotsController.dots) {
             if (dot.attackTargetDot && dot.attackCooldownLeft === 0) {
                 this.renderDotAttackTargetArrow(dot, dot.attackTargetDot);
@@ -155,6 +159,28 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.textAlign = textAlign ?? "left";
         this.ctx.textBaseline = textBaseline ?? "top";
         this.ctx.font = font ?? "10px sans-serif";
+    }
+
+    private renderBuildingGhost(building: BuildingBase) {
+        this.ctx.strokeStyle = "gray";
+        this.ctx.lineWidth = 1;
+
+        this.drawPolygon(building.frame);
+
+        this.ctx.stroke();
+
+        const center = getPolygonCenter(building.frame);
+
+        this.setupText({
+            font: "16px sans-serif",
+            textBaseline: "middle",
+            textAlign: "center",
+        });
+        this.ctx.fillStyle = 'gray';
+        this.ctx.fillText(building.kind, center.x, center.y);
+        this.ctx.strokeStyle = "black";
+        this.ctx.lineWidth = 0.5;
+        this.ctx.strokeText(building.kind, center.x, center.y);
     }
 
     private renderBuilding(building: BuildingBase) {

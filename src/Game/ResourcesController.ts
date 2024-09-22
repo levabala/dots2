@@ -4,6 +4,8 @@ export type ResourcesState = {
     food: number;
     foodCapacity: number;
     housing: number;
+    wood: number;
+    woodCapacity: number;
 };
 
 export class ResourcesController {
@@ -16,6 +18,8 @@ export class ResourcesController {
             food: 0,
             foodCapacity: 0,
             housing: 0,
+            wood: 0,
+            woodCapacity: 0,
         });
     }
 

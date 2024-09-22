@@ -420,3 +420,7 @@ function isPointInPolygon(point: Point, polygon: Polygon): boolean {
     }
     return inside;
 }
+
+export function assertUnreachable(x: never): never {
+    throw new Error("Didn't expect to get here");
+}
