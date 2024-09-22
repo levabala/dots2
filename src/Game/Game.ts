@@ -86,14 +86,20 @@ export class Game {
         this.buildings.addBuilding({
             ...BUILDINGS_CONFIGS.barracks,
             team: team1,
-            frame: createPolygonOffset(BUILDINGS_CONFIGS.barracks.frameRelative, center1),
+            frame: createPolygonOffset(
+                BUILDINGS_CONFIGS.barracks.frameRelative,
+                center1,
+            ),
             center: center1,
         });
         const center2 = { x: 900, y: 1000 };
         this.buildings.addBuilding({
             ...BUILDINGS_CONFIGS.house,
             team: team1,
-            frame: createPolygonOffset(BUILDINGS_CONFIGS.house.frameRelative, center2),
+            frame: createPolygonOffset(
+                BUILDINGS_CONFIGS.house.frameRelative,
+                center2,
+            ),
             center: center1,
         });
         const center3 = { x: 870, y: 1100 };
@@ -101,7 +107,10 @@ export class Game {
             ...BUILDINGS_CONFIGS.farm,
             kind: "farm",
             team: team1,
-            frame: createPolygonOffset(BUILDINGS_CONFIGS.farm.frameRelative, center3),
+            frame: createPolygonOffset(
+                BUILDINGS_CONFIGS.farm.frameRelative,
+                center3,
+            ),
             center: center3,
         });
 
@@ -110,7 +119,10 @@ export class Game {
             ...BUILDINGS_CONFIGS.barracks,
             kind: "barracks",
             team: team2,
-            frame: createPolygonOffset(BUILDINGS_CONFIGS.barracks.frameRelative, center4),
+            frame: createPolygonOffset(
+                BUILDINGS_CONFIGS.barracks.frameRelative,
+                center4,
+            ),
             center: center4,
             spawnQueue: times(50, () =>
                 this.dotsController.generateDotRandom(),
@@ -121,7 +133,10 @@ export class Game {
             ...BUILDINGS_CONFIGS.house,
             kind: "house",
             team: team2,
-            frame: createPolygonOffset(BUILDINGS_CONFIGS.house.frameRelative, center5),
+            frame: createPolygonOffset(
+                BUILDINGS_CONFIGS.house.frameRelative,
+                center5,
+            ),
             center: center5,
         });
     }
@@ -201,6 +216,16 @@ export class Game {
                 team,
                 this.buildings.countFoodCapacity(team),
             );
+        }
+
+        for (const building of this.buildings.buildings) {
+            if (building.kind === "barracks") {
+                if (building.spawnQueue.length === 0) {
+                    building.spawnQueue.push(
+                        this.dotsController.generateDotRandom(),
+                    );
+                }
+            }
         }
 
         this.projectilesController.tick(timeDelta);
