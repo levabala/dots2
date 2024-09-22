@@ -50,11 +50,10 @@ export const BUILDINGS_CONFIGS: {
             { x: -50, y: 50 },
         ],
         health: 100,
-        foodPerSecond: 5,
+        foodPerSecond: 20,
         foodCapacity: 100,
         cost: {
             wood: 80,
-
             coins: 50,
         },
     },
@@ -86,7 +85,7 @@ export const BUILDINGS_CONFIGS: {
         woodCapacity: 100,
         cost: {
             wood: 0,
-            coins: 20,
+            coins: 200,
         },
     },
 };
