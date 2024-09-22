@@ -59,6 +59,17 @@ export function sceneTwoTeamsSomeBuildings(game: Game) {
         ),
         center: center6,
     });
+    const center7 = { x: 850, y: 920 };
+    game.buildingsController.addBuilding({
+        ...BUILDINGS_CONFIGS.hq,
+        kind: "hq",
+        team: team1,
+        frame: createPolygonOffset(
+            BUILDINGS_CONFIGS.hq.frameRelative,
+            center7,
+        ),
+        center: center7,
+    });
 
     const center4 = { x: 1700, y: 1000 };
     game.buildingsController.addBuilding({
@@ -83,10 +94,21 @@ export function sceneTwoTeamsSomeBuildings(game: Game) {
         ),
         center: center5,
     });
+    const center8 = { x: 2000, y: 1000 };
+    game.buildingsController.addBuilding({
+        ...BUILDINGS_CONFIGS.hq,
+        kind: "hq",
+        team: team2,
+        frame: createPolygonOffset(
+            BUILDINGS_CONFIGS.hq.frameRelative,
+            center8,
+        ),
+        center: center8,
+    });
 }
 
-export function sceneTwoSquads(ui: UI) {
-    for (const dot of ui.game.dotsController.dots) {
+export function sceneTwoSquads(game: Game, ui: UI) {
+    for (const dot of game.dotsController.dots) {
         if (dot.team.name === "red") {
             ui.dotsSelected.add(dot);
         }
@@ -103,7 +125,7 @@ export function sceneTwoSquads(ui: UI) {
     ui.dotsAllUnselect();
     ui.squadFramesSelected.splice(0, ui.squadFramesSelected.length);
 
-    for (const dot of ui.game.dotsController.dots) {
+    for (const dot of game.dotsController.dots) {
         if (dot.team.name === "blue") {
             ui.dotsSelected.add(dot);
         }

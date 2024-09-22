@@ -93,7 +93,7 @@ function gameLoop() {
 ui.init();
 
 sceneTwoTeamsSomeBuildings(game);
-sceneTwoSquads(ui);
+sceneTwoSquads(game, ui);
 
 renderLoop();
 gameLoop();

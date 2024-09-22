@@ -49,12 +49,17 @@ export type BuildingLumberMill = BuildingBase & {
     woodCapacity: number;
 };
 
+export type BuildingHQ = BuildingBase & {
+    kind: "hq";
+};
+
 export type Building =
     | BuildingBarracks
     | BuildingHouse
     | BuildingFarm
     | BuildingGranary
-    | BuildingLumberMill;
+    | BuildingLumberMill
+    | BuildingHQ;
 
 export type BuildingKind = Building["kind"];
 

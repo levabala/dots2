@@ -1,13 +1,10 @@
 import { type Point } from "../utils";
-import { times } from "remeda";
 import { BuildingsController, type Building } from "./BuildingsController";
-import { createPolygonOffset } from "../shapes";
 import { DotsController, type Dot } from "./DotsController";
 import { ProjectilesController } from "./ProjectilesController";
 import { SquadsController, type Squad } from "./SquadsController";
 import { ResourcesController } from "./ResourcesController";
 import { TeamController } from "./TeamController";
-import { BUILDINGS_CONFIGS } from "./buildingsConfigs";
 
 export enum GameEventTickName {
     squadsRemoved = "squads-removed",

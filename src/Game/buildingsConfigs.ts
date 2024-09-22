@@ -88,4 +88,18 @@ export const BUILDINGS_CONFIGS: {
             coins: 200,
         },
     },
+    hq: {
+        kind: "hq",
+        frameRelative: [
+            { x: -40, y: -50 },
+            { x: 40, y: -50 },
+            { x: 40, y: 50 },
+            { x: -40, y: 50 },
+        ],
+        health: 500,
+        cost: {
+            wood: Infinity,
+            coins: Infinity,
+        },
+    },
 };
