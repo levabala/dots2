@@ -82,6 +82,7 @@ export class DotsController {
             | "slot"
             | "gridSquareIndexes"
             | "removed"
+            | "allowAttack"
         >,
     ): Dot {
         return {
@@ -99,6 +100,7 @@ export class DotsController {
                 DOT_HEIGHT,
             ),
             removed: false,
+            allowAttack: true,
 
             squad: null,
             slot: null,
