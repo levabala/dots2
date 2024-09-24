@@ -245,6 +245,10 @@ export class DotsController {
         };
     }
 
+    dotMoveTo(dot: Dot, destination: Point) {
+        dot.path = [destination];
+    }
+
     checkHasShootIntersectionWithOwnTeam(dot: Dot, target: Point): boolean {
         const line = {
             p1: dot.position,

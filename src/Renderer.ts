@@ -4,9 +4,9 @@ import type { Game } from "./Game";
 import type { Building, BuildingBase } from "./Game/BuildingsController";
 import type { Dot } from "./Game/DotsController";
 import type { Projectile } from "./Game/ProjectilesController";
-import type { Slot } from "./Game/SquadsController";
+import type { Slot, Squad } from "./Game/SquadsController";
 import { getPolygonCenter } from "./shapes";
-import type { SquadFrame, UI } from "./UI/UI";
+import type { UI } from "./UI/UI";
 import {
     getIntersectionFirstPolygon,
     getIntersectionFirstRect,
@@ -37,12 +37,19 @@ export class RendererCanvasSimple implements Renderer {
 
     lastRenderTimestamp: number | null = null;
     render() {
+        const {
+            dotsController,
+            buildingsController,
+            projectilesController,
+            squadsController,
+        } = this.game.getPrivateStaffYouShouldNotUse();
+
         this.ctx.clearRect(0, 0, this.width, this.height);
         this.adjustViewport();
 
-        this.renderDotsGrid(this.game.dotsController.dotsGrid);
+        this.renderDotsGrid(dotsController.dotsGrid);
 
-        for (const building of this.game.buildingsController.buildings) {
+        for (const building of buildingsController.buildings) {
             this.renderBuilding(building);
         }
 
@@ -50,7 +57,7 @@ export class RendererCanvasSimple implements Renderer {
             this.renderBuildingGhost(this.ui.buildingPlacingGhost);
         }
 
-        for (const dot of this.game.dotsController.dots) {
+        for (const dot of dotsController.dots) {
             if (
                 (dot.attackTargetDot || dot.attackTargetBuilding) &&
                 dot.attackCooldownLeft === 0
@@ -70,13 +77,13 @@ export class RendererCanvasSimple implements Renderer {
             }
         }
 
-        for (const squad of this.game.squadsController.squads) {
+        for (const squad of squadsController.squads) {
             for (const slot of squad.slots) {
                 this.renderSlot(slot);
             }
         }
 
-        for (const dot of this.game.dotsController.dots) {
+        for (const dot of dotsController.dots) {
             if (dot.attackCooldownLeft === 0) {
                 this.renderDotWeaponRaised(dot);
             }
@@ -84,33 +91,32 @@ export class RendererCanvasSimple implements Renderer {
             this.renderDot(dot);
         }
 
-        for (const squadFrame of this.ui.squadFrames) {
-            const isSelected = this.ui.squadFramesSelected.includes(squadFrame);
-            this.renderSquadFrames(squadFrame, isSelected);
+        for (const squad of squadsController.squads) {
+            const isSelected = this.ui.squadsSelected.includes(squad);
+            this.renderSquadFrames(squad, isSelected);
         }
 
-        for (const projectile of this.game.projectilesController.projectiles) {
+        for (const projectile of projectilesController.projectiles) {
             this.renderProjectile(projectile);
         }
 
-        for (const squadFrame of this.ui.squadFrames) {
-            for (const squadTarget of squadFrame.squad.attackTargetSquads) {
-                const squadFrameTarget = this.ui.squadFrames.find(
-                    (sf) => sf.squad === squadTarget,
+        for (const squad of squadsController.squads) {
+            for (const squadTarget of squad.attackTargetSquads) {
+                const squadFrameTarget = squadsController.squads.find(
+                    (sf) => sf === squadTarget,
                 );
 
                 if (squadFrameTarget) {
                     this.renderSquadFrameAttackArrowToSquad(
-                        squadFrame,
+                        squad,
                         squadFrameTarget,
                     );
                 }
             }
 
-            for (const buildingTarget of squadFrame.squad
-                .attackTargetBuildings) {
+            for (const buildingTarget of squad.attackTargetBuildings) {
                 this.renderSquadFrameAttackArrowToBuilding(
-                    squadFrame,
+                    squad,
                     buildingTarget,
                 );
             }
@@ -225,11 +231,19 @@ export class RendererCanvasSimple implements Renderer {
         });
         this.ctx.fillStyle = this.getTeamColor(building.team?.index ?? -1);
         this.ctx.fillText(building.kind, center.x, center.y - lineHeight / 2);
-        this.ctx.fillText(`${building.health}`, center.x, center.y + lineHeight / 2);
+        this.ctx.fillText(
+            `${building.health}`,
+            center.x,
+            center.y + lineHeight / 2,
+        );
         this.ctx.strokeStyle = "black";
         this.ctx.lineWidth = 0.5;
         this.ctx.strokeText(building.kind, center.x, center.y - lineHeight / 2);
-        this.ctx.strokeText(`${building.health}`, center.x, center.y + lineHeight / 2);
+        this.ctx.strokeText(
+            `${building.health}`,
+            center.x,
+            center.y + lineHeight / 2,
+        );
     }
 
     private getDotColor(dot: Dot) {
@@ -330,11 +344,11 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.stroke();
     }
 
-    renderSquadFrames(squadFrame: SquadFrame, isSelected: boolean) {
+    renderSquadFrames(squad: Squad, isSelected: boolean) {
         this.ctx.lineWidth = 1;
         this.ctx.strokeStyle = isSelected ? "darkkhaki" : "brown";
 
-        this.drawRect(squadFrame.frame);
+        this.drawRect(squad.frame);
 
         this.ctx.stroke();
     }
@@ -371,25 +385,19 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.stroke();
     }
 
-    renderSquadFrameAttackArrowToSquad(
-        squadFrameFrom: SquadFrame,
-        squadFrameTo: SquadFrame,
-    ) {
+    renderSquadFrameAttackArrowToSquad(squadFrom: Squad, squadTo: Squad) {
         this.ctx.lineWidth = 2;
         this.ctx.strokeStyle = "red";
 
-        const from = getRectCenter(squadFrameFrom.frame);
-        const to = getRectCenter(squadFrameTo.frame);
+        const from = getRectCenter(squadFrom.frame);
+        const to = getRectCenter(squadTo.frame);
 
         const lineCenterToCenter = { p1: from, p2: to };
         const start = getIntersectionFirstRect(
             lineCenterToCenter,
-            squadFrameFrom.frame,
+            squadFrom.frame,
         );
-        const end = getIntersectionFirstRect(
-            lineCenterToCenter,
-            squadFrameTo.frame,
-        );
+        const end = getIntersectionFirstRect(lineCenterToCenter, squadTo.frame);
 
         if (!start || !end) {
             return;
@@ -401,19 +409,19 @@ export class RendererCanvasSimple implements Renderer {
     }
 
     renderSquadFrameAttackArrowToBuilding(
-        squadFrameFrom: SquadFrame,
+        squadFrom: Squad,
         buildingTo: Building,
     ) {
         this.ctx.lineWidth = 2;
         this.ctx.strokeStyle = "red";
 
-        const from = getRectCenter(squadFrameFrom.frame);
+        const from = getRectCenter(squadFrom.frame);
         const to = getPolygonCenter(buildingTo.frame);
 
         const lineCenterToCenter = { p1: from, p2: to };
         const start = getIntersectionFirstRect(
             lineCenterToCenter,
-            squadFrameFrom.frame,
+            squadFrom.frame,
         );
         const end = getIntersectionFirstPolygon(
             lineCenterToCenter,

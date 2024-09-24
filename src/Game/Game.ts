@@ -1,10 +1,10 @@
-import { type Point } from "../utils";
+import { type Point, type Rect } from "../utils";
 import { BuildingsController, type Building } from "./BuildingsController";
 import { DotsController, type Dot } from "./DotsController";
 import { ProjectilesController } from "./ProjectilesController";
 import { SquadsController, type Squad } from "./SquadsController";
 import { ResourcesController } from "./ResourcesController";
-import { TeamController } from "./TeamController";
+import { TeamController, type Team } from "./TeamController";
 
 export enum GameEventTickName {
     squadsRemoved = "squads-removed",
@@ -34,14 +34,14 @@ export type GameEventListener<Name extends GameEventTick["name"]> = (
 ) => void;
 
 export class Game {
-    dotsController: DotsController;
-    projectilesController: ProjectilesController;
-    squadsController: SquadsController;
-    buildingsController: BuildingsController;
-    resourcesController: ResourcesController;
-    teamController: TeamController;
+    private dotsController: DotsController;
+    private projectilesController: ProjectilesController;
+    private squadsController: SquadsController;
+    private buildingsController: BuildingsController;
+    private resourcesController: ResourcesController;
+    private teamController: TeamController;
 
-    eventListeners: {
+    private eventListeners: {
         [key in GameEventTick["name"]]: Set<GameEventListener<key>>;
     } = {
         [GameEventTickName.squadsRemoved]: new Set(),
@@ -64,6 +64,33 @@ export class Game {
         );
         this.squadsController = new SquadsController();
         this.resourcesController = new ResourcesController();
+    }
+
+    getPrivateStaffYouShouldNotUse() {
+        return {
+            dotsController: this.dotsController,
+            projectilesController: this.projectilesController,
+            squadsController: this.squadsController,
+            buildingsController: this.buildingsController,
+            resourcesController: this.resourcesController,
+            teamController: this.teamController,
+        };
+    }
+
+    getDots() {
+        return this.dotsController.dots;
+    }
+
+    getSquads() {
+        return this.squadsController.squads;
+    }
+
+    getBuildings() {
+        return this.buildingsController.buildings;
+    }
+
+    getTeamToResources() {
+        return this.resourcesController.teamToState;
     }
 
     private emitEvent<Name extends GameEventTick["name"]>(
@@ -128,8 +155,8 @@ export class Game {
         }
     }
 
-    dotMoveTo(dot: Dot, destination: Point) {
-        dot.path = [destination];
+    dotWithoutSquadMoveTo(dot: Dot, destination: Point) {
+        this.dotsController.dotMoveTo(dot, destination);
     }
 
     tryBuild(building: Building) {
@@ -148,6 +175,22 @@ export class Game {
         );
 
         return true;
+    }
+
+    createSquad(dots: Dot[], team: Team, center: Point) {
+        return this.squadsController.createSquad(dots, team, center);
+    }    
+
+    removeSquad(squad: Squad) {
+        this.squadsController.removeSquad(squad);
+    }
+
+    isInSquad(dot: Dot) {
+        return this.squadsController.isInSquad(dot);
+    }
+
+    moveSquadTo(squads: Squad[], targetFrame: Rect) {
+        return this.squadsController.moveSquadTo(squads, targetFrame);
     }
 
     tick(timeDelta: number) {

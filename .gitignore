@@ -176,3 +176,6 @@ dist
 
 # temp build files
 .build
+
+# temp types
+.types

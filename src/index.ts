@@ -98,7 +98,12 @@ sceneTwoSquads(game, ui);
 
 const player = new PlayerAI(game, team2);
 
-player.addEventListener((message: string) => console.log(message));
+player.addEventListener("action", (message: string) =>
+    console.log("action", message),
+);
+player.addEventListener("intention", (message: string) =>
+    console.log("intention", message),
+);
 player.startAI();
 
 renderLoop();

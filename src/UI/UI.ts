@@ -24,13 +24,12 @@ import {
 import { isNonNull } from "remeda";
 import { ViewPort } from "./ViewPort";
 import type { Dot } from "../Game/DotsController";
-import type { Squad, Slot } from "../Game/SquadsController";
+import type { Squad } from "../Game/SquadsController";
 import type { Team } from "../Game/TeamController";
 import type { Building, BuildingKind } from "../Game/BuildingsController";
 import { createPolygonOffset } from "../shapes";
 import { BUILDINGS_CONFIGS } from "../Game/buildingsConfigs";
-
-export type SquadFrame = { index: number; squad: Squad; frame: Rect };
+import { SquadFrameUtils } from "../Game/SquadFrameUtils";
 
 export class UI {
     focusPoint: Point | null = null;
@@ -45,10 +44,9 @@ export class UI {
     destinationStartPoint: Point | null = null;
     destination: Rect | null = null;
 
-    squadFrames: SquadFrame[] = [];
-    squadFramesSelected: SquadFrame[] = [];
+    squadsSelected: Squad[] = [];
 
-    squadFramesAllowAttackOnce: SquadFrame[] = [];
+    squadsAllowAttackOnce: Squad[] = [];
 
     commandPanelUI: CommandPanelUI;
 
@@ -119,15 +117,6 @@ export class UI {
 
         this.game.addEventListener(GameEventTickName.resourcesChanged, () =>
             this.renderCommandPanel(),
-        );
-
-        this.game.addEventListener(
-            GameEventTickName.squadsRemoved,
-            ({ squads }) => {
-                for (const squad of squads) {
-                    this.removeSquadFrameBySquad(squad);
-                }
-            },
         );
     }
 
@@ -290,9 +279,9 @@ export class UI {
     }
 
     dotSelectAllWithoutSquad() {
-        this.dotsSelected = new Set(this.game.dotsController.dots);
+        this.dotsSelected = new Set(this.game.getDots());
 
-        for (const squad of this.game.squadsController.squads) {
+        for (const squad of this.game.getSquads()) {
             for (const slot of squad.slots) {
                 if (slot.dot) {
                     this.dotsSelected.delete(slot.dot);
@@ -303,18 +292,18 @@ export class UI {
 
     createCommandPanelState(): CommandPanelState {
         const team =
-            (this.squadFramesSelected[0]?.squad as Squad | undefined)?.team ||
+            (this.squadsSelected[0] as Squad | undefined)?.team ||
             (this.dotsSelected.values().next()?.value as Dot | undefined)
                 ?.team ||
             null;
 
         const teamToState = team
-            ? this.game.resourcesController.teamToState.get(team)
+            ? this.game.getTeamToResources().get(team)
             : null;
 
         return {
             team,
-            squads: this.squadFramesSelected.map((sf) => sf.squad),
+            squads: this.squadsSelected,
             resources: teamToState
                 ? {
                       food: teamToState.food,
@@ -407,16 +396,6 @@ export class UI {
         return this.dotsSelected.has(dot);
     }
 
-    removeSquadFrameBySquad(squad: Squad) {
-        const index = this.squadFrames.findIndex((sf) => sf.squad === squad);
-
-        if (index === -1) {
-            return;
-        }
-
-        this.squadFrames.splice(index, 1);
-    }
-
     handleRightButtonDown(e: MouseEvent) {
         this.destinationStartPoint = null;
 
@@ -424,14 +403,14 @@ export class UI {
             x: e.offsetX,
             y: e.offsetY,
         });
-        const squadFrameClicked = this.getSquadFrameByPosition(clickPoint);
+        const squadClicked = this.getSquadByPosition(clickPoint);
 
-        const teamSelected = this.squadFramesSelected[0]?.squad.team;
+        const teamSelected = this.squadsSelected[0]?.team;
 
         if (
-            squadFrameClicked &&
-            !this.squadFramesSelected.includes(squadFrameClicked) &&
-            teamSelected !== squadFrameClicked.squad.team
+            squadClicked &&
+            !this.squadsSelected.includes(squadClicked) &&
+            teamSelected !== squadClicked.team
         ) {
             return;
         }
@@ -455,23 +434,23 @@ export class UI {
             x: e.offsetX,
             y: e.offsetY,
         });
-        const squadFrameClicked = this.getSquadFrameByPosition(clickPoint);
+        const squadClicked = this.getSquadByPosition(clickPoint);
 
-        const teamSelected = this.squadFramesSelected[0]?.squad.team;
+        const teamSelected = this.squadsSelected[0]?.team;
 
         if (
-            this.squadFramesSelected.length &&
-            squadFrameClicked &&
-            !this.squadFramesSelected.includes(squadFrameClicked) &&
-            squadFrameClicked.squad.team !== teamSelected
+            this.squadsSelected.length &&
+            squadClicked &&
+            !this.squadsSelected.includes(squadClicked) &&
+            squadClicked.team !== teamSelected
         ) {
             if (!e.shiftKey) {
-                for (const squadFrame of this.squadFramesSelected) {
-                    this.cancelAttackAll(squadFrame);
+                for (const squad of this.squadsSelected) {
+                    this.cancelAttackAll(squad);
                 }
             }
 
-            this.attackSquadSelected(squadFrameClicked);
+            this.attackSquadSelected(squadClicked);
             return;
         }
 
@@ -513,32 +492,31 @@ export class UI {
             }
 
             case "KeyA": {
-                for (const squadFrame of this.squadFramesSelected) {
-                    squadFrame.squad.allowAttack =
-                        !squadFrame.squad.allowAttack;
+                for (const squad of this.squadsSelected) {
+                    squad.allowAttack = !squad.allowAttack;
                 }
                 break;
             }
         }
     }
 
-    cancelAttackAll(squadFrame: SquadFrame) {
-        this.game.cancelAttackSquadAll(squadFrame.squad);
+    cancelAttackAll(squad: Squad) {
+        this.game.cancelAttackSquadAll(squad);
 
         this.renderCommandPanel();
     }
 
     cancelAttackSelected() {
-        this.squadFramesSelected.forEach(this.cancelAttackAll.bind(this));
+        this.squadsSelected.forEach(this.cancelAttackAll.bind(this));
 
         this.renderCommandPanel();
     }
 
-    attackSquadSelected(squadFrameTarget: SquadFrame) {
-        for (const squadFrame of this.squadFramesSelected) {
+    attackSquadSelected(squadTarget: Squad) {
+        for (const squad of this.squadsSelected) {
             this.game.attackSquad({
-                squadAttacker: squadFrame.squad,
-                squadTarget: squadFrameTarget.squad,
+                squadAttacker: squad,
+                squadTarget: squadTarget,
             });
         }
 
@@ -546,9 +524,9 @@ export class UI {
     }
 
     attackBuildingBySquadSelected(buildingTarget: Building) {
-        for (const squadFrame of this.squadFramesSelected) {
+        for (const squad of this.squadsSelected) {
             this.game.attackBuilding({
-                squadAttacker: squadFrame.squad,
+                squadAttacker: squad,
                 buildingTarget,
             });
         }
@@ -556,10 +534,10 @@ export class UI {
         this.renderCommandPanel();
     }
 
-    getSquadFrameByPosition({ x, y }: Point): SquadFrame | null {
-        for (const squadFrame of this.squadFrames) {
-            if (isPointInRect({ x, y }, squadFrame.frame)) {
-                return squadFrame;
+    getSquadByPosition({ x, y }: Point): Squad | null {
+        for (const squad of this.game.getSquads()) {
+            if (isPointInRect({ x, y }, squad.frame)) {
+                return squad;
             }
         }
 
@@ -568,7 +546,7 @@ export class UI {
 
     getBuildingByPosition({ x, y }: Point): Building | null {
         const point = { x, y };
-        for (const building of this.game.buildingsController.buildings) {
+        for (const building of this.game.getBuildings()) {
             if (isPointInPolygon(point, building.frame)) {
                 return building;
             }
@@ -579,7 +557,7 @@ export class UI {
 
     getDotByPosition(x: number, y: number): Dot | null {
         const point = { x, y };
-        for (const dot of this.game.dotsController.dots) {
+        for (const dot of this.game.getDots()) {
             if (isPointInRect(point, dot.hitBox)) {
                 return dot;
             }
@@ -588,27 +566,24 @@ export class UI {
         return null;
     }
 
-    selectSquadFrame(squadFrame: SquadFrame) {
-        this.squadFramesSelected.push(squadFrame);
+    selectSquadFrame(squad: Squad) {
+        this.squadsSelected.push(squad);
 
-        this.selectTeam(squadFrame.squad.team);
+        this.selectTeam(squad.team);
     }
 
-    deselectSquadFrame(squadFrame: SquadFrame) {
-        this.squadFramesSelected.splice(
-            this.squadFramesSelected.indexOf(squadFrame),
-            1,
-        );
+    deselectSquadFrame(squad: Squad) {
+        this.squadsSelected.splice(this.squadsSelected.indexOf(squad), 1);
 
-        if (this.squadFramesSelected.length) {
-            this.selectTeam(this.squadFramesSelected[0].squad.team);
+        if (this.squadsSelected.length) {
+            this.selectTeam(this.squadsSelected[0].team);
         } else {
             this.deselectTeam();
         }
     }
 
     deselectSquadFramesAll() {
-        this.squadFramesSelected = [];
+        this.squadsSelected = [];
         this.deselectTeam();
     }
 
@@ -620,10 +595,10 @@ export class UI {
             this.deselectSquadFramesAll();
         }
 
-        const squadFrameClicked = this.getSquadFrameByPosition({ x, y });
+        const squadClicked = this.getSquadByPosition({ x, y });
 
-        if (squadFrameClicked) {
-            this.selectSquadFrame(squadFrameClicked);
+        if (squadClicked) {
+            this.selectSquadFrame(squadClicked);
             return { selected: true };
         }
 
@@ -655,47 +630,25 @@ export class UI {
             y: sumY / dots.length,
         };
 
-        const frame = this.createSquadSquare(dots.length, center);
-        const slots = this.game.squadsController.createSlots(
-            frame,
-            dots.length,
-        );
-
-        this.fillSlotsMutate(slots, dots);
-
         const team = dots[0].team;
 
-        const squad = this.game.squadsController.createSquad(slots, team);
+        const squad = this.game.createSquad(dots, team, center);
 
-        const squadFrame = { index: this.squadFrames.length, squad, frame };
-        this.squadFrames.push(squadFrame);
-
-        this.squadFramesSelected = [squadFrame];
+        this.squadsSelected = [squad];
 
         this.dotsAllUnselect();
     }
 
     destroySquad() {
-        if (!this.squadFramesSelected.length) {
+        if (!this.squadsSelected.length) {
             return;
         }
 
-        for (const squadFrame of this.squadFramesSelected) {
-            this.game.squadsController.removeSquad(squadFrame.squad);
-            this.removeSquadFrameBySquad(squadFrame.squad);
+        for (const squad of this.squadsSelected) {
+            this.game.removeSquad(squad);
         }
 
         this.deselectSquadFramesAll();
-    }
-
-    fillSlotsMutate(slots: Slot[], dots: Dot[]) {
-        for (const [index, slot] of slots.entries()) {
-            if (index >= dots.length) {
-                return;
-            }
-
-            this.game.squadsController.assignDotToSlot(dots[index], slot);
-        }
     }
 
     startSelection(
@@ -704,7 +657,7 @@ export class UI {
     ) {
         if (deselectPrevious) {
             this.dotsAllUnselect();
-            this.squadFramesSelected = [];
+            this.squadsSelected = [];
         }
 
         this.selectionStartPoint = { x, y };
@@ -729,32 +682,11 @@ export class UI {
         this.markDotsInSelection();
     }
 
-    calcDotsSquadArea(dotsCount: number) {
-        return dotsCount * DOT_TARGET_MOVE_SPACE;
-    }
-
-    createSquadSquare(dotsCount: number, center: Point) {
-        const targetRectArea = this.calcDotsSquadArea(dotsCount);
-        const sideLength = Math.ceil(Math.sqrt(targetRectArea));
-        const targetRect = orthogonalRect(
-            {
-                x: center.x - sideLength / 2,
-                y: center.y - sideLength / 2,
-            },
-            {
-                x: center.x + sideLength / 2,
-                y: center.y + sideLength / 2,
-            },
-        );
-
-        return targetRect;
-    }
-
     getDotCountForDestination() {
-        if (this.squadFramesSelected.length) {
+        if (this.squadsSelected.length) {
             let count = 0;
-            for (const squadFrame of this.squadFramesSelected) {
-                count += squadFrame.squad.slots.length;
+            for (const squad of this.squadsSelected) {
+                count += squad.slots.length;
             }
 
             return count;
@@ -766,7 +698,7 @@ export class UI {
     startDestination({ x, y }: Point) {
         this.destinationStartPoint = { x, y };
         const dotCountToMove = this.getDotCountForDestination();
-        const targetRect = this.createSquadSquare(
+        const targetRect = SquadFrameUtils.createSquadSquare(
             dotCountToMove,
             this.destinationStartPoint,
         );
@@ -796,13 +728,13 @@ export class UI {
             return;
         }
 
-        const totalDotsToMove = this.squadFramesSelected.reduce(
-            (sum, squadFrame) => sum + squadFrame.squad.slots.length,
+        const totalDotsToMove = this.squadsSelected.reduce(
+            (sum, squad) => sum + squad.slots.length,
             0,
         );
 
         const totalGapsLength =
-            BETWEEN_SQUADS_GAP * (this.squadFramesSelected.length - 1);
+            BETWEEN_SQUADS_GAP * (this.squadsSelected.length - 1);
 
         const frontLength = distanceBetween(
             { x, y },
@@ -858,10 +790,10 @@ export class UI {
             return;
         }
 
-        for (const dot of this.game.dotsController.dots) {
+        for (const dot of this.game.getDots()) {
             if (
                 isPointInRect(dot.position, this.selection) &&
-                !this.game.squadsController.isInSquad(dot)
+                !this.game.isInSquad(dot)
             ) {
                 this.dotSelect(dot);
             }
@@ -886,18 +818,18 @@ export class UI {
         const positions = dots.map(() => randomPointInRect(this.destination!));
 
         for (const [positionIndex, dot] of dots.entries()) {
-            this.game.dotMoveTo(dot, positions[positionIndex]);
+            this.game.dotWithoutSquadMoveTo(dot, positions[positionIndex]);
         }
     }
 
-    commandMoveSquads(squadFrames: SquadFrame[], targetFrame: Rect) {
+    commandMoveSquads(squads: Squad[], targetFrame: Rect) {
         const squadRects =
-            this.game.squadsController.generateAndUpdateSlotsAfterMove(
-                squadFrames.map((sf) => sf.squad),
+            this.game.moveSquadTo(
+                squads,
                 targetFrame,
             ) as Array<Rect | undefined>;
 
-        squadFrames.forEach((sf, i) => {
+        squads.forEach((sf, i) => {
             if (!squadRects[i]) return;
             sf.frame = squadRects[i];
         });
@@ -908,8 +840,8 @@ export class UI {
             return;
         }
 
-        if (this.squadFramesSelected.length) {
-            this.commandMoveSquads(this.squadFramesSelected, this.destination);
+        if (this.squadsSelected.length) {
+            this.commandMoveSquads(this.squadsSelected, this.destination);
             this.destination = null;
             return;
         }

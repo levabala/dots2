@@ -5,20 +5,27 @@ import { createPolygonOffset } from "../shapes";
 import type { UI } from "../UI";
 
 export function sceneTwoTeamsSomeBuildings(game: Game) {
-    const team1 = game.teamController.createTeam({ name: "red" });
-    const team2 = game.teamController.createTeam({ name: "blue" });
+    const {
+        teamController,
+        resourcesController,
+        dotsController,
+        buildingsController,
+    } = game.getPrivateStaffYouShouldNotUse();
 
-    game.resourcesController.initTeamResourcesState(team1);
-    game.resourcesController.initTeamResourcesState(team2);
+    const team1 = teamController.createTeam({ name: "red" });
+    const team2 = teamController.createTeam({ name: "blue" });
 
-    game.resourcesController.setCoins(team1, 1000);
-    game.resourcesController.setCoins(team2, 1000);
+    resourcesController.initTeamResourcesState(team1);
+    resourcesController.initTeamResourcesState(team2);
 
-    times(100, () => game.dotsController.addDotRandom(team1));
-    times(100, () => game.dotsController.addDotRandom(team2));
+    resourcesController.setCoins(team1, 1000);
+    resourcesController.setCoins(team2, 1000);
+
+    times(100, () => dotsController.addDotRandom(team1));
+    times(100, () => dotsController.addDotRandom(team2));
 
     const center1 = { x: 1000, y: 1000 };
-    game.buildingsController.addBuilding({
+    buildingsController.addBuilding({
         ...BUILDINGS_CONFIGS.barracks,
         team: team1,
         frame: createPolygonOffset(
@@ -28,7 +35,7 @@ export function sceneTwoTeamsSomeBuildings(game: Game) {
         center: center1,
     });
     const center2 = { x: 900, y: 1000 };
-    game.buildingsController.addBuilding({
+    buildingsController.addBuilding({
         ...BUILDINGS_CONFIGS.house,
         team: team1,
         frame: createPolygonOffset(
@@ -38,7 +45,7 @@ export function sceneTwoTeamsSomeBuildings(game: Game) {
         center: center1,
     });
     const center3 = { x: 870, y: 1100 };
-    game.buildingsController.addBuilding({
+    buildingsController.addBuilding({
         ...BUILDINGS_CONFIGS.farm,
         kind: "farm",
         team: team1,
@@ -49,7 +56,7 @@ export function sceneTwoTeamsSomeBuildings(game: Game) {
         center: center3,
     });
     const center6 = { x: 870, y: 1300 };
-    game.buildingsController.addBuilding({
+    buildingsController.addBuilding({
         ...BUILDINGS_CONFIGS.lumberMill,
         kind: "lumberMill",
         team: team1,
@@ -60,19 +67,16 @@ export function sceneTwoTeamsSomeBuildings(game: Game) {
         center: center6,
     });
     const center7 = { x: 850, y: 920 };
-    game.buildingsController.addBuilding({
+    buildingsController.addBuilding({
         ...BUILDINGS_CONFIGS.hq,
         kind: "hq",
         team: team1,
-        frame: createPolygonOffset(
-            BUILDINGS_CONFIGS.hq.frameRelative,
-            center7,
-        ),
+        frame: createPolygonOffset(BUILDINGS_CONFIGS.hq.frameRelative, center7),
         center: center7,
     });
 
     const center4 = { x: 1700, y: 1000 };
-    game.buildingsController.addBuilding({
+    buildingsController.addBuilding({
         ...BUILDINGS_CONFIGS.barracks,
         kind: "barracks",
         team: team2,
@@ -81,10 +85,10 @@ export function sceneTwoTeamsSomeBuildings(game: Game) {
             center4,
         ),
         center: center4,
-        spawnQueue: times(50, () => game.dotsController.generateDotRandom()),
+        spawnQueue: times(50, () => dotsController.generateDotRandom()),
     });
     const center5 = { x: 1850, y: 1000 };
-    game.buildingsController.addBuilding({
+    buildingsController.addBuilding({
         ...BUILDINGS_CONFIGS.house,
         kind: "house",
         team: team2,
@@ -95,22 +99,46 @@ export function sceneTwoTeamsSomeBuildings(game: Game) {
         center: center5,
     });
     const center8 = { x: 2000, y: 1000 };
-    game.buildingsController.addBuilding({
+    buildingsController.addBuilding({
         ...BUILDINGS_CONFIGS.hq,
         kind: "hq",
         team: team2,
-        frame: createPolygonOffset(
-            BUILDINGS_CONFIGS.hq.frameRelative,
-            center8,
-        ),
+        frame: createPolygonOffset(BUILDINGS_CONFIGS.hq.frameRelative, center8),
         center: center8,
+    });
+    const center9 = { x: 2070, y: 1100 };
+    buildingsController.addBuilding({
+        ...BUILDINGS_CONFIGS.farm,
+        kind: "farm",
+        team: team2,
+        frame: createPolygonOffset(
+            BUILDINGS_CONFIGS.farm.frameRelative,
+            center9,
+        ),
+        center: center9,
+    });
+    const center10 = { x: 2070, y: 1300 };
+    buildingsController.addBuilding({
+        ...BUILDINGS_CONFIGS.lumberMill,
+        kind: "lumberMill",
+        team: team2,
+        frame: createPolygonOffset(
+            BUILDINGS_CONFIGS.lumberMill.frameRelative,
+            center10,
+        ),
+        center: center10,
     });
 
     return { team1, team2 };
 }
 
 export function sceneTwoSquads(game: Game, ui: UI) {
-    for (const dot of game.dotsController.dots) {
+    const {
+        dotsController,
+        squadsController,
+    } = game.getPrivateStaffYouShouldNotUse();
+
+    for (const dot of dotsController.dots) {
         if (dot.team.name === "red") {
             ui.dotsSelected.add(dot);
         }
@@ -125,9 +153,9 @@ export function sceneTwoSquads(game: Game, ui: UI) {
     ui.cancelSelection();
     ui.clearDestination();
     ui.dotsAllUnselect();
-    ui.squadFramesSelected.splice(0, ui.squadFramesSelected.length);
+    ui.squadsSelected.splice(0, ui.squadsSelected.length);
 
-    for (const dot of game.dotsController.dots) {
+    for (const dot of dotsController.dots) {
         if (dot.team.name === "blue") {
             ui.dotsSelected.add(dot);
         }
@@ -140,6 +168,6 @@ export function sceneTwoSquads(game: Game, ui: UI) {
     ui.commandMove();
 
     ui.cancelSelection();
-    ui.squadFramesSelected.splice(0, ui.squadFramesSelected.length);
-    ui.selectSquadFrame(ui.squadFrames[0]);
+    ui.squadsSelected.splice(0, ui.squadsSelected.length);
+    ui.selectSquadFrame(squadsController.squads[0]);
 }

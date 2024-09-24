@@ -161,16 +161,11 @@ export type GameEventListener<Name extends GameEventTick["name"]> = (payload: Ga
 export declare class Game {
     readonly width: number;
     readonly height: number;
-    dotsController: DotsController;
-    projectilesController: ProjectilesController;
-    squadsController: SquadsController;
-    buildingsController: BuildingsController;
-    resourcesController: ResourcesController;
-    teamController: TeamController;
-    eventListeners: {
-        [key in GameEventTick["name"]]: Set<GameEventListener<key>>;
-    };
     constructor(width: number, height: number);
+    getDots(): Set<Dot>;
+    getSquads(): Squad[];
+    getBuildings(): Set<Building>;
+    getTeamToResources(): Map<Team, import("./ResourcesController").ResourcesState>;
     private emitEvent;
     addEventListener<Name extends GameEventTick["name"]>(name: Name, listener: GameEventListener<Name>): void;
     removeEventListener<Name extends GameEventTick["name"]>(name: Name, listener: GameEventListener<Name>): void;
@@ -183,8 +178,12 @@ export declare class Game {
         buildingTarget: Building;
     }): void;
     cancelAttackSquadAll(squadAttacker: Squad): void;
-    dotMoveTo(dot: Dot, destination: Point): void;
+    dotWithoutSquadMoveTo(dot: Dot, destination: Point): void;
     tryBuild(building: Building): boolean;
+    createSquad(dots: Dot[], team: Team, center: Point): Squad;
+    removeSquad(squad: Squad): void;
+    isInSquad(dot: Dot): boolean;
+    moveSquadTo(squads: Squad[], targetFrame: Rect): Rect[];
 }
 
 
@@ -210,24 +209,6 @@ export type Slot = {
 export type SquadsControllerTickEffects = {
     squadsRemoved: Squad[];
 };
-export declare class SquadsController {
-    squads: Squad[];
-    constructor();
-    fillEmptyFrontSlots(squad: Squad): void;
-    squadKeyIndex: number;
-    createSquadKey(): string;
-    createSquad(slots: Slot[], team: Team): Squad;
-    removeSquad(squad: Squad): void;
-    isInSquad(dot: Dot): boolean;
-    removeSquadIfEmpty(squad: Squad): {
-        isRemoved: boolean;
-    };
-    assignDotToSlot(dot: Dot, slot: Slot): void;
-    createSlotPositions(rect: Rect, count: number): Point[];
-    createSlots(rect: Rect, count: number): Slot[];
-    updateSlotPositionsAndReassignDots(squad: Squad, newFrame: Rect): Squad;
-    generateAndUpdateSlotsAfterMove(squads: Squad[], targetFrame: Rect): void;
-}
 
 --------- ResourcesController class:
 export type ResourcesState = {
@@ -254,15 +235,6 @@ export type Projectile = {
     fromDot: Dot;
     radius: number;
 };
-export type ProjectilesControllerTickEffects = {
-    dotsKilled: Dot[];
-    buildingsKilled: Building[];
-};
-export declare class ProjectilesController {
-    shootProjectile(fromDot: Dot, toPoint: Point, params: Pick<Projectile, "speed" | "damage" | "flyDistanceLeft" | "radius">): void;
-}
-
-
 
 --------- DotsController class:
 export type DotTemplate = {
@@ -297,26 +269,6 @@ export type ProjectileToShoot = {
     toPoint: Point;
     params: Pick<Projectile, "speed" | "damage" | "flyDistanceLeft" | "radius">;
 };
-export type DotsControllerTickEffects = {
-    projectilesToShoot: ProjectileToShoot[];
-    dotsRemoved: Dot[];
-};
-export declare class DotsController {
-    readonly width: number;
-    readonly height: number;
-    dotsGrid: DotsGrid;
-    dots: Set<Dot>;
-    constructor(width: number, height: number);
-    initDot(dotPartial: Omit<Dot, "path" | "attackTargetDot" | "attackCooldownLeft" | "attackTargetedByDots" | "aimingTimeLeft" | "aimingTarget" | "hitBox" | "squad" | "slot" | "gridSquareIndexes" | "removed" | "allowAttack" | "aimingTargetDot" | "attackTargetBuilding">): Dot;
-    addDot(dot: Dot): void;
-    removeDot(dot: Dot): void;
-    generateDotRandom(): Omit<Dot, "team">;
-    addDotRandom(team: Team): void;
-    syncDotAndSlotAngle(dot: Dot, slot: Slot): void;
-    moveDot(dot: Dot, to: Point): void;
-    checkHasShootIntersectionWithOwnTeam(dot: Dot, target: Point): boolean;
-}
-
 
 
 
@@ -361,6 +313,7 @@ export type BuildingLumberMill = BuildingBase & {
 };
 export type BuildingHQ = BuildingBase & {
     kind: "hq";
+    coinsPerSecond: number;
 };
 export type Building = BuildingBarracks | BuildingHouse | BuildingFarm | BuildingGranary | BuildingLumberMill | BuildingHQ;
 export type BuildingKind = Building["kind"];
@@ -384,20 +337,6 @@ export type BuildingsControllerArgs = {
         coins: number;
     }>;
 };
-export declare class BuildingsController {
-    buildings: Set<Building>;
-    constructor();
-    static canBuild(buildingCost: BuildingCost, resources: ResourcesState): boolean;
-    addBuilding(building: Building): void;
-    removeBuilding(building: Building): void;
-    countHousing(team: Team): number;
-    countFoodCapacity(team: Team): number;
-    countWoodCapacity(team: Team): number;
-}
-
-
-
-
 
 
 --------- buildingsConfigs:
@@ -498,12 +437,21 @@ export const BUILDINGS_CONFIGS: {
             { x: -40, y: 50 },
         ],
         health: 500,
+        coinsPerSecond: 10,
         cost: {
             wood: Infinity,
             coins: Infinity,
         },
     },
 };
+
+
+--------- SquadFrameUtils class:
+export declare class SquadFrameUtils {
+    static calcDotsSquadArea(dotsCount: number): number;
+    static createSquadSquare(dotsCount: number, center: Point): import("../utils").Rect;
+}
+
 
 resources explanation:
 coins - to produce units and to buy buildings.
@@ -565,7 +513,7 @@ if there are some.
 
 maybe you should try to develop some kind of strategy and make decisions based on it.
 
-there is no getEnemyTeam method in TeamController. all teams besides yours are enemies.
+all teams besides yours are enemies.
 
 try not to forget to manage your squads.
 moving and attacking is important!
@@ -574,9 +522,6 @@ there can be a lot of code. it's alright. maybe you better to modularize it (but
 
 add some randomness to the AI. so you don't get stuck in a loop.
 
-you can't use Game.dotMoveTo to move a dot in a squad because dots are linked to slots in a squad.
-you need to use generateAndUpdateSlotsAfterMove.
-create squads via SquadsController.createSquad.
 do not confuse Rect and RectOrth.
 
 now, write code! (or ask questions if you need help).

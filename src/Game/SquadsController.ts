@@ -1,13 +1,15 @@
 import { SQUAD_NAMES } from "../assets/squadNames";
 import { BETWEEN_SQUADS_GAP, DOT_TARGET_MOVE_SPACE } from "../consts";
-import { arePointsEqual, distanceBetween, rotatePoint, rotateRect, type Point, type Rect } from "../utils";
+import { arePointsEqual, distanceBetween, orthogonalRect, rotatePoint, rotateRect, type Point, type Rect } from "../utils";
 import type { Building } from "./BuildingsController";
 import type { Dot } from "./DotsController";
+import { SquadFrameUtils } from "./SquadFrameUtils";
 import type { Team } from "./TeamController";
 
 export type Squad = {
     key: string;
     index: number;
+    frame: Rect;
     slots: Slot[];
     attackTargetBuildings: Set<Building>;
     attackTargetSquads: Set<Squad>;
@@ -62,10 +64,30 @@ export class SquadsController {
         return SQUAD_NAMES[this.squadKeyIndex++] || "JustASquad";
     }
 
-    createSquad(slots: Slot[], team: Team) {
+    fillSlotsMutate(slots: Slot[], dots: Dot[]) {
+        for (const [index, slot] of slots.entries()) {
+            if (index >= dots.length) {
+                return;
+            }
+
+            this.assignDotToSlot(dots[index], slot);
+        }
+    }
+
+    createSquad(dots: Dot[], team: Team, center: Point) {
+        const frame = SquadFrameUtils.createSquadSquare(dots.length, center);
+
+        const slots = this.createSlots(
+            frame,
+            dots.length,
+        );
+
+        this.fillSlotsMutate(slots, dots);
+
         const squad: Squad = {
             key: this.createSquadKey(),
             index: this.squads.length,
+            frame,
             slots,
             attackTargetBuildings: new Set(),
             attackTargetSquads: new Set(),
@@ -242,7 +264,7 @@ export class SquadsController {
     }
 
     // chatgpt (c)
-    generateAndUpdateSlotsAfterMove(squads: Squad[], targetFrame: Rect) {
+    moveSquadTo(squads: Squad[], targetFrame: Rect) {
         const N = squads.length;
         if (N === 0) return [];
 
@@ -297,6 +319,8 @@ export class SquadsController {
             );
 
             squadRects.push(squadRect);
+
+            squad.frame = squadRect;
 
             currentOffset += squadLength + BETWEEN_SQUADS_GAP;
         }
