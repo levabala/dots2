@@ -1,6 +1,17 @@
 import { SQUAD_NAMES } from "../assets/squadNames";
-import { BETWEEN_SQUADS_GAP, DOT_TARGET_MOVE_SPACE } from "../consts";
-import { arePointsEqual, distanceBetween, orthogonalRect, rotatePoint, rotateRect, type Point, type Rect } from "../utils";
+import {
+    BETWEEN_SQUADS_GAP,
+    DOT_IN_SQUAD_SPACE_AROUND,
+    SQUAD_MIN_DOTS,
+} from "../consts";
+import {
+    arePointsEqual,
+    distanceBetween,
+    rotatePoint,
+    rotateRect,
+    type Point,
+    type Rect,
+} from "../utils";
 import type { Building } from "./BuildingsController";
 import type { Dot } from "./DotsController";
 import { SquadFrameUtils } from "./SquadFrameUtils";
@@ -75,12 +86,13 @@ export class SquadsController {
     }
 
     createSquad(dots: Dot[], team: Team, center: Point) {
+        if (dots.length < SQUAD_MIN_DOTS) {
+            return { isSuccess: false, error: "no enough dots" } as const;
+        }
+
         const frame = SquadFrameUtils.createSquadSquare(dots.length, center);
 
-        const slots = this.createSlots(
-            frame,
-            dots.length,
-        );
+        const slots = this.createSlots(frame, dots.length);
 
         this.fillSlotsMutate(slots, dots);
 
@@ -109,7 +121,7 @@ export class SquadsController {
             slot.dot.slot = slot;
         }
 
-        return squad;
+        return { isSuccess: true, squad } as const;
     }
 
     removeSquad(squad: Squad) {
@@ -251,10 +263,7 @@ export class SquadsController {
                 });
 
                 if (closestSlot !== slot) {
-                    this.assignDotToSlot(
-                        slot.dot,
-                        closestSlot,
-                    );
+                    this.assignDotToSlot(slot.dot, closestSlot);
                     slot.dot = null;
                 }
             }
@@ -270,7 +279,7 @@ export class SquadsController {
 
         const totalLength = distanceBetween(targetFrame.p1, targetFrame.p2);
         const sideLength = distanceBetween(targetFrame.p1, targetFrame.p4);
-        const density = DOT_TARGET_MOVE_SPACE; // Area per unit
+        const density = DOT_IN_SQUAD_SPACE_AROUND; // Area per unit
 
         const frontDirection = {
             x: (targetFrame.p2.x - targetFrame.p1.x) / totalLength,
@@ -313,10 +322,7 @@ export class SquadsController {
                 },
             };
 
-            this.updateSlotPositionsAndReassignDots(
-                squad,
-                squadRect,
-            );
+            this.updateSlotPositionsAndReassignDots(squad, squadRect);
 
             squadRects.push(squadRect);
 

@@ -3,8 +3,9 @@ import { UI } from "./UI/UI";
 import { RendererCanvasSimple } from "./Renderer";
 import { Logger } from "./Logger";
 import { VisualDebugger } from "./VisualDebugger";
-import { sceneTwoSquads, sceneTwoTeamsSomeBuildings } from "./scenes";
-import { PlayerAI } from "./player/PlayerAI1";
+import { sceneOneTeam, sceneTwoSquads, sceneTwoTeamsSomeBuildings } from "./scenes";
+import { PlayerAI as PlayerAI1 } from "./player/PlayerAI1";
+import { PlayerAI as PlayerAI2 } from "./player/PlayerAI2";
 
 const container = document.createElement("div");
 container.style.position = "relative";
@@ -93,18 +94,40 @@ function gameLoop() {
 
 ui.init();
 
-const { team2 } = sceneTwoTeamsSomeBuildings(game);
+const { team1, team2 } = sceneTwoTeamsSomeBuildings(game);
 sceneTwoSquads(game, ui);
 
-const player = new PlayerAI(game, team2);
+const player1 = new PlayerAI1(game, team1);
 
-player.addEventListener("action", (message: string) =>
+player1.addEventListener("action", (message: string) =>
     console.log("action", message),
 );
-player.addEventListener("intention", (message: string) =>
+player1.addEventListener("intention", (message: string) =>
     console.log("intention", message),
 );
-player.startAI();
+player1.startAI();
+
+const player2 = new PlayerAI2(game, team2);
+
+player2.addEventListener("action", (message: string) =>
+    console.log("action", message),
+);
+player2.addEventListener("intention", (message: string) =>
+    console.log("intention", message),
+);
+player2.startAI();
+
+const team3 = sceneOneTeam(game);
+
+const player3 = new PlayerAI2(game, team3);
+
+player3.addEventListener("action", (message: string) =>
+    console.log("action", message),
+);
+player3.addEventListener("intention", (message: string) =>
+    console.log("intention", message),
+);
+player3.startAI();
 
 renderLoop();
 gameLoop();

@@ -264,6 +264,8 @@ export class RendererCanvasSimple implements Renderer {
                 return "red";
             case 1:
                 return "blue";
+            case 2:
+                return "green";
             default:
                 return "black";
         }

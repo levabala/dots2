@@ -116,7 +116,7 @@ export class Game {
         this.eventListeners[name].delete(listener);
     }
 
-    attackSquad({
+    orderAttackOnlySquad({
         squadAttacker,
         squadTarget,
     }: {
@@ -127,7 +127,7 @@ export class Game {
         squadTarget.attackTargetedBySquads.add(squadAttacker);
     }
 
-    attackBuilding({
+    orderAttackOnlyBuilding({
         squadAttacker,
         buildingTarget,
     }: {

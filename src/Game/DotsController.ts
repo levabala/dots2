@@ -1,6 +1,10 @@
 import { randomInteger } from "remeda";
 import {
     DEFAULT_PROJECTILE,
+    DOT_AIMING_DURATION,
+    DOT_ATTACK_COOLDOWN,
+    DOT_ATTACK_RANGE,
+    DOT_HEALTH,
     DOT_HEIGHT,
     DOT_SPEED,
     DOT_WIDTH,
@@ -139,8 +143,8 @@ export class DotsController {
 
     generateDotRandom(): Omit<Dot, "team"> {
         const position = {
-            x: randomInteger(1000, 2000),
-            y: randomInteger(1000, 2000),
+            x: randomInteger(1200, 1500),
+            y: randomInteger(1200, 1500),
         };
         return {
             path: [],
@@ -149,15 +153,15 @@ export class DotsController {
             height: DOT_HEIGHT,
             speed: DOT_SPEED,
             attackTargetDot: null,
-            attackRange: 200,
-            attackCooldown: 3000,
+            attackRange: DOT_ATTACK_RANGE,
+            attackCooldown: DOT_ATTACK_COOLDOWN,
             attackCooldownLeft: 0,
             attackTargetedByDots: new Set(),
             attackTargetBuilding: null,
-            aimingDuration: 1000,
-            aimingTimeLeft: 1000,
+            aimingDuration: DOT_AIMING_DURATION,
+            aimingTimeLeft: DOT_AIMING_DURATION,
             aimingTargetDot: null,
-            health: 2,
+            health: DOT_HEALTH,
             angle: 0,
             hitBox: this.calculateHitBox(position, 0, DOT_WIDTH, DOT_HEIGHT),
             removed: false,
@@ -184,8 +188,14 @@ export class DotsController {
     }
 
     moveDot(dot: Dot, to: Point) {
-        dot.position.x = to.x;
-        dot.position.y = to.y;
+        dot.position.x = Math.max(
+            Math.min(to.x, this.width - dot.width * 2),
+            dot.width * 2,
+        );
+        dot.position.y = Math.max(
+            Math.min(to.y, this.height - dot.height * 2),
+            dot.height * 2,
+        );
 
         dot.hitBox = this.calculateHitBox(
             dot.position,

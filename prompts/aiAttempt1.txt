@@ -161,7 +161,22 @@ export type GameEventListener<Name extends GameEventTick["name"]> = (payload: Ga
 export declare class Game {
     readonly width: number;
     readonly height: number;
+    private dotsController;
+    private projectilesController;
+    private squadsController;
+    private buildingsController;
+    private resourcesController;
+    private teamController;
+    private eventListeners;
     constructor(width: number, height: number);
+    getPrivateStaffYouShouldNotUse(): {
+        dotsController: DotsController;
+        projectilesController: ProjectilesController;
+        squadsController: SquadsController;
+        buildingsController: BuildingsController;
+        resourcesController: ResourcesController;
+        teamController: TeamController;
+    };
     getDots(): Set<Dot>;
     getSquads(): Squad[];
     getBuildings(): Set<Building>;
@@ -169,18 +184,26 @@ export declare class Game {
     private emitEvent;
     addEventListener<Name extends GameEventTick["name"]>(name: Name, listener: GameEventListener<Name>): void;
     removeEventListener<Name extends GameEventTick["name"]>(name: Name, listener: GameEventListener<Name>): void;
-    attackSquad({ squadAttacker, squadTarget, }: {
+    orderAttackOnlySquad({ squadAttacker, squadTarget, }: {
         squadAttacker: Squad;
         squadTarget: Squad;
     }): void;
-    attackBuilding({ squadAttacker, buildingTarget, }: {
+    orderAttackOnlyBuilding({ squadAttacker, buildingTarget, }: {
         squadAttacker: Squad;
         buildingTarget: Building;
     }): void;
     cancelAttackSquadAll(squadAttacker: Squad): void;
     dotWithoutSquadMoveTo(dot: Dot, destination: Point): void;
     tryBuild(building: Building): boolean;
-    createSquad(dots: Dot[], team: Team, center: Point): Squad;
+    createSquad(dots: Dot[], team: Team, center: Point): {
+        readonly isSuccess: false;
+        readonly error: "no enough dots";
+        readonly squad?: undefined;
+    } | {
+        readonly isSuccess: true;
+        readonly squad: Squad;
+        readonly error?: undefined;
+    };
     removeSquad(squad: Squad): void;
     isInSquad(dot: Dot): boolean;
     moveSquadTo(squads: Squad[], targetFrame: Rect): Rect[];
@@ -453,6 +476,41 @@ export declare class SquadFrameUtils {
 }
 
 
+--------- consts:
+export const DOT_WIDTH = 8;
+export const DOT_HEIGHT = 6;
+export const DOT_SPEED = 70 / 1000;
+export const DOT_IN_SQUAD_SPACE_AROUND = 250;
+export const DEFAULT_PROJECTILE = {
+    radius: 4,
+    speed: 1500 / 1000,
+    damage: 1,
+    flyDistanceLeft: 500,
+};
+export const BETWEEN_SQUADS_GAP = 30;
+export const DOTS_GRID_SIZE = Math.max(DOT_WIDTH, DOT_HEIGHT) * 5;
+export const DOT_COST_FOOD = 10;
+export const DOT_COST_COINS = 10;
+export const SQUAD_MIN_DOTS = 10;
+export const DOT_ATTACK_RANGE = 200;
+export const DOT_ATTACK_COOLDOWN = 2000;
+export const DOT_AIMING_DURATION = 500;
+export const DOT_HEALTH = 2;
+
+
+--------- PlayerAI class usage:
+const player = new PlayerAI(game, team2);
+
+player.addEventListener("action", (message: string) =>
+    console.log("action", message),
+);
+player.addEventListener("intention", (message: string) =>
+    console.log("intention", message),
+);
+player.startAI();
+
+
+--------- other info (important one as well):
 resources explanation:
 coins - to produce units and to buy buildings.
 wood - to buy buildings.
@@ -523,6 +581,44 @@ there can be a lot of code. it's alright. maybe you better to modularize it (but
 add some randomness to the AI. so you don't get stuck in a loop.
 
 do not confuse Rect and RectOrth.
+
+barracks do have a limited throughput.
+so you may have much more resources production than you spend on units.
+better optimize the spending as well.
+
+dots are slow and fragile. you can't just order a squad move inside an enemy squad.
+because your dots cannot shoot while moving. and enemy's are standing still, waiting for you and shooting you.
+so you better place your squads in a reach of enemy's squad to shoot them.
+instead of ordering your squads to move too close.
+who first stars to shoot - the one who wins a skirmish.
+but dots have a range. so you can't be really far from the enemy.
+
+when you order to attack a building - you squad won't attack enemy's squads.
+so you better be close to the building and be safe before attacking.
+or risk!
+
+where order to attack a squad - the single thing that changes that your squad won't attack other squads.
+so it's "focus on attacking only that squad".
+
+you do not need to fill barracks spawning queue - it's being filled automatically.
+
+i suggest you write something like 'canMySquadAttackEnemySquad' to figure out if your squads are able to attack enemy's squads at its positions.
+it's very bad when your squad can't shoot.
+
+your dots can't shoot through your building or your dots.
+i mean, you can shoot them but then you destroy them.
+so you better not to overlap them.
+DOT NOT OVERLAP YOUR SQUADS.
+
+dots atack on their own when they are in range.
+
+place your squads towards the enemy's squads so the can better attack them.
+you can adjust the direction by placing a squad's frame.
+frame.p1 + frame.p2 are the front line.
+so you need to face the line towards the enemy.
+
+
+and maybe try creating squads with a different size - it's more interesting to watch. :)
 
 now, write code! (or ask questions if you need help).
 do not emit explanations in the final answer to the prompt. just write the code.

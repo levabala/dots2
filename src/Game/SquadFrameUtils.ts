@@ -1,9 +1,9 @@
-import { DOT_TARGET_MOVE_SPACE } from "../consts";
+import { DOT_IN_SQUAD_SPACE_AROUND } from "../consts";
 import { orthogonalRect, type Point } from "../utils";
 
 export class SquadFrameUtils {
     static calcDotsSquadArea(dotsCount: number) {
-        return dotsCount * DOT_TARGET_MOVE_SPACE;
+        return dotsCount * DOT_IN_SQUAD_SPACE_AROUND;
     }
 
     static createSquadSquare(dotsCount: number, center: Point) {

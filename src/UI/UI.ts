@@ -10,7 +10,7 @@ import {
     type Rect,
 } from "../utils";
 import {
-    DOT_TARGET_MOVE_SPACE,
+    DOT_IN_SQUAD_SPACE_AROUND,
     DOT_WIDTH,
     BETWEEN_SQUADS_GAP,
 } from "../consts";
@@ -514,7 +514,7 @@ export class UI {
 
     attackSquadSelected(squadTarget: Squad) {
         for (const squad of this.squadsSelected) {
-            this.game.attackSquad({
+            this.game.orderAttackOnlySquad({
                 squadAttacker: squad,
                 squadTarget: squadTarget,
             });
@@ -525,7 +525,7 @@ export class UI {
 
     attackBuildingBySquadSelected(buildingTarget: Building) {
         for (const squad of this.squadsSelected) {
-            this.game.attackBuilding({
+            this.game.orderAttackOnlyBuilding({
                 squadAttacker: squad,
                 buildingTarget,
             });
@@ -632,9 +632,11 @@ export class UI {
 
         const team = dots[0].team;
 
-        const squad = this.game.createSquad(dots, team, center);
+        const createSquadResult = this.game.createSquad(dots, team, center);
 
-        this.squadsSelected = [squad];
+        if (createSquadResult.isSuccess) {
+            this.squadsSelected = [createSquadResult.squad];
+        }
 
         this.dotsAllUnselect();
     }
@@ -746,7 +748,7 @@ export class UI {
         }
 
         const availableFrontLength = frontLength - totalGapsLength;
-        const totalAreaNeeded = totalDotsToMove * DOT_TARGET_MOVE_SPACE;
+        const totalAreaNeeded = totalDotsToMove * DOT_IN_SQUAD_SPACE_AROUND;
         const sideLength = totalAreaNeeded / availableFrontLength;
 
         const destinationRaw = orthogonalRect(
