@@ -4,7 +4,6 @@ import {
     isPointInRect,
     orthogonalRect,
     randomPointInRect,
-    rotatePoint,
     rotateRect,
     sortRectPoints,
     type Point,
@@ -409,10 +408,13 @@ export class UI {
     }
 
     removeSquadFrameBySquad(squad: Squad) {
-        this.squadFrames.splice(
-            this.squadFrames.findIndex((sf) => sf.squad === squad),
-            1,
-        );
+        const index = this.squadFrames.findIndex((sf) => sf.squad === squad);
+
+        if (index === -1) {
+            return;
+        }
+
+        this.squadFrames.splice(index, 1);
     }
 
     handleRightButtonDown(e: MouseEvent) {
@@ -654,7 +656,10 @@ export class UI {
         };
 
         const frame = this.createSquadSquare(dots.length, center);
-        const slots = this.createSlots(frame, dots.length);
+        const slots = this.game.squadsController.createSlots(
+            frame,
+            dots.length,
+        );
 
         this.fillSlotsMutate(slots, dots);
 
@@ -691,98 +696,6 @@ export class UI {
 
             this.game.squadsController.assignDotToSlot(dots[index], slot);
         }
-    }
-
-    createSlotPositions(rect: Rect, count: number) {
-        const angle = Math.atan2(rect.p2.y - rect.p1.y, rect.p2.x - rect.p1.x);
-        const rectOrth = rotateRect({ rect, anchor: rect.p1, angle: -angle });
-        const lengthFront = rectOrth.p2.x - rectOrth.p1.x;
-        const lengthSide = rectOrth.p4.y - rectOrth.p1.y;
-        const columns = Math.ceil(
-            Math.sqrt((count * lengthFront) / lengthSide),
-        );
-        const rows = Math.ceil(Math.sqrt((count * lengthSide) / lengthFront));
-
-        const positions: Point[] = [];
-        let countLeft = count;
-        for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < columns; c++) {
-                if (countLeft-- <= 0) {
-                    break;
-                }
-
-                const pointOrth = {
-                    x: rectOrth.p1.x + (lengthFront * c) / (columns - 1 || 1),
-                    y: rectOrth.p1.y + (lengthSide * r) / (rows - 1 || 1),
-                };
-                positions.push(rotatePoint(pointOrth, rectOrth.p1, angle));
-            }
-        }
-
-        return positions;
-    }
-
-    // chatgpt (c)
-    updateSlotPositionsAndReassignDots(squadFrame: SquadFrame, newFrame: Rect) {
-        const oldSlots = squadFrame.squad.slots;
-        const newPositions = this.createSlotPositions(
-            newFrame,
-            oldSlots.length,
-        );
-
-        // Calculate the front direction angle from p1 to p2
-        const frontAngle =
-            Math.atan2(
-                newFrame.p2.y - newFrame.p1.y,
-                newFrame.p2.x - newFrame.p1.x,
-            ) + Math.PI;
-
-        // Update slot positions and angles based on the front direction of the frame
-        oldSlots.forEach((slot, index) => {
-            slot.position = newPositions[index];
-            slot.angle = frontAngle; // Set the angle towards the front of the frame
-        });
-
-        // Reassign dots to maintain minimal position change
-        oldSlots.forEach((slot) => {
-            if (slot.dot) {
-                let minDistance = Infinity;
-                let closestSlot = slot;
-
-                oldSlots.forEach((targetSlot) => {
-                    const distance = distanceBetween(
-                        slot.position,
-                        targetSlot.position,
-                    );
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        closestSlot = targetSlot;
-                    }
-                });
-
-                if (closestSlot !== slot) {
-                    this.game.squadsController.assignDotToSlot(
-                        slot.dot,
-                        closestSlot,
-                    );
-                    slot.dot = null;
-                }
-            }
-        });
-
-        return squadFrame;
-    }
-
-    createSlots(rect: Rect, count: number) {
-        const positions = this.createSlotPositions(rect, count);
-
-        const angle = Math.atan2(rect.p3.y - rect.p2.y, rect.p3.x - rect.p2.x);
-
-        return positions.map<Slot>((position) => ({
-            position,
-            dot: null,
-            angle,
-        }));
     }
 
     startSelection(
@@ -977,59 +890,17 @@ export class UI {
         }
     }
 
-    // chatgpt (c)
     commandMoveSquads(squadFrames: SquadFrame[], targetFrame: Rect) {
-        const N = squadFrames.length;
-        if (N === 0) return;
+        const squadRects =
+            this.game.squadsController.generateAndUpdateSlotsAfterMove(
+                squadFrames.map((sf) => sf.squad),
+                targetFrame,
+            ) as Array<Rect | undefined>;
 
-        const totalLength = distanceBetween(targetFrame.p1, targetFrame.p2);
-        const sideLength = distanceBetween(targetFrame.p1, targetFrame.p4);
-        const density = DOT_TARGET_MOVE_SPACE; // Area per unit
-
-        const frontDirection = {
-            x: (targetFrame.p2.x - targetFrame.p1.x) / totalLength,
-            y: (targetFrame.p2.y - targetFrame.p1.y) / totalLength,
-        };
-
-        const sideDirection = {
-            x: targetFrame.p4.x - targetFrame.p1.x,
-            y: targetFrame.p4.y - targetFrame.p1.y,
-        };
-
-        let currentOffset = 0;
-        for (const squadFrame of squadFrames) {
-            const squadUnits = squadFrame.squad.slots.length;
-
-            const squadArea = squadUnits * density;
-            const squadLength = squadArea / sideLength;
-
-            const start = {
-                x: targetFrame.p1.x + frontDirection.x * currentOffset,
-                y: targetFrame.p1.y + frontDirection.y * currentOffset,
-            };
-            const end = {
-                x: start.x + frontDirection.x * squadLength,
-                y: start.y + frontDirection.y * squadLength,
-            };
-
-            const squadRect: Rect = {
-                p1: start,
-                p2: end,
-                p3: {
-                    x: end.x + sideDirection.x,
-                    y: end.y + sideDirection.y,
-                },
-                p4: {
-                    x: start.x + sideDirection.x,
-                    y: start.y + sideDirection.y,
-                },
-            };
-
-            this.updateSlotPositionsAndReassignDots(squadFrame, squadRect);
-            squadFrame.frame = squadRect;
-
-            currentOffset += squadLength + BETWEEN_SQUADS_GAP;
-        }
+        squadFrames.forEach((sf, i) => {
+            if (!squadRects[i]) return;
+            sf.frame = squadRects[i];
+        });
     }
 
     commandMove() {

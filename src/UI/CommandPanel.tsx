@@ -111,7 +111,7 @@ const CommandPanel: React.FC<{
                                           housing: resources.housing,
                                           woodCapacity: resources.woodCapacity,
                                           wood: Math.ceil(resources.wood),
-                                          coins: resources.coins,
+                                          coins: Math.ceil(resources.coins),
                                           foodCapacity: resources.foodCapacity,
                                           food: Math.ceil(resources.food),
                                       }

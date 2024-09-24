@@ -4,6 +4,7 @@ import { RendererCanvasSimple } from "./Renderer";
 import { Logger } from "./Logger";
 import { VisualDebugger } from "./VisualDebugger";
 import { sceneTwoSquads, sceneTwoTeamsSomeBuildings } from "./scenes";
+import { PlayerAI } from "./player/PlayerAI1";
 
 const container = document.createElement("div");
 container.style.position = "relative";
@@ -21,7 +22,7 @@ canvas.style.border = "solid gray 1px";
 
 container.appendChild(canvas);
 
-const game = new Game(10000, 10000);
+const game = new Game(3000, 3000);
 
 const isPauseRef = { current: false };
 
@@ -92,8 +93,13 @@ function gameLoop() {
 
 ui.init();
 
-sceneTwoTeamsSomeBuildings(game);
+const { team2 } = sceneTwoTeamsSomeBuildings(game);
 sceneTwoSquads(game, ui);
+
+const player = new PlayerAI(game, team2);
+
+player.addEventListener((message: string) => console.log(message));
+player.startAI();
 
 renderLoop();
 gameLoop();

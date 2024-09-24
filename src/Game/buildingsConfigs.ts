@@ -97,6 +97,7 @@ export const BUILDINGS_CONFIGS: {
             { x: -40, y: 50 },
         ],
         health: 500,
+        coinsPerSecond: 10,
         cost: {
             wood: Infinity,
             coins: Infinity,

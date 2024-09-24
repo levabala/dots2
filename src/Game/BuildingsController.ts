@@ -51,6 +51,7 @@ export type BuildingLumberMill = BuildingBase & {
 
 export type BuildingHQ = BuildingBase & {
     kind: "hq";
+    coinsPerSecond: number;
 };
 
 export type Building =
@@ -293,6 +294,12 @@ export class BuildingsController {
             getResourcesChange(building.team).woodProduced += woodProduced;
         };
 
+        const tickHQ = (building: BuildingHQ) => {
+            const coinsProduced = building.coinsPerSecond * (timeDelta / 1000);
+
+            getResourcesChange(building.team).coinsProduced += coinsProduced;
+        };
+
         const removeIfDead = (building: Building) => {
             if (building.health <= 0) {
                 this.removeBuilding(building);
@@ -313,6 +320,9 @@ export class BuildingsController {
                     break;
                 case "lumberMill":
                     tickLumberMill(building);
+                    break;
+                case "hq":
+                    tickHQ(building);
                     break;
             }
         }

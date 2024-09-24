@@ -1,0 +1,584 @@
+you got an rts 2d game. you need to place buildings. 
+develop economy. 
+destroy enemy squads and buildings. 
+winning is the destruction of enemy HQ. 
+losing is the destruction of yours.
+
+--------- your utils:
+export type RectOrth = {
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
+};
+export type Point = {
+    x: number;
+    y: number;
+};
+export type Line = {
+    p1: Point;
+    p2: Point;
+};
+export type Rect = {
+    p1: Point;
+    p2: Point;
+    p3: Point;
+    p4: Point;
+};
+export type Polygon = Point[];
+export declare function orthogonalRect(p1: Point, p3: Point): Rect;
+export declare function randomPointInRect({ p1, p2, p3 }: Rect): Point;
+export declare function sortRectPoints(rect: Rect): Rect;
+export declare function isPointInRect(point: Point, { p1, p2, p3, p4 }: Rect): boolean;
+export declare function rotatePoint({ x: px, y: py }: Point, { x: cx, y: cy }: Point, rad: number): {
+    x: number;
+    y: number;
+};
+export declare function getIntersectionFirstPolygon(line: {
+    p1: Point;
+    p2: Point;
+}, polygon: Polygon): Point | null;
+export declare function rotateRect({ rect, anchor, angle, }: {
+    rect: Rect;
+    anchor: Point;
+    angle: number;
+}): {
+    p1: {
+        x: number;
+        y: number;
+    };
+    p2: {
+        x: number;
+        y: number;
+    };
+    p3: {
+        x: number;
+        y: number;
+    };
+    p4: {
+        x: number;
+        y: number;
+    };
+};
+export declare function makeRectOrthogonal(rect: Rect): {
+    p1: {
+        x: number;
+        y: number;
+    };
+    p2: {
+        x: number;
+        y: number;
+    };
+    p3: {
+        x: number;
+        y: number;
+    };
+    p4: {
+        x: number;
+        y: number;
+    };
+};
+export declare function getRectCenter(rect: Rect): Point;
+export declare function getIntersectionFirstRect(line: {
+    p1: Point;
+    p2: Point;
+}, rect: Rect): Point | null;
+export declare function getIntersectionAnyPolygon(line: {
+    p1: Point;
+    p2: Point;
+}, polygon: Polygon): Point | null;
+export declare function getIntersectionAnyRect(line: {
+    p1: Point;
+    p2: Point;
+}, rect: Rect): Point | null;
+export declare function roundSinCos(sincos: number): number;
+export declare function roundAngle(angleRaw: number): number;
+export declare enum Direction {
+    top = 0,
+    right = 1,
+    bottom = 2,
+    left = 3
+}
+export declare function getIntersectedSquareOrth(point: Point, angleRaw: number, cosAngle: number, sinAngle: number, square: RectOrth): {
+    side: Direction.top | Direction.right | Direction.bottom | Direction.left;
+    intersection: Point;
+};
+export declare function distanceBetween(p1: Point, p2: Point): number;
+export declare function arePointsEqual(p1: Point, p2: Point): boolean;
+export declare function randomPointInPolygon(polygon: Polygon): Point;
+export declare function isPointInPolygon(point: Point, polygon: Polygon): boolean;
+export declare function assertUnreachable(x: never): never;
+
+
+--------- your class to implement:
+export class PlayerAI extends Player {
+    constructor(
+        readonly game: Game,
+        readonly team: Team,
+    ) {
+        super(game, team);
+    }
+}
+
+
+
+--------- Game class:
+export declare enum GameEventTickName {
+    squadsRemoved = "squads-removed",
+    dotsAdded = "dots-added",
+    dotsRemoved = "dots-removed",
+    dotsMoved = "dots-moved",
+    resourcesChanged = "resources-changed"
+}
+export type GameEventTick = {
+    name: GameEventTickName.squadsRemoved;
+    payload: {
+        squads: Squad[];
+    };
+} | {
+    name: GameEventTickName.dotsAdded;
+    payload: {
+        dots: Dot[];
+    };
+} | {
+    name: GameEventTickName.dotsRemoved;
+    payload: {
+        dots: Dot[];
+    };
+} | {
+    name: GameEventTickName.dotsMoved;
+    payload: {
+        dots: Dot[];
+    };
+} | {
+    name: GameEventTickName.resourcesChanged;
+    payload: null;
+};
+export type GameEventFromName<Name extends GameEventTick["name"]> = Extract<GameEventTick, {
+    name: Name;
+}>;
+export type GameEventListener<Name extends GameEventTick["name"]> = (payload: GameEventFromName<Name>["payload"]) => void;
+export declare class Game {
+    readonly width: number;
+    readonly height: number;
+    dotsController: DotsController;
+    projectilesController: ProjectilesController;
+    squadsController: SquadsController;
+    buildingsController: BuildingsController;
+    resourcesController: ResourcesController;
+    teamController: TeamController;
+    eventListeners: {
+        [key in GameEventTick["name"]]: Set<GameEventListener<key>>;
+    };
+    constructor(width: number, height: number);
+    private emitEvent;
+    addEventListener<Name extends GameEventTick["name"]>(name: Name, listener: GameEventListener<Name>): void;
+    removeEventListener<Name extends GameEventTick["name"]>(name: Name, listener: GameEventListener<Name>): void;
+    attackSquad({ squadAttacker, squadTarget, }: {
+        squadAttacker: Squad;
+        squadTarget: Squad;
+    }): void;
+    attackBuilding({ squadAttacker, buildingTarget, }: {
+        squadAttacker: Squad;
+        buildingTarget: Building;
+    }): void;
+    cancelAttackSquadAll(squadAttacker: Squad): void;
+    dotMoveTo(dot: Dot, destination: Point): void;
+    tryBuild(building: Building): boolean;
+}
+
+
+--------- SquadsController class:
+export type Squad = {
+    key: string;
+    index: number;
+    slots: Slot[];
+    attackTargetBuildings: Set<Building>;
+    attackTargetSquads: Set<Squad>;
+    attackTargetedBySquads: Set<Squad>;
+    allowAttack: boolean;
+    allowShootOnce: boolean;
+    dotsToShootOnce: Set<Dot>;
+    team: Team;
+    removed: boolean;
+};
+export type Slot = {
+    position: Point;
+    angle: number;
+    dot: Dot | null;
+};
+export type SquadsControllerTickEffects = {
+    squadsRemoved: Squad[];
+};
+export declare class SquadsController {
+    squads: Squad[];
+    constructor();
+    fillEmptyFrontSlots(squad: Squad): void;
+    squadKeyIndex: number;
+    createSquadKey(): string;
+    createSquad(slots: Slot[], team: Team): Squad;
+    removeSquad(squad: Squad): void;
+    isInSquad(dot: Dot): boolean;
+    removeSquadIfEmpty(squad: Squad): {
+        isRemoved: boolean;
+    };
+    assignDotToSlot(dot: Dot, slot: Slot): void;
+    createSlotPositions(rect: Rect, count: number): Point[];
+    createSlots(rect: Rect, count: number): Slot[];
+    updateSlotPositionsAndReassignDots(squad: Squad, newFrame: Rect): Squad;
+    generateAndUpdateSlotsAfterMove(squads: Squad[], targetFrame: Rect): void;
+}
+
+--------- ResourcesController class:
+export type ResourcesState = {
+    food: number;
+    foodCapacity: number;
+    housing: number;
+    wood: number;
+    woodCapacity: number;
+    coins: number;
+};
+export declare class ResourcesController {
+    teamToState: Map<Team, ResourcesState>;
+    getState(team: Team): ResourcesState;
+}
+
+
+--------- ProjectilesController class:
+export type Projectile = {
+    position: Point;
+    angle: number;
+    speed: number;
+    damage: number;
+    flyDistanceLeft: number;
+    fromDot: Dot;
+    radius: number;
+};
+export type ProjectilesControllerTickEffects = {
+    dotsKilled: Dot[];
+    buildingsKilled: Building[];
+};
+export declare class ProjectilesController {
+    shootProjectile(fromDot: Dot, toPoint: Point, params: Pick<Projectile, "speed" | "damage" | "flyDistanceLeft" | "radius">): void;
+}
+
+
+
+--------- DotsController class:
+export type DotTemplate = {
+    width: number;
+    height: number;
+    speed: number;
+    attackRange: number;
+    attackCooldown: number;
+    aimingDuration: number;
+    hitBox: Rect;
+    health: number;
+    angle: number;
+};
+export type Dot = DotTemplate & {
+    position: Point;
+    team: Team;
+    removed: boolean;
+    squad: Squad | null;
+    slot: Slot | null;
+    gridSquareIndexes: number[];
+    attackCooldownLeft: number;
+    aimingTimeLeft: number;
+    aimingTargetDot: Dot | null;
+    attackTargetedByDots: Set<Dot>;
+    attackTargetDot: Dot | null;
+    attackTargetBuilding: Building | null;
+    path: Point[];
+    allowAttack: boolean;
+};
+export type ProjectileToShoot = {
+    fromDot: Dot;
+    toPoint: Point;
+    params: Pick<Projectile, "speed" | "damage" | "flyDistanceLeft" | "radius">;
+};
+export type DotsControllerTickEffects = {
+    projectilesToShoot: ProjectileToShoot[];
+    dotsRemoved: Dot[];
+};
+export declare class DotsController {
+    readonly width: number;
+    readonly height: number;
+    dotsGrid: DotsGrid;
+    dots: Set<Dot>;
+    constructor(width: number, height: number);
+    initDot(dotPartial: Omit<Dot, "path" | "attackTargetDot" | "attackCooldownLeft" | "attackTargetedByDots" | "aimingTimeLeft" | "aimingTarget" | "hitBox" | "squad" | "slot" | "gridSquareIndexes" | "removed" | "allowAttack" | "aimingTargetDot" | "attackTargetBuilding">): Dot;
+    addDot(dot: Dot): void;
+    removeDot(dot: Dot): void;
+    generateDotRandom(): Omit<Dot, "team">;
+    addDotRandom(team: Team): void;
+    syncDotAndSlotAngle(dot: Dot, slot: Slot): void;
+    moveDot(dot: Dot, to: Point): void;
+    checkHasShootIntersectionWithOwnTeam(dot: Dot, target: Point): boolean;
+}
+
+
+
+
+--------- BuildingsController class:
+export type BuildingCost = {
+    coins: number;
+    wood: number;
+};
+export type BuildingBase = {
+    kind: string;
+    frameRelative: Polygon;
+    frame: Polygon;
+    center: Point;
+    health: number;
+    team: Team;
+    cost: BuildingCost;
+};
+export type BuildingBarracks = BuildingBase & {
+    kind: "barracks";
+    spawnDuration: number;
+    spawnTimeLeft: number;
+    spawnQueue: DotTemplate[];
+    isSpawning: boolean;
+};
+export type BuildingHouse = BuildingBase & {
+    kind: "house";
+    capacity: number;
+};
+export type BuildingFarm = BuildingBase & {
+    kind: "farm";
+    foodPerSecond: number;
+    foodCapacity: number;
+};
+export type BuildingGranary = BuildingBase & {
+    kind: "granary";
+    foodCapacity: number;
+};
+export type BuildingLumberMill = BuildingBase & {
+    kind: "lumberMill";
+    woodPerSecond: number;
+    woodCapacity: number;
+};
+export type BuildingHQ = BuildingBase & {
+    kind: "hq";
+};
+export type Building = BuildingBarracks | BuildingHouse | BuildingFarm | BuildingGranary | BuildingLumberMill | BuildingHQ;
+export type BuildingKind = Building["kind"];
+export type DotSpawned = DotTemplate & Pick<Dot, "position" | "team">;
+export type BuildingsControllerTickEffects = {
+    dotsSpawned: DotSpawned[];
+    resourcesChangeByMap: Map<Team, {
+        foodProduced: number;
+        foodConsumed: number;
+        woodProduced: number;
+        woodConsumed: number;
+        coinsProduced: number;
+        coinsConsumed: number;
+    }>;
+};
+export type BuildingsControllerArgs = {
+    teamToResources: Map<Team, {
+        food: number;
+        housing: number;
+        wood: number;
+        coins: number;
+    }>;
+};
+export declare class BuildingsController {
+    buildings: Set<Building>;
+    constructor();
+    static canBuild(buildingCost: BuildingCost, resources: ResourcesState): boolean;
+    addBuilding(building: Building): void;
+    removeBuilding(building: Building): void;
+    countHousing(team: Team): number;
+    countFoodCapacity(team: Team): number;
+    countWoodCapacity(team: Team): number;
+}
+
+
+
+
+
+
+--------- buildingsConfigs:
+export type BuildingConfig<B extends Building> = Omit<
+    B,
+    "frame" | "center" | "team"
+>;
+
+export const BUILDINGS_CONFIGS: {
+    [Kind in BuildingKind]: BuildingConfig<Extract<Building, { kind: Kind }>>;
+} = {
+    barracks: {
+        kind: "barracks",
+        frameRelative: [
+            { x: -50, y: -40 },
+            { x: 50, y: -40 },
+            { x: 50, y: 40 },
+            { x: -50, y: 40 },
+        ],
+        health: 10,
+        spawnDuration: 500,
+        spawnTimeLeft: 500,
+        spawnQueue: [],
+        isSpawning: false,
+        cost: {
+            wood: 50,
+            coins: 100,
+        },
+    },
+    house: {
+        kind: "house",
+        frameRelative: [
+            { x: -25, y: -25 },
+            { x: 25, y: -25 },
+            { x: 25, y: 25 },
+            { x: -25, y: 25 },
+        ],
+        health: 100,
+        capacity: 110,
+        cost: {
+            wood: 20,
+            coins: 20,
+        },
+    },
+    farm: {
+        kind: "farm",
+        frameRelative: [
+            { x: -50, y: -50 },
+            { x: 50, y: -50 },
+            { x: 50, y: 50 },
+            { x: -50, y: 50 },
+        ],
+        health: 100,
+        foodPerSecond: 20,
+        foodCapacity: 100,
+        cost: {
+            wood: 80,
+            coins: 50,
+        },
+    },
+    granary: {
+        kind: "granary",
+        frameRelative: [
+            { x: -30, y: -30 },
+            { x: 30, y: -30 },
+            { x: 30, y: 30 },
+            { x: -30, y: 30 },
+        ],
+        health: 100,
+        foodCapacity: 100,
+        cost: {
+            wood: 80,
+            coins: 50,
+        },
+    },
+    lumberMill: {
+        kind: "lumberMill",
+        frameRelative: [
+            { x: -50, y: -50 },
+            { x: 50, y: -50 },
+            { x: 50, y: 50 },
+            { x: -50, y: 50 },
+        ],
+        health: 100,
+        woodPerSecond: 5,
+        woodCapacity: 100,
+        cost: {
+            wood: 0,
+            coins: 200,
+        },
+    },
+    hq: {
+        kind: "hq",
+        frameRelative: [
+            { x: -40, y: -50 },
+            { x: 40, y: -50 },
+            { x: 40, y: 50 },
+            { x: -40, y: 50 },
+        ],
+        health: 500,
+        cost: {
+            wood: Infinity,
+            coins: Infinity,
+        },
+    },
+};
+
+resources explanation:
+coins - to produce units and to buy buildings.
+wood - to buy buildings.
+food - to produce units.
+
+coins are better to preserve. there are no good ways to produce them.
+food is very important - no food = no units = you die.
+wood is not so important - you can build lumber mills anytime.
+
+farms produce food.
+barracks produce units.
+lumber mills produce wood.
+hq produces coins. (a small amount of coins)
+
+farms are very important - no food = no units = you die.
+lumber mills are very cheap - but know your limit. try no to spend all your coins on them.
+
+implement! in a one file.
+if there is a lack of some information then ask me before producing the output.
+otherwise emit only code.
+
+make the AI act periodically (like once every 200 ms).
+like do an window.setInterval (window! not just setInterval) in PlayerAI and do the stuff there.
+there should be no need to work with Game tick effects (you have no access anyway).
+
+building can be done via Game.tryBuild - it tries to build and returns true if it was successful.
+
+enemy's squads and buildings can be anywhere - you need to find them.
+
+log all your actions to an array of strings. an make an event of it that can be subscribed to externally.
+do not use Game events system (it's private btw).
+provide addEventListener and removeEventListener methods to listen to new events.
+there is no external EventEmitter implementation.
+also log your intentions but with an interval of 1 second.
+i mean, real intentions, not just "I'm assessing the situation".
+like store the last intention after a iteration and then emit it.
+when you mention a squad - use its key to refer to it.
+
+when in loop of failing the same action over and over again,
+try to find a better way to do it or just don't bother doing it.
+like when you can't find a place to place a building.
+
+there can be only one HQ in the game.
+
+there can be already placed buildings and squads for you and your opponent.
+
+make a startAI public method that starts the AI.
+
+when you order a squad to attack - it won't move on its own. you need to do it manually.
+so order to attack just sets a shooting target for the dots in the squad.
+you also better allow shooting for the squad in order for it to attack.
+
+you can't just try to attack the enemy HQ only. you better take enemy squads in account.
+
+you better keep your buildings close to each other. maybe start building around already placed buildings.
+build around the HQ?
+if there are some.
+
+maybe you should try to develop some kind of strategy and make decisions based on it.
+
+there is no getEnemyTeam method in TeamController. all teams besides yours are enemies.
+
+try not to forget to manage your squads.
+moving and attacking is important!
+
+there can be a lot of code. it's alright. maybe you better to modularize it (but inside the same file).
+
+add some randomness to the AI. so you don't get stuck in a loop.
+
+you can't use Game.dotMoveTo to move a dot in a squad because dots are linked to slots in a squad.
+you need to use generateAndUpdateSlotsAfterMove.
+create squads via SquadsController.createSquad.
+do not confuse Rect and RectOrth.
+
+now, write code! (or ask questions if you need help).
+do not emit explanations in the final answer to the prompt. just write the code.
+or ask questions if you have any.

@@ -105,6 +105,8 @@ export function sceneTwoTeamsSomeBuildings(game: Game) {
         ),
         center: center8,
     });
+
+    return { team1, team2 };
 }
 
 export function sceneTwoSquads(game: Game, ui: UI) {

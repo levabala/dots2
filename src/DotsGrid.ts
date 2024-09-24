@@ -193,10 +193,10 @@ export class DotsGrid {
         const gridRadiusForSure = Math.ceil(range / this.dotsGridSquadSize);
 
         const center = this.calcIndexXY(point);
-        const fromX = center.x - gridRadiusForSure;
-        const fromY = center.y - gridRadiusForSure;
-        const toX = center.x + gridRadiusForSure;
-        const toY = center.y + gridRadiusForSure;
+        const fromX = Math.min(Math.max(center.x - gridRadiusForSure, 0), this.dotsGridCols - 1);
+        const fromY = Math.min(Math.max(center.y - gridRadiusForSure, 0), this.dotsGridRows - 1);
+        const toX = Math.min(Math.max(center.x + gridRadiusForSure, 0), this.dotsGridCols - 1);
+        const toY = Math.min(Math.max(center.y + gridRadiusForSure, 0), this.dotsGridRows - 1);
 
         const dotsGridSquadDiagonalHalf = Math.sqrt(
             this.dotsGridSquadSize ** 2 * 2,
