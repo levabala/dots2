@@ -8,8 +8,8 @@ import {
     sceneTwoSquads,
     sceneTwoTeamsSomeBuildings,
 } from "./scenes";
-import { PlayerAI as PlayerAI1 } from "./player/PlayerAI1";
-import { PlayerAI as PlayerAI2 } from "./player/PlayerAI2";
+import { PlayerAI as PlayerAI1 } from "./player/PlayerAIGPT1";
+import { PlayerAI as PlayerAI2 } from "./player/PlayerAIGPT2";
 
 const container = document.createElement("div");
 container.style.position = "relative";
