@@ -1,16 +1,39 @@
-import { DOT_COST_COINS, DOT_COST_FOOD } from "../consts";
+import {
+    DOT_ATTACK_RANGE,
+    DOT_COST_COINS,
+    DOT_COST_FOOD,
+    DOT_HEIGHT,
+    DOT_IN_SQUAD_RADIUS_AROUND,
+} from "../consts";
 import type { Game } from "../Game";
 import { BUILDINGS_CONFIGS } from "../Game/buildingsConfigs";
 import type { Building, BuildingKind } from "../Game/BuildingsController";
 import type { Resource } from "../Game/ResourcesController";
 import type { Team } from "../Game/TeamController";
 import { mapValues, randomInteger } from "remeda";
-import type { Point } from "../utils";
+import {
+    angleBetweenPoints,
+    distanceBetween,
+    getIntersectionFirstRect,
+    getRectCenter,
+    getVectorEndPoint,
+    orthogonalRect,
+    rotateRect,
+    translateRect,
+    type Point,
+} from "../utils";
+import type { Dot } from "../Game/DotsController";
+import type { Squad } from "../Game/SquadsController";
+import { SquadFrameUtils } from "../Game/SquadFrameUtils";
 
 const PLANNING_HORIZON_SECONDS = 10;
+const MY_SQUAD_MIN_SIZE = 30;
+const DANGER_HQ_PROXIMITY = 800;
+const REPEL_DISTANCE = DOT_ATTACK_RANGE - 10;
 
 export class PlayerAI {
-    economy: Economy;
+    economist: Economist;
+    warlord: Warlord;
 
     actIntervalBetween: number = 100;
 
@@ -18,7 +41,8 @@ export class PlayerAI {
         readonly game: Game,
         readonly team: Team,
     ) {
-        this.economy = new Economy(game, team);
+        this.economist = new Economist(game, team);
+        this.warlord = new Warlord(game, team);
     }
 
     startAI() {
@@ -27,12 +51,251 @@ export class PlayerAI {
         }, this.actIntervalBetween);
 
         setInterval(() => {
-            this.economy.log();
+            this.economist.log();
         }, 1000);
     }
 
     private act() {
-        this.economy.act();
+        this.economist.act();
+        this.warlord.act();
+    }
+}
+
+class Warlord {
+    squadEnemyToSquadMy = new Map<Squad, Squad>();
+    squadsToRepel: Squad[] = [];
+    baseCenter: Point;
+
+    constructor(
+        readonly game: Game,
+        readonly team: Team,
+    ) {
+        this.baseCenter = this.calcBaseCenter();
+    }
+
+    private calcBaseCenter() {
+        const buildings = this.game.getBuildings();
+
+        for (const building of buildings) {
+            if (building.team !== this.team) {
+                continue;
+            }
+
+            if (building.kind === "hq") {
+                return building.center;
+            }
+        }
+
+        return { x: this.game.width / 2, y: this.game.height / 2 };
+    }
+
+    private calcRallyPoint() {
+        return this.baseCenter;
+    }
+
+    private getDotsWithoutSquad() {
+        const dots = this.game.getDots();
+        const dotsWithoutSquad = [];
+
+        for (const dot of dots) {
+            if (dot.team !== this.team) {
+                continue;
+            }
+
+            if (dot.squad) {
+                continue;
+            }
+
+            dotsWithoutSquad.push(dot);
+        }
+
+        return dotsWithoutSquad;
+    }
+
+    private createSquad(dots: Dot[]) {
+        const center = this.calcRallyPoint();
+
+        this.game.createSquad(dots, this.team, center);
+    }
+
+    private createSquadIfNeeded() {
+        const dots = this.getDotsWithoutSquad();
+
+        if (dots.length < MY_SQUAD_MIN_SIZE) {
+            return;
+        }
+
+        this.createSquad(dots);
+    }
+
+    private getSquadsDangerousToHQ() {
+        const squads = this.game.getSquads();
+        const squadsDangerousToHQ = [];
+
+        for (const squad of squads) {
+            if (squad.team === this.team) {
+                continue;
+            }
+
+            const squadCenter = getRectCenter(squad.frame);
+
+            const distance = distanceBetween(squadCenter, this.baseCenter);
+
+            if (distance > DANGER_HQ_PROXIMITY) {
+                continue;
+            }
+
+            squadsDangerousToHQ.push(squad);
+        }
+
+        return squadsDangerousToHQ;
+    }
+
+    private calcSquadsToRepel() {
+        const squadsDangerousToHQ = this.getSquadsDangerousToHQ();
+
+        return squadsDangerousToHQ;
+    }
+
+    private calcAvaiableSquads() {
+        const squads = this.game.getSquads();
+        const squadsAvailable = [];
+
+        for (const squad of squads) {
+            if (squad.team !== this.team) {
+                continue;
+            }
+
+            squadsAvailable.push(squad);
+        }
+
+        return squadsAvailable;
+    }
+
+    private placeSquadInFrontOfSquad(
+        squadMy: Squad,
+        squadEnemy: Squad,
+        distance: number,
+    ) {
+        const enemyFrontlineCenter = getIntersectionFirstRect(
+            { p1: this.baseCenter, p2: getRectCenter(squadEnemy.frame) },
+            squadEnemy.frame,
+        );
+
+        if (!enemyFrontlineCenter) {
+            window.panic("can't find an intersection", {
+                squadMy,
+                squadEnemy,
+            });
+        }
+
+        const angleToEnemyFromBase = angleBetweenPoints(
+            this.baseCenter,
+            enemyFrontlineCenter,
+        );
+
+        const distanceToEnemyFromBase = distanceBetween(
+            this.baseCenter,
+            enemyFrontlineCenter,
+        );
+
+        const myFrontlineCenter = getVectorEndPoint(
+            this.baseCenter,
+            angleToEnemyFromBase,
+            distanceToEnemyFromBase - distance,
+        );
+
+        const rowHeight = DOT_HEIGHT + DOT_IN_SQUAD_RADIUS_AROUND;
+        const sideLength = rowHeight * 3;
+
+        const frontLength = SquadFrameUtils.calcSquadFrontLength(
+            squadMy.slots.length,
+            sideLength,
+        );
+
+        const frameOrthZero = orthogonalRect(
+            { x: -frontLength / 2, y: 0 },
+            { x: frontLength / 2, y: sideLength },
+        );
+
+        const frameZero = rotateRect({
+            rect: frameOrthZero,
+            anchor: { x: 0, y: 0 },
+            angle: angleToEnemyFromBase + Math.PI / 2,
+        });
+
+        const frame = translateRect(
+            frameZero,
+            myFrontlineCenter.x,
+            myFrontlineCenter.y,
+        );
+
+        this.game.moveSquadTo([squadMy], frame);
+    }
+
+    private assignSquadToRepel(squadMy: Squad, squadToRepel: Squad) {
+        this.placeSquadInFrontOfSquad(squadMy, squadToRepel, REPEL_DISTANCE);
+    }
+
+    private assignSquads() {
+        for (const [squadToRepel, squadMy] of this.squadEnemyToSquadMy) {
+            if (
+                !this.game.getSquads().includes(squadMy) ||
+                !this.game.getSquads().includes(squadToRepel)
+            ) {
+                this.squadEnemyToSquadMy.delete(squadToRepel);
+            }
+        }
+
+        const squadsAvailable = this.calcAvaiableSquads();
+
+        for (const squadToRepel of this.squadsToRepel) {
+            if (!squadsAvailable.length) {
+                return;
+            }
+
+            const squadAssigned = this.squadEnemyToSquadMy.get(squadToRepel);
+
+            if (squadAssigned) {
+                this.assignSquadToRepel(squadAssigned, squadToRepel);
+                squadsAvailable.splice(
+                    squadsAvailable.indexOf(squadAssigned),
+                    1,
+                );
+                continue;
+            }
+
+            let squadMyTheClosest: Squad | null = null;
+            let distance = Infinity;
+            let index = -1;
+            for (const [i, squadMy] of squadsAvailable.entries()) {
+                const distanceToEnemy = distanceBetween(
+                    getRectCenter(squadMy.frame),
+                    getRectCenter(squadToRepel.frame),
+                );
+
+                if (distanceToEnemy < distance) {
+                    squadMyTheClosest = squadMy;
+                    distance = distanceToEnemy;
+                    index = i;
+                }
+            }
+
+            const squadMy = squadsAvailable.splice(index, 1)[0];
+
+            this.assignSquadToRepel(squadMy, squadToRepel);
+            this.squadEnemyToSquadMy.set(squadToRepel, squadMy);
+        }
+    }
+
+    private updateInfo() {
+        this.squadsToRepel = this.calcSquadsToRepel();
+    }
+
+    act() {
+        this.updateInfo();
+        this.createSquadIfNeeded();
+        this.assignSquads();
     }
 }
 
@@ -43,7 +306,7 @@ const ResourceToBuildingToBeProductedBy: Record<Resource, BuildingKind> = {
     housing: "house",
 };
 
-class Economy {
+class Economist {
     resourcesProductionBalance: Record<Resource, number> = {
         food: 0,
         wood: 0,

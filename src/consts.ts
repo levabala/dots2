@@ -1,7 +1,7 @@
 export const DOT_WIDTH = 8;
 export const DOT_HEIGHT = 6;
 export const DOT_SPEED = 70 / 1000;
-export const DOT_IN_SQUAD_SPACE_AROUND = 250;
+export const DOT_IN_SQUAD_RADIUS_AROUND = 8;
 export const DEFAULT_PROJECTILE = {
     radius: 4,
     speed: 1500 / 1000,

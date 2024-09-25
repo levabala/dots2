@@ -1,9 +1,5 @@
 import { SQUAD_NAMES } from "../assets/squadNames";
-import {
-    BETWEEN_SQUADS_GAP,
-    DOT_IN_SQUAD_SPACE_AROUND,
-    SQUAD_MIN_DOTS,
-} from "../consts";
+import { BETWEEN_SQUADS_GAP, SQUAD_MIN_DOTS } from "../consts";
 import {
     arePointsEqual,
     distanceBetween,
@@ -279,7 +275,7 @@ export class SquadsController {
 
         const totalLength = distanceBetween(targetFrame.p1, targetFrame.p2);
         const sideLength = distanceBetween(targetFrame.p1, targetFrame.p4);
-        const density = DOT_IN_SQUAD_SPACE_AROUND; // Area per unit
+        const density = SquadFrameUtils.calcDotArea(); // Area per unit
 
         const frontDirection = {
             x: (targetFrame.p2.x - targetFrame.p1.x) / totalLength,

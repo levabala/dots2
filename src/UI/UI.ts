@@ -10,7 +10,6 @@ import {
     type Rect,
 } from "../utils";
 import {
-    DOT_IN_SQUAD_SPACE_AROUND,
     DOT_WIDTH,
     BETWEEN_SQUADS_GAP,
 } from "../consts";
@@ -784,8 +783,10 @@ export class UI {
         }
 
         const availableFrontLength = frontLength - totalGapsLength;
-        const totalAreaNeeded = totalDotsToMove * DOT_IN_SQUAD_SPACE_AROUND;
-        const sideLength = totalAreaNeeded / availableFrontLength;
+        const sideLength = SquadFrameUtils.calcSquadSideLength(
+            totalDotsToMove,
+            availableFrontLength,
+        );
 
         const destinationRaw = orthogonalRect(
             {

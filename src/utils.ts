@@ -202,6 +202,15 @@ export function getRectCenter(rect: Rect): Point {
     };
 }
 
+export function translateRect(rect: Rect, dx: number, dy: number) {
+    return {
+        p1: { x: rect.p1.x + dx, y: rect.p1.y + dy },
+        p2: { x: rect.p2.x + dx, y: rect.p2.y + dy },
+        p3: { x: rect.p3.x + dx, y: rect.p3.y + dy },
+        p4: { x: rect.p4.x + dx, y: rect.p4.y + dy },
+    };
+}
+
 export function getIntersectionFirstRect(
     line: { p1: Point; p2: Point },
     rect: Rect,
@@ -449,6 +458,20 @@ export function isPointInPolygon(point: Point, polygon: Polygon): boolean {
     return inside;
 }
 
-export function assertUnreachable(x: never): never {
+export function assertUnreachable(_x: never): never {
     throw new Error("Didn't expect to get here");
+}
+
+export function angleBetweenPoints(p1: Point, p2: Point) {
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+
+    return Math.atan2(dy, dx);
+}
+
+export function getVectorEndPoint(startPoint: Point, angle: number, length: number) {
+    const x = startPoint.x + length * Math.cos(angle);
+    const y = startPoint.y + length * Math.sin(angle);
+
+    return { x, y };
 }

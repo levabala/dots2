@@ -78,17 +78,15 @@ function renderLoop() {
     requestAnimationFrame(renderLoop);
 }
 
+window.timeScale = 4;
+
 let timeReal = Date.now();
 function gameLoop() {
     const timeRealNew = Date.now();
     const deltaReal = timeRealNew - timeReal;
 
     if (!isPauseRef.current) {
-        const timeScale =
-            typeof window.timeScale === "number" &&
-            Number.isFinite(window.timeScale)
-                ? window.timeScale
-                : 1;
+        const timeScale = window.timeScale;
         game.tick(deltaReal * timeScale);
     }
 
@@ -128,17 +126,18 @@ const player2 = new PlayerAI2(game, team2);
 // );
 player2.startAI();
 
-const team3 = sceneOneTeamLeftBottom(game);
+// const team3 = sceneOneTeamLeftBottom(game);
+sceneOneTeamLeftBottom(game);
 
-const player3 = new PlayerAI2(game, team3);
+// const player3 = new PlayerAI2(game, team3);
 
-// player3.addEventListener("action", (message: string) =>
-//     console.log("action", message),
-// );
-// player3.addEventListener("intention", (message: string) =>
-//     console.log("intention", message),
-// );
-player3.startAI();
+// // player3.addEventListener("action", (message: string) =>
+// //     console.log("action", message),
+// // );
+// // player3.addEventListener("intention", (message: string) =>
+// //     console.log("intention", message),
+// // );
+// player3.startAI();
 
 const team4 = sceneOneTeamRightBottom(game);
 
@@ -156,7 +155,7 @@ player4.startAI();
 (window as any).players = {
     player1,
     player2,
-    player3,
+    // player3,
     player4,
 };
 
