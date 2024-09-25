@@ -54,13 +54,19 @@ export type BuildingHQ = BuildingBase & {
     coinsPerSecond: number;
 };
 
+export type BuildingCoinMiner = BuildingBase & {
+    kind: "coinMiner";
+    coinsPerSecond: number;
+};
+
 export type Building =
     | BuildingBarracks
     | BuildingHouse
     | BuildingFarm
     | BuildingGranary
     | BuildingLumberMill
-    | BuildingHQ;
+    | BuildingHQ
+    | BuildingCoinMiner;
 
 export type BuildingKind = Building["kind"];
 
@@ -300,6 +306,12 @@ export class BuildingsController {
             getResourcesChange(building.team).coinsProduced += coinsProduced;
         };
 
+        const tickCoinMiner = (building: BuildingCoinMiner) => {
+            const coinsProduced = building.coinsPerSecond * (timeDelta / 1000);
+
+            getResourcesChange(building.team).coinsProduced += coinsProduced;
+        };
+
         const removeIfDead = (building: Building) => {
             if (building.health <= 0) {
                 this.removeBuilding(building);
@@ -323,6 +335,9 @@ export class BuildingsController {
                     break;
                 case "hq":
                     tickHQ(building);
+                    break;
+                case "coinMiner":
+                    tickCoinMiner(building);
                     break;
             }
         }

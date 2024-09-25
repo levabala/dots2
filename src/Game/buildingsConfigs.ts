@@ -103,4 +103,19 @@ export const BUILDINGS_CONFIGS: {
             coins: Infinity,
         },
     },
+    coinMiner: {
+        kind: "coinMiner",
+        frameRelative: [
+            { x: -60, y: -50 },
+            { x: 60, y: -50 },
+            { x: 60, y: 50 },
+            { x: -60, y: 50 },
+        ],
+        health: 80,
+        coinsPerSecond: 3,
+        cost: {
+            wood: 100,
+            coins: 300,
+        },
+    },
 };
