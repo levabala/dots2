@@ -3,7 +3,11 @@ import { UI } from "./UI/UI";
 import { RendererCanvasSimple } from "./Renderer";
 import { Logger } from "./Logger";
 import { VisualDebugger } from "./VisualDebugger";
-import { sceneOneTeam, sceneTwoSquads, sceneTwoTeamsSomeBuildings } from "./scenes";
+import {
+    sceneOneTeam,
+    sceneTwoSquads,
+    sceneTwoTeamsSomeBuildings,
+} from "./scenes";
 import { PlayerAI as PlayerAI1 } from "./player/PlayerAI1";
 import { PlayerAI as PlayerAI2 } from "./player/PlayerAI2";
 
@@ -72,16 +76,21 @@ function renderLoop() {
     requestAnimationFrame(renderLoop);
 }
 
-let time = Date.now();
+let timeReal = Date.now();
 function gameLoop() {
-    const timeNew = Date.now();
-    const delta = timeNew - time;
+    const timeRealNew = Date.now();
+    const deltaReal = timeRealNew - timeReal;
 
     if (!isPauseRef.current) {
-        game.tick(delta);
+        const timeScale =
+            typeof window.timeScale === "number" &&
+            Number.isFinite(window.timeScale)
+                ? window.timeScale
+                : 1;
+        game.tick(deltaReal * timeScale);
     }
 
-    time = timeNew;
+    timeReal = timeRealNew;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
