@@ -53,6 +53,7 @@ export class UI {
     currentTeam: Team | null = null;
 
     buildingPlacingGhost: Building | null = null;
+    buildingsSelected: Set<Building> = new Set();
 
     logs: CommandPanelLog[] = [];
 
@@ -118,6 +119,19 @@ export class UI {
         this.game.addEventListener(GameEventTickName.resourcesChanged, () =>
             this.renderCommandPanel(),
         );
+
+        this.game.addEventListener(
+            GameEventTickName.buildingsAdded,
+            ({ buildings }) => {
+                for (const building of buildings) {
+                    this.addLog(
+                        `Built "${building.kind}" by ${building.team.name}`,
+                    );
+                }
+
+                this.renderCommandPanel();
+            },
+        );
     }
 
     initUserEventListeners() {
@@ -144,6 +158,13 @@ export class UI {
             }
         });
         this.element.addEventListener("mouseup", (e) => {
+            const pointTransformed = this.viewPort.matrix.transformPointReverse(
+                {
+                    x: e.offsetX,
+                    y: e.offsetY,
+                },
+            );
+
             switch (e.button) {
                 case 0:
                     if (this.buildingPlacingGhost) {
@@ -159,19 +180,11 @@ export class UI {
                         return;
                     }
 
-                    this.trySelectSquadFrame(
-                        this.viewPort.matrix.transformPointReverse({
-                            x: e.offsetX,
-                            y: e.offsetY,
-                        }),
-                        { deselectPrevious: !e.shiftKey },
-                    );
-                    this.trySelectDot(
-                        this.viewPort.matrix.transformPointReverse({
-                            x: e.offsetX,
-                            y: e.offsetY,
-                        }),
-                    );
+                    this.trySelectSquadFrame(pointTransformed, {
+                        deselectPrevious: !e.shiftKey,
+                    });
+                    this.trySelectDot(pointTransformed);
+                    this.trySelectBuilding(pointTransformed);
                     break;
                 case 2:
                     if (this.buildingPlacingGhost) {
@@ -295,6 +308,11 @@ export class UI {
             (this.squadsSelected[0] as Squad | undefined)?.team ||
             (this.dotsSelected.values().next()?.value as Dot | undefined)
                 ?.team ||
+            (
+                this.buildingsSelected.values().next()?.value as
+                    | Building
+                    | undefined
+            )?.team ||
             null;
 
         const teamToState = team
@@ -309,9 +327,11 @@ export class UI {
                       food: teamToState.food,
                       foodCapacity: teamToState.foodCapacity,
                       housing: teamToState.housing,
+                      housingCapacity: teamToState.housingCapacity,
                       wood: teamToState.wood,
                       woodCapacity: teamToState.woodCapacity,
                       coins: teamToState.coins,
+                      coinsCapacity: teamToState.coinsCapacity,
                   }
                 : null,
             logs: this.logs,
@@ -616,6 +636,22 @@ export class UI {
         return { selected: false };
     }
 
+    trySelectBuilding(point: Point) {
+        const buildingClicked = this.getBuildingByPosition(point);
+
+        console.log(buildingClicked);
+
+        if (buildingClicked) {
+            this.buildingsSelected.clear();
+            this.buildingsSelected.add(buildingClicked);
+            this.selectTeam(buildingClicked.team);
+
+            return { selected: true };
+        }
+
+        return { selected: false };
+    }
+
     createSquad() {
         const dots = Array.from(this.dotsSelected);
 
@@ -825,11 +861,9 @@ export class UI {
     }
 
     commandMoveSquads(squads: Squad[], targetFrame: Rect) {
-        const squadRects =
-            this.game.moveSquadTo(
-                squads,
-                targetFrame,
-            ) as Array<Rect | undefined>;
+        const squadRects = this.game.moveSquadTo(squads, targetFrame) as Array<
+            Rect | undefined
+        >;
 
         squads.forEach((sf, i) => {
             if (!squadRects[i]) return;

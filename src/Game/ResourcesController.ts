@@ -1,12 +1,9 @@
 import type { Team } from "./TeamController";
 
-export type ResourcesState = {
-    food: number;
-    foodCapacity: number;
-    housing: number;
-    wood: number;
-    woodCapacity: number;
-    coins: number;
+export type Resource = "food" | "wood" | "coins" | "housing";
+
+export type ResourcesState = { [key in Resource]: number } & {
+    [key in Resource as `${key}Capacity`]: number;
 };
 
 export class ResourcesController {
@@ -22,6 +19,8 @@ export class ResourcesController {
             wood: 0,
             woodCapacity: 0,
             coins: 0,
+            coinsCapacity: Infinity,
+            housingCapacity: Infinity,
         });
     }
 
@@ -43,6 +42,12 @@ export class ResourcesController {
         window.assert(state.wood >= 0, "wood must be positive", {
             wood: state.wood,
         });
+    }
+
+    setWood(team: Team, wood: number) {
+        const state = this.getState(team);
+
+        state.wood = wood;
     }
 
     changeCoins(team: Team, coinsDelta: number) {

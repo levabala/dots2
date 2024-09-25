@@ -85,7 +85,7 @@ export function sceneTwoTeamsSomeBuildings(game: Game) {
             center4,
         ),
         center: center4,
-        spawnQueue: times(50, () => dotsController.generateDotRandom()),
+        spawnQueue: [],
     });
     const center5 = { x: 1850, y: 1000 };
     buildingsController.addBuilding({
@@ -128,6 +128,9 @@ export function sceneTwoTeamsSomeBuildings(game: Game) {
         ),
         center: center10,
     });
+
+    resourcesController.setWood(team1, 70);
+    resourcesController.setWood(team2, 70);
 
     return { team1, team2 };
 }
@@ -172,7 +175,7 @@ export function sceneTwoSquads(game: Game, ui: UI) {
     ui.selectSquadFrame(squadsController.squads[0]);
 }
 
-export function sceneOneTeam(game: Game) {
+export function sceneOneTeamLeftBottom(game: Game) {
     const {
         teamController,
         resourcesController,
@@ -235,6 +238,77 @@ export function sceneOneTeam(game: Game) {
         frame: createPolygonOffset(BUILDINGS_CONFIGS.hq.frameRelative, center7),
         center: center7,
     });
+
+    resourcesController.setWood(team, 70);
+
+    return team;
+}
+
+export function sceneOneTeamRightBottom(game: Game) {
+    const {
+        teamController,
+        resourcesController,
+        buildingsController,
+    } = game.getPrivateStaffYouShouldNotUse();
+
+    const team = teamController.createTeam({ name: "orange" });
+
+    resourcesController.initTeamResourcesState(team);
+
+    resourcesController.setCoins(team, 1000);
+
+    const center1 = { x: 2000, y: 2000 };
+    buildingsController.addBuilding({
+        ...BUILDINGS_CONFIGS.barracks,
+        team: team,
+        frame: createPolygonOffset(
+            BUILDINGS_CONFIGS.barracks.frameRelative,
+            center1,
+        ),
+        center: center1,
+    });
+    const center2 = { x: 2100, y: 2000 };
+    buildingsController.addBuilding({
+        ...BUILDINGS_CONFIGS.house,
+        team: team,
+        frame: createPolygonOffset(
+            BUILDINGS_CONFIGS.house.frameRelative,
+            center2,
+        ),
+        center: center1,
+    });
+    const center3 = { x: 1870, y: 2100 };
+    buildingsController.addBuilding({
+        ...BUILDINGS_CONFIGS.farm,
+        kind: "farm",
+        team: team,
+        frame: createPolygonOffset(
+            BUILDINGS_CONFIGS.farm.frameRelative,
+            center3,
+        ),
+        center: center3,
+    });
+    const center6 = { x: 2170, y: 2300 };
+    buildingsController.addBuilding({
+        ...BUILDINGS_CONFIGS.lumberMill,
+        kind: "lumberMill",
+        team: team,
+        frame: createPolygonOffset(
+            BUILDINGS_CONFIGS.lumberMill.frameRelative,
+            center6,
+        ),
+        center: center6,
+    });
+    const center7 = { x: 1850, y: 2320 };
+    buildingsController.addBuilding({
+        ...BUILDINGS_CONFIGS.hq,
+        kind: "hq",
+        team: team,
+        frame: createPolygonOffset(BUILDINGS_CONFIGS.hq.frameRelative, center7),
+        center: center7,
+    });
+
+    resourcesController.setWood(team, 70);
 
     return team;
 }

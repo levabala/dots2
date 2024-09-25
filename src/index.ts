@@ -4,12 +4,14 @@ import { RendererCanvasSimple } from "./Renderer";
 import { Logger } from "./Logger";
 import { VisualDebugger } from "./VisualDebugger";
 import {
-    sceneOneTeam,
+    sceneOneTeamLeftBottom,
+    sceneOneTeamRightBottom,
     sceneTwoSquads,
     sceneTwoTeamsSomeBuildings,
 } from "./scenes";
 import { PlayerAI as PlayerAI1 } from "./player/PlayerAIGPT1";
 import { PlayerAI as PlayerAI2 } from "./player/PlayerAIGPT2";
+import { PlayerAI as PlayerAI3 } from "./player/PlayerAI1";
 
 const container = document.createElement("div");
 container.style.position = "relative";
@@ -108,35 +110,55 @@ sceneTwoSquads(game, ui);
 
 const player1 = new PlayerAI1(game, team1);
 
-player1.addEventListener("action", (message: string) =>
-    console.log("action", message),
-);
-player1.addEventListener("intention", (message: string) =>
-    console.log("intention", message),
-);
+// player1.addEventListener("action", (message: string) =>
+//     console.log("action", message),
+// );
+// player1.addEventListener("intention", (message: string) =>
+//     console.log("intention", message),
+// );
 player1.startAI();
 
 const player2 = new PlayerAI2(game, team2);
 
-player2.addEventListener("action", (message: string) =>
-    console.log("action", message),
-);
-player2.addEventListener("intention", (message: string) =>
-    console.log("intention", message),
-);
+// player2.addEventListener("action", (message: string) =>
+//     console.log("action", message),
+// );
+// player2.addEventListener("intention", (message: string) =>
+//     console.log("intention", message),
+// );
 player2.startAI();
 
-const team3 = sceneOneTeam(game);
+const team3 = sceneOneTeamLeftBottom(game);
 
 const player3 = new PlayerAI2(game, team3);
 
-player3.addEventListener("action", (message: string) =>
-    console.log("action", message),
-);
-player3.addEventListener("intention", (message: string) =>
-    console.log("intention", message),
-);
+// player3.addEventListener("action", (message: string) =>
+//     console.log("action", message),
+// );
+// player3.addEventListener("intention", (message: string) =>
+//     console.log("intention", message),
+// );
 player3.startAI();
+
+const team4 = sceneOneTeamRightBottom(game);
+
+const player4 = new PlayerAI3(game, team4);
+
+// player4.addEventListener("action", (message: string) =>
+//     console.log("action", message),
+// );
+// player4.addEventListener("intention", (message: string) =>
+//     console.log("intention", message),
+// );
+player4.startAI();
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(window as any).players = {
+    player1,
+    player2,
+    player3,
+    player4,
+};
 
 renderLoop();
 gameLoop();

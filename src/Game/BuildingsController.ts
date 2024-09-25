@@ -25,6 +25,7 @@ export type BuildingBarracks = BuildingBase & {
     spawnTimeLeft: number;
     spawnQueue: DotTemplate[];
     isSpawning: boolean;
+    allowSpawning: boolean;
 };
 
 export type BuildingHouse = BuildingBase & {
@@ -240,8 +241,18 @@ export class BuildingsController {
                 return;
             }
 
+            if (building.spawnQueue.length > 1){
+                window.panic("building spawn queue must be empty or have one element", {
+                    building,
+                });
+            }
+
             if (!building.isSpawning) {
                 if (!building.spawnQueue.length) {
+                    return;
+                }
+
+                if (!building.allowSpawning) {
                     return;
                 }
 

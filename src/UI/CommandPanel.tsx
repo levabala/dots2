@@ -7,6 +7,7 @@ import {
     type BuildingKind,
 } from "../Game/BuildingsController";
 import { BUILDINGS_CONFIGS } from "../Game/buildingsConfigs";
+import { useEffect, useLayoutEffect, useRef } from "react";
 
 export type CommandPanelLog = {
     timestamp: Date;
@@ -48,6 +49,40 @@ const CommandPanel: React.FC<{
     state: CommandPanelState;
     callbacks: CommandPanelCallbacks;
 }> = ({ state: { team, squads, resources, logs }, callbacks }) => {
+    const logsRef = useRef<HTMLDivElement>(null);
+
+    const isScrolledToBottom = useRef(true);
+    useEffect(() => {
+        if (!logsRef.current) {
+            return;
+        }
+
+        logsRef.current.addEventListener("scroll", () => {
+            if (!logsRef.current) {
+                return;
+            }
+
+            isScrolledToBottom.current =
+                logsRef.current.scrollTop + logsRef.current.clientHeight >=
+                logsRef.current.scrollHeight - 10;
+        });
+    }, []);
+
+    useLayoutEffect(() => {
+        if (!logsRef.current) {
+            return;
+        }
+
+        if (!isScrolledToBottom.current) {
+            return;
+        }
+
+        logsRef.current.scrollTo({
+            top: logsRef.current.scrollHeight,
+            behavior: "smooth",
+        });
+    }, [logs.length]);
+
     let allowAttack: Presence;
     if (squads.every((squad) => !squad.allowAttack)) {
         allowAttack = Presence.None;
@@ -85,6 +120,7 @@ const CommandPanel: React.FC<{
                     flexDirection: "row",
                     gap: 4,
                     flexGrow: 1,
+                    minHeight: 0,
                 }}
             >
                 <div
@@ -276,13 +312,14 @@ const CommandPanel: React.FC<{
                     >
                         Logs:
                         <div
+                            ref={logsRef}
                             style={{
                                 overflow: "scroll",
                                 flexGrow: 1,
                             }}
                         >
-                            {logs.map((log) => (
-                                <div>
+                            {logs.map((log, i) => (
+                                <div key={i}>
                                     <span>
                                         {log.timestamp.toLocaleString("en-US", {
                                             hour12: false,

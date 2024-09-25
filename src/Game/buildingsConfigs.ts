@@ -21,6 +21,7 @@ export const BUILDINGS_CONFIGS: {
         spawnTimeLeft: 500,
         spawnQueue: [],
         isSpawning: false,
+        allowSpawning: true,
         cost: {
             wood: 50,
             coins: 100,
@@ -112,10 +113,10 @@ export const BUILDINGS_CONFIGS: {
             { x: -60, y: 50 },
         ],
         health: 80,
-        coinsPerSecond: 3,
+        coinsPerSecond: 5,
         cost: {
             wood: 100,
-            coins: 300,
+            coins: 200,
         },
     },
 };
