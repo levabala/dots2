@@ -4,9 +4,9 @@ import type { Squad } from "../Game/SquadsController";
 import type { Team } from "../Game/TeamController";
 import {
     BuildingsController,
+    type BuildingCost,
     type BuildingKind,
 } from "../Game/BuildingsController";
-import { BUILDINGS_CONFIGS } from "../Game/buildingsConfigs";
 import { useEffect, useLayoutEffect, useRef } from "react";
 
 export type CommandPanelLog = {
@@ -19,6 +19,7 @@ export type CommandPanelState = {
     squads: Squad[];
     resources: ResourcesState | null;
     logs: CommandPanelLog[];
+    buildingToCost: Record<BuildingKind, BuildingCost> | null;
 };
 
 export type CommandPanelCallbacks = {
@@ -48,7 +49,10 @@ enum Presence {
 const CommandPanel: React.FC<{
     state: CommandPanelState;
     callbacks: CommandPanelCallbacks;
-}> = ({ state: { team, squads, resources, logs }, callbacks }) => {
+}> = ({
+    state: { team, squads, resources, logs, buildingToCost },
+    callbacks,
+}) => {
     const logsRef = useRef<HTMLDivElement>(null);
 
     const isScrolledToBottom = useRef(true);
@@ -217,15 +221,19 @@ const CommandPanel: React.FC<{
                             onClick={() =>
                                 callbacks.selectBuilding("lumberMill")
                             }
-                            data-tooltip={JSON.stringify(
-                                BUILDINGS_CONFIGS.lumberMill.cost,
-                                undefined,
-                                2,
-                            )}
+                            data-tooltip={
+                                buildingToCost &&
+                                JSON.stringify(
+                                    buildingToCost.lumberMill,
+                                    undefined,
+                                    2,
+                                )
+                            }
                             disabled={
                                 resources === null ||
+                                buildingToCost === null ||
                                 !BuildingsController.canBuild(
-                                    BUILDINGS_CONFIGS.lumberMill.cost,
+                                    buildingToCost.lumberMill,
                                     resources,
                                 )
                             }
@@ -234,15 +242,16 @@ const CommandPanel: React.FC<{
                         </button>
                         <button
                             onClick={() => callbacks.selectBuilding("barracks")}
-                            data-tooltip={JSON.stringify(
-                                BUILDINGS_CONFIGS.barracks.cost,
+                            data-tooltip={buildingToCost &&JSON.stringify(
+                                buildingToCost.barracks,
                                 undefined,
                                 2,
                             )}
                             disabled={
                                 resources === null ||
+                                    buildingToCost === null ||
                                 !BuildingsController.canBuild(
-                                    BUILDINGS_CONFIGS.barracks.cost,
+                                    buildingToCost.barracks,
                                     resources,
                                 )
                             }
@@ -251,15 +260,16 @@ const CommandPanel: React.FC<{
                         </button>
                         <button
                             onClick={() => callbacks.selectBuilding("house")}
-                            data-tooltip={JSON.stringify(
-                                BUILDINGS_CONFIGS.house.cost,
+                            data-tooltip={buildingToCost &&JSON.stringify(
+                                buildingToCost.house,
                                 undefined,
                                 2,
                             )}
                             disabled={
                                 resources === null ||
+                                    buildingToCost === null ||
                                 !BuildingsController.canBuild(
-                                    BUILDINGS_CONFIGS.house.cost,
+                                    buildingToCost.house,
                                     resources,
                                 )
                             }
@@ -268,15 +278,16 @@ const CommandPanel: React.FC<{
                         </button>
                         <button
                             onClick={() => callbacks.selectBuilding("farm")}
-                            data-tooltip={JSON.stringify(
-                                BUILDINGS_CONFIGS.farm.cost,
+                            data-tooltip={buildingToCost &&JSON.stringify(
+                                buildingToCost.farm,
                                 undefined,
                                 2,
                             )}
                             disabled={
                                 resources === null ||
+                                    buildingToCost === null ||
                                 !BuildingsController.canBuild(
-                                    BUILDINGS_CONFIGS.farm.cost,
+                                    buildingToCost.farm,
                                     resources,
                                 )
                             }
@@ -285,15 +296,16 @@ const CommandPanel: React.FC<{
                         </button>
                         <button
                             onClick={() => callbacks.selectBuilding("granary")}
-                            data-tooltip={JSON.stringify(
-                                BUILDINGS_CONFIGS.granary.cost,
+                            data-tooltip={buildingToCost &&JSON.stringify(
+                                buildingToCost.granary,
                                 undefined,
                                 2,
                             )}
                             disabled={
                                 resources === null ||
+                                    buildingToCost === null ||
                                 !BuildingsController.canBuild(
-                                    BUILDINGS_CONFIGS.granary.cost,
+                                    buildingToCost.granary,
                                     resources,
                                 )
                             }

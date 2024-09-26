@@ -1,5 +1,6 @@
 import { DOT_COST_COINS, DOT_COST_FOOD } from "../consts";
 import { randomPointInPolygon, type Point, type Polygon } from "../utils";
+import { BUILDINGS_CONFIGS } from "./buildingsConfigs";
 import type { DotTemplate, Dot } from "./DotsController";
 import type { ResourcesState } from "./ResourcesController";
 import type { Team } from "./TeamController";
@@ -16,7 +17,6 @@ export type BuildingBase = {
     center: Point;
     health: number;
     team: Team;
-    cost: BuildingCost;
 };
 
 export type BuildingBarracks = BuildingBase & {
@@ -165,6 +165,17 @@ export class BuildingsController {
         }
 
         return count;
+    }
+
+    getBuildingCost(buildingKind: BuildingKind, team: Team): BuildingCost {
+        let countExistingBuildings = 0;
+        for (const buildingExisting of this.buildings) {
+            if (buildingExisting.team === team && buildingExisting.kind === buildingKind) {
+                countExistingBuildings++;
+            }
+        }
+
+        return BUILDINGS_CONFIGS[buildingKind].getCost(countExistingBuildings);
     }
 
     tick(

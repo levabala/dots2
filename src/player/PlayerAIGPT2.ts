@@ -223,7 +223,7 @@ export class PlayerAI extends Player {
             return false;
         }
 
-        const cost = config.cost;
+        const cost = this.game.getBuildingCost(kind, this.team);
 
         if (resources.coins < cost.coins || resources.wood < cost.wood) {
             this.emitEvent('intention', `Not enough resources to build ${kind}.`);

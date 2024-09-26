@@ -9,10 +9,7 @@ import {
     type Point,
     type Rect,
 } from "../utils";
-import {
-    DOT_WIDTH,
-    BETWEEN_SQUADS_GAP,
-} from "../consts";
+import { DOT_WIDTH, BETWEEN_SQUADS_GAP } from "../consts";
 import { GameEventTickName, type Game } from "../Game/Game";
 import {
     CommandPanelUI,
@@ -20,7 +17,7 @@ import {
     type CommandPanelLog,
     type CommandPanelState,
 } from "./CommandPanel";
-import { isNonNull } from "remeda";
+import { isNonNull, mapValues } from "remeda";
 import { ViewPort } from "./ViewPort";
 import type { Dot } from "../Game/DotsController";
 import type { Squad } from "../Game/SquadsController";
@@ -333,6 +330,9 @@ export class UI {
                       coinsCapacity: teamToState.coinsCapacity,
                   }
                 : null,
+            buildingToCost: this.currentTeam ? mapValues(BUILDINGS_CONFIGS, (config) =>
+                this.game.getBuildingCost(config.kind, this.currentTeam!),
+            ) : null,
             logs: this.logs,
         };
     }

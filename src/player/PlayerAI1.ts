@@ -479,8 +479,10 @@ class Economist {
 
         const buildingNeededConfig = BUILDINGS_CONFIGS[buildingToBuild.kind];
 
-        resourcesAtHorizon.wood -= buildingNeededConfig.cost.wood;
-        resourcesAtHorizon.coins -= buildingNeededConfig.cost.coins;
+        const cost = this.game.getBuildingCost(buildingNeededConfig.kind, this.team);
+
+        resourcesAtHorizon.wood -= cost.wood;
+        resourcesAtHorizon.coins -= cost.coins;
 
         // TODO: iterate
         resourcesAtHorizon.food = Math.min(
@@ -624,7 +626,7 @@ class Economist {
         )[0][0] as BuildingKind;
 
         const canBuild = this.game.canBuild(
-            BUILDINGS_CONFIGS[buildingKind].cost,
+            buildingKind,
             this.team,
         );
 

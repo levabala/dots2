@@ -93,7 +93,7 @@ export class PlayerAI extends Player {
         for (const buildingKind of buildingsOrder) {
             if (buildingCounts[buildingKind] < targetBuildingCounts[buildingKind]) {
                 const buildingConfig = BUILDINGS_CONFIGS[buildingKind];
-                const cost = buildingConfig.cost;
+                const cost = this.game.getBuildingCost(buildingConfig.kind, this.team);
 
                 if (resources.coins >= cost.coins && resources.wood >= cost.wood) {
                     const baseBuilding = this.findBuildingToBuildAround();

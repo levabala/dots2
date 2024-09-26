@@ -2,8 +2,8 @@ import { type Point, type Rect } from "../utils";
 import {
     BuildingsController,
     type Building,
-    type BuildingBarracks,
     type BuildingCost,
+    type BuildingKind,
 } from "./BuildingsController";
 import { DotsController, type Dot } from "./DotsController";
 import { ProjectilesController } from "./ProjectilesController";
@@ -182,16 +182,17 @@ export class Game {
 
         const resources = this.resourcesController.getState(building.team);
 
-        if (!BuildingsController.canBuild(building.cost, resources)) {
+        const cost = this.buildingsController.getBuildingCost(building.kind, building.team);
+        if (!BuildingsController.canBuild(cost, resources)) {
             return false;
         }
 
         this.buildingsController.addBuilding(building);
 
-        this.resourcesController.changeWood(building.team, -building.cost.wood);
+        this.resourcesController.changeWood(building.team, -cost.wood);
         this.resourcesController.changeCoins(
             building.team,
-            -building.cost.coins,
+            -cost.coins,
         );
 
         this.emitEvent(GameEventTickName.buildingsAdded, {
@@ -201,9 +202,9 @@ export class Game {
         return true;
     }
 
-    canBuild(cost: BuildingCost, team: Team) {
+    canBuild(buildingKind: BuildingKind, team: Team) {
         return BuildingsController.canBuild(
-            cost,
+            this.buildingsController.getBuildingCost(buildingKind, team),
             this.resourcesController.getState(team),
         );
     }
@@ -226,6 +227,10 @@ export class Game {
 
     moveSquadTo(squads: Squad[], targetFrame: Rect) {
         return this.squadsController.moveSquadTo(squads, targetFrame);
+    }
+
+    getBuildingCost(buildingKind: BuildingKind, team: Team): BuildingCost {
+        return this.buildingsController.getBuildingCost(buildingKind, team);
     }
 
     tick(timeDelta: number) {
