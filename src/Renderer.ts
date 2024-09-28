@@ -5,6 +5,7 @@ import type { Building, BuildingBase } from "./Game/BuildingsController";
 import type { Dot } from "./Game/DotsController";
 import type { Projectile } from "./Game/ProjectilesController";
 import type { Slot, Squad } from "./Game/SquadsController";
+import { RendererUtils } from "./RendererUtils";
 import { getPolygonCenter } from "./shapes";
 import type { UI } from "./UI/UI";
 import {
@@ -36,7 +37,7 @@ export class RendererCanvasSimple implements Renderer {
     }
 
     lastRenderTimestamp: number | null = null;
-    render() {
+    render(renderDebugFigures?: (ctx: CanvasRenderingContext2D) => void) {
         const {
             dotsController,
             buildingsController,
@@ -48,6 +49,8 @@ export class RendererCanvasSimple implements Renderer {
         this.adjustViewport();
 
         this.renderDotsGrid(dotsController.dotsGrid);
+
+        renderDebugFigures?.(this.ctx);
 
         for (const building of buildingsController.buildings) {
             this.renderBuilding(building);
@@ -195,7 +198,7 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.strokeStyle = "gray";
         this.ctx.lineWidth = 1;
 
-        this.drawPolygon(building.frame);
+        RendererUtils.drawPolygon(this.ctx, building.frame);
 
         this.ctx.stroke();
 
@@ -217,7 +220,7 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.strokeStyle = "black";
         this.ctx.lineWidth = 1;
 
-        this.drawPolygon(building.frame);
+        RendererUtils.drawPolygon(this.ctx, building.frame);
 
         this.ctx.stroke();
 
@@ -310,31 +313,17 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.strokeStyle = this.getDotTeamColor(dot);
         this.ctx.lineWidth = 1;
 
-        this.drawRect(dot.hitBox);
+        RendererUtils.drawRect(this.ctx, dot.hitBox);
 
         this.ctx.fill();
         this.ctx.stroke();
-    }
-
-    private drawPolygon(points: Point[]) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(points[0].x, points[0].y);
-
-        for (const point of points) {
-            this.ctx.lineTo(point.x, point.y);
-        }
-        this.ctx.closePath();
-    }
-
-    private drawRect(rect: Rect) {
-        this.drawPolygon([rect.p1, rect.p2, rect.p3, rect.p4]);
     }
 
     renderSelection(selection: Rect) {
         this.ctx.lineWidth = 1;
         this.ctx.strokeStyle = "yellowgreen";
 
-        this.drawRect(selection);
+        RendererUtils.drawRect(this.ctx, selection);
 
         this.ctx.stroke();
     }
@@ -343,7 +332,7 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.lineWidth = 1;
         this.ctx.strokeStyle = "olive";
 
-        this.drawRect(destination);
+        RendererUtils.drawRect(this.ctx, destination);
 
         this.ctx.stroke();
     }
@@ -352,40 +341,18 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.lineWidth = 1;
         this.ctx.strokeStyle = isSelected ? "darkkhaki" : "brown";
 
-        this.drawRect(squad.frame);
+        RendererUtils.drawRect(this.ctx, squad.frame);
 
         this.ctx.stroke();
-    }
-
-    // chatgpt (c)
-    private drawArrow(p1: Point, p2: Point, headLength: number) {
-        const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-
-        // Draw the line
-        this.ctx.beginPath();
-        this.ctx.moveTo(p1.x, p1.y);
-        this.ctx.lineTo(p2.x, p2.y);
-
-        // Draw the arrowhead
-        this.ctx.lineTo(
-            p2.x - headLength * Math.cos(angle - Math.PI / 6),
-            p2.y - headLength * Math.sin(angle - Math.PI / 6),
-        );
-        this.ctx.moveTo(p2.x, p2.y);
-        this.ctx.lineTo(
-            p2.x - headLength * Math.cos(angle + Math.PI / 6),
-            p2.y - headLength * Math.sin(angle + Math.PI / 6),
-        );
-
-        this.ctx.closePath();
     }
 
     renderDotAttackTargetArrow(dotFrom: Dot, pointTo: Point) {
         this.ctx.lineWidth = 0.5;
         this.ctx.strokeStyle = "palevioletred";
 
-        this.drawArrow(dotFrom.position, pointTo, 7);
-
+        RendererUtils.drawPolygon(this.ctx, [dotFrom.position, pointTo]);
+        this.ctx.stroke();
+        RendererUtils.drawArrowHead(this.ctx, dotFrom.position, pointTo, 7);
         this.ctx.stroke();
     }
 
@@ -407,8 +374,9 @@ export class RendererCanvasSimple implements Renderer {
             return;
         }
 
-        this.drawArrow(start, end, 10);
-
+        RendererUtils.drawPolygon(this.ctx, [start, end]);
+        this.ctx.stroke();
+        RendererUtils.drawArrowHead(this.ctx, start, end, 10);
         this.ctx.stroke();
     }
 
@@ -436,8 +404,9 @@ export class RendererCanvasSimple implements Renderer {
             return;
         }
 
-        this.drawArrow(start, end, 10);
-
+        RendererUtils.drawPolygon(this.ctx, [start, end]);
+        this.ctx.stroke();
+        RendererUtils.drawArrowHead(this.ctx, start, end, 10);
         this.ctx.stroke();
     }
 

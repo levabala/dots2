@@ -18,6 +18,10 @@ export function orthogonalRect(p1: Point, p3: Point): Rect {
     };
 }
 
+export function rectToPolygon(rect: Rect): Polygon {
+    return [rect.p1, rect.p2, rect.p3, rect.p4];
+}
+
 // chatgpt (c)
 export function randomPointInRect({ p1, p2, p3 }: Rect): Point {
     // Calculate the width and height of the rectangle
@@ -254,7 +258,6 @@ export function getIntersectionAnyPolygon(
         return null; // No intersection
     }
 
-
     const sides = [];
     for (let i = 0; i < polygon.length; i++) {
         const p1 = polygon[i];
@@ -276,6 +279,61 @@ export function getIntersectionAnyPolygon(
     }
 
     return null;
+}
+
+// chatgpt (c)
+export function getIntersectionsAllPolygon(
+    line: { p1: Point; p2: Point },
+    polygon: Polygon,
+): Point[] {
+    function getIntersection(
+        p1: Point,
+        p2: Point,
+        p3: Point,
+        p4: Point,
+    ): Point | null {
+        const denom =
+            (p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y);
+        if (denom === 0) return null; // Lines are parallel
+
+        const ua =
+            ((p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x)) /
+            denom;
+        const ub =
+            ((p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x)) /
+            denom;
+
+        if (ua >= 0 && ua <= 1 && ub >= 0 && ub <= 1) {
+            const x = p1.x + ua * (p2.x - p1.x);
+            const y = p1.y + ua * (p2.y - p1.y);
+            return { x, y };
+        }
+
+        return null; // No intersection
+    }
+
+    const sides = [];
+    for (let i = 0; i < polygon.length; i++) {
+        const p1 = polygon[i];
+        const p2 = polygon[(i + 1) % polygon.length];
+
+        sides.push({ p1, p2 });
+    }
+
+    const intersections: Point[] = [];
+    for (const side of sides) {
+        const intersection = getIntersection(
+            line.p1,
+            line.p2,
+            side.p1,
+            side.p2,
+        );
+        if (intersection && intersections.every(i => !arePointsEqual(i, intersection))) {
+            intersections.push(intersection);
+        }
+    }
+
+    return intersections;
 }
 
 export function getIntersectionAnyRect(
@@ -469,9 +527,242 @@ export function angleBetweenPoints(p1: Point, p2: Point) {
     return Math.atan2(dy, dx);
 }
 
-export function getVectorEndPoint(startPoint: Point, angle: number, length: number) {
+export function getVectorEndPoint(
+    startPoint: Point,
+    angle: number,
+    length: number,
+) {
     const x = startPoint.x + length * Math.cos(angle);
     const y = startPoint.y + length * Math.sin(angle);
 
     return { x, y };
+}
+
+// chatgpt (c)
+export function createMultiPolygon(polygons: Polygon[]): Polygon {
+    const points: Point[] = polygons.flat(); // Flatten all polygon points into one array
+    return convexHull(points);
+}
+
+// chatgpt (c)
+function convexHull(points: Point[]): Polygon {
+    if (points.length < 3) return points; // A convex hull requires at least 3 points
+
+    // Find the leftmost point
+    const leftmost = points.reduce(
+        (left, p) => (p.x < left.x ? p : left),
+        points[0],
+    );
+
+    const hull: Point[] = [];
+    let current = leftmost;
+    let next: Point;
+
+    do {
+        hull.push(current);
+        next = points[0]; // Start by assuming the next point is the first one
+
+        for (let i = 1; i < points.length; i++) {
+            if (
+                next === current ||
+                isCounterClockwise(current, next, points[i])
+            ) {
+                next = points[i];
+            }
+        }
+        current = next;
+    } while (current !== leftmost);
+
+    return hull;
+}
+
+// chatgpt (c)
+function isCounterClockwise(p1: Point, p2: Point, p3: Point): boolean {
+    // Cross product to check the orientation of the turn
+    return (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x) > 0;
+}
+
+// chatgpt (c)
+export function resizeRect(
+    rect: Rect,
+    newWidth: number,
+    newHeight: number,
+): Rect {
+    const centerX = (rect.p1.x + rect.p3.x) / 2;
+    const centerY = (rect.p1.y + rect.p3.y) / 2;
+
+    // Current width vector (p1 to p2) and height vector (p2 to p3)
+    const widthVector = { x: rect.p2.x - rect.p1.x, y: rect.p2.y - rect.p1.y };
+    const heightVector = { x: rect.p3.x - rect.p2.x, y: rect.p3.y - rect.p2.y };
+
+    // Current width and height
+    const currentWidth = Math.hypot(widthVector.x, widthVector.y);
+    const currentHeight = Math.hypot(heightVector.x, heightVector.y);
+
+    // Normalize width and height vectors
+    const normalizedWidthVector = {
+        x: widthVector.x / currentWidth,
+        y: widthVector.y / currentWidth,
+    };
+    const normalizedHeightVector = {
+        x: heightVector.x / currentHeight,
+        y: heightVector.y / currentHeight,
+    };
+
+    // Calculate new half-extents along the width and height directions
+    const halfNewWidth = newWidth / 2;
+    const halfNewHeight = newHeight / 2;
+
+    // Scale the width and height vectors to the new size
+    const scaledWidthVector = {
+        x: normalizedWidthVector.x * halfNewWidth,
+        y: normalizedWidthVector.y * halfNewWidth,
+    };
+    const scaledHeightVector = {
+        x: normalizedHeightVector.x * halfNewHeight,
+        y: normalizedHeightVector.y * halfNewHeight,
+    };
+
+    // Recalculate rectangle points
+    return {
+        p1: {
+            x: centerX - scaledWidthVector.x - scaledHeightVector.x,
+            y: centerY - scaledWidthVector.y - scaledHeightVector.y,
+        },
+        p2: {
+            x: centerX + scaledWidthVector.x - scaledHeightVector.x,
+            y: centerY + scaledWidthVector.y - scaledHeightVector.y,
+        },
+        p3: {
+            x: centerX + scaledWidthVector.x + scaledHeightVector.x,
+            y: centerY + scaledWidthVector.y + scaledHeightVector.y,
+        },
+        p4: {
+            x: centerX - scaledWidthVector.x + scaledHeightVector.x,
+            y: centerY - scaledWidthVector.y + scaledHeightVector.y,
+        },
+    };
+}
+
+// chatgpt (c)
+export function resizeRectByChange(
+    rect: Rect,
+    widthChange: number,
+    heightChange: number,
+): Rect {
+    // Width vector (p1 to p2) and height vector (p2 to p3)
+    const widthVector = { x: rect.p2.x - rect.p1.x, y: rect.p2.y - rect.p1.y };
+    const heightVector = { x: rect.p3.x - rect.p2.x, y: rect.p3.y - rect.p2.y };
+
+    // Projected current width and height
+    const currentWidth = Math.hypot(widthVector.x, widthVector.y);
+    const currentHeight = Math.hypot(heightVector.x, heightVector.y);
+
+    // Calculate new width and height by adding the change values
+    const newWidth = currentWidth + widthChange;
+    const newHeight = currentHeight + heightChange;
+
+    // Use the previous function to resize the rect based on the new dimensions
+    return resizeRect(rect, newWidth, newHeight);
+}
+
+// chatgpt (c)
+export function hasIntersectionPolygons(
+    poly1: Polygon,
+    poly2: Polygon,
+): boolean {
+    // Check for edge intersections between poly1 and poly2
+    for (let i = 0; i < poly1.length; i++) {
+        const p1 = poly1[i];
+        const p2 = poly1[(i + 1) % poly1.length]; // Wrap around to the first point
+        const edge = { p1, p2 };
+
+        // Use the existing getIntersectionAnyPolygon function
+        if (getIntersectionAnyPolygon(edge, poly2)) {
+            return true;
+        }
+    }
+
+    // Check if any point of poly1 is inside poly2
+    for (const point of poly1) {
+        if (isPointInPolygon(point, poly2)) {
+            return true;
+        }
+    }
+
+    // Check if any point of poly2 is inside poly1
+    for (const point of poly2) {
+        if (isPointInPolygon(point, poly1)) {
+            return true;
+        }
+    }
+
+    // No intersection found
+    return false;
+}
+
+export function hasIntersectionRects(rect1: Rect, rect2: Rect): boolean {
+    const poly1 = rectToPolygon(rect1);
+    const poly2 = rectToPolygon(rect2);
+
+    return hasIntersectionPolygons(poly1, poly2);
+}
+
+export function groupByOverlapping<T>(
+    shapes: T[],
+    hasIntersection: (a: T, b: T) => boolean,
+): T[][] {
+    const groups = new Set<T[]>();
+
+    for (const shape of shapes) {
+        const groupsIntersected = [];
+        for (const group of groups) {
+            const hasIntersectionWithGroup = group.some((shapeInGroup) =>
+                hasIntersection(shape, shapeInGroup),
+            );
+
+            if (hasIntersectionWithGroup) {
+                groupsIntersected.push(group);
+            }
+        }
+
+        if (groupsIntersected.length === 0) {
+            groups.add([shape]);
+            continue;
+        }
+
+        for (const group of groupsIntersected) {
+            groups.delete(group);
+        }
+
+        groups.add([...groupsIntersected.flat(), shape]);
+    }
+
+    return Array.from(groups);
+}
+
+export function groupPolygonsByOverlapping(polygons: Polygon[]): Polygon[][] {
+    return groupByOverlapping(polygons, hasIntersectionPolygons);
+}
+
+export function groupRectsByOverlapping(rects: Rect[]): Rect[][] {
+    return groupByOverlapping(rects, hasIntersectionRects);
+}
+
+export function getFacingSidesOfConvexPolygon(
+    from: Point,
+    polygon: Polygon,
+): Point[] {
+    if (polygon.length < 3 || isPointInPolygon(from, polygon)) {
+        return [];
+    }
+
+    return polygon.filter((point) => {
+        const intersections = getIntersectionsAllPolygon(
+            { p1: from, p2: point },
+            polygon,
+        );
+
+        return intersections.length < 2;
+    });
 }

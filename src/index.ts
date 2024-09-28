@@ -74,7 +74,7 @@ window.assert = assert;
 window.panic = panic;
 
 function renderLoop() {
-    renderer.render();
+    renderer.render(player4.drawDebugFigures.bind(player4));
     requestAnimationFrame(renderLoop);
 }
 
