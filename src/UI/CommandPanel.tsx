@@ -312,6 +312,24 @@ const CommandPanel: React.FC<{
                         >
                             Granary
                         </button>
+                        <button
+                            onClick={() => callbacks.selectBuilding("coinMiner")}
+                            data-tooltip={buildingToCost &&JSON.stringify(
+                                buildingToCost.coinMiner,
+                                undefined,
+                                2,
+                            )}
+                            disabled={
+                                resources === null ||
+                                    buildingToCost === null ||
+                                !BuildingsController.canBuild(
+                                    buildingToCost.coinMiner,
+                                    resources,
+                                )
+                            }
+                            >
+                            Coin Miner
+                        </button>
                     </div>
                     <div
                         style={{
