@@ -66,7 +66,7 @@ export class UI {
             element.clientHeight,
             Math.PI / 2,
             element.clientWidth / element.clientHeight,
-            700,
+            1300,
             {
                 x: 1500,
                 y: 1400,

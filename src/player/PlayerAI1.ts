@@ -81,11 +81,17 @@ type SquadGroup = {
     polygon: Polygon;
 };
 
+type SquadGroupWithFrontLine = SquadGroup & {
+    frontLine: Point[];
+    squadsMy: Squad[];
+};
+
 class Warlord {
     squadsToRepel: Squad[] = [];
     baseCenter: Point;
     enemySquadGroups: SquadGroup[] = [];
     enemySquadGroupsToAttack: SquadGroup[] = [];
+    enemySquadGroupsAssignments: SquadGroupWithFrontLine[] = [];
 
     constructor(
         readonly game: Game,
@@ -200,7 +206,7 @@ class Warlord {
         return squadsDangerousToHQ;
     }
 
-    private calcAvaiableSquads() {
+    private calcAvailableSquads() {
         const squads = this.game.getSquads();
         const squadsAvailable = [];
 
@@ -300,9 +306,13 @@ class Warlord {
         this.placeSquadInFrontOfSquad(squadMy, squadToRepel, REPEL_DISTANCE);
     }
 
+    // private calcSquadGroupsAssignments(): SquadGroupWithFrontLine[] {
+
+    // }
+
     debugFrontLines: Point[][] = [];
     private assignSquads() {
-        const squadsAvailable = this.calcAvaiableSquads();
+        const squadsAvailable = this.calcAvailableSquads();
 
         this.debugFrontLines = [];
         for (const squadGroupToAttack of this.enemySquadGroupsToAttack) {
@@ -504,6 +514,7 @@ class Warlord {
         this.squadsToRepel = this.calcSquadsToRepel();
         this.enemySquadGroups = this.calcEnemySquadGroups();
         this.enemySquadGroupsToAttack = this.calcSquadGroupsDangerousToHQ();
+        // this.enemySquadGroupsAssignments = this.calcSquadGroupsAssignments();
     }
 
     act() {

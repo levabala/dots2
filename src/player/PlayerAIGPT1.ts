@@ -1,4 +1,5 @@
 /* eslint-disable */
+// @ts-nocheck
 
 import { DOT_COST_COINS, DOT_COST_FOOD, DOT_WIDTH, DOT_HEIGHT, DOT_SPEED, SQUAD_MIN_DOTS, DOT_AIMING_DURATION, DOT_ATTACK_COOLDOWN, DOT_ATTACK_RANGE, DOT_HEALTH } from "../consts";
 import type { Game } from "../Game";

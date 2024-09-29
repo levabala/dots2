@@ -6,9 +6,24 @@ import {
     DOT_ATTACK_RANGE,
     DOT_HEALTH,
     DOT_HEIGHT,
+    DOT_MORALE_BASELINE,
+    DOT_MORALE_DROP_BY_NEARBY_ENEMY_COUNT,
+    DOT_MORALE_DROP_BY_NEARBY_ENEMY_RADIUS,
+    DOT_MORALE_FLEE_LEVEL,
+    DOT_MORALE_GAIN_BY_NEARBY_ALLIE_COUNT,
+    DOT_MORALE_GAIN_BY_NEARBY_ALLIE_RADIUS,
+    DOT_MORALE_MAX,
+    DOT_MORALE_DROP_PER_SECOND_MAX,
+    DOT_MORALE_GAIN_PER_SECOND_MAX,
     DOT_SPEED,
     DOT_WIDTH,
     DOTS_GRID_SIZE,
+    DOT_MORALE_MIN,
+    DOT_MORALE_GAIN_BY_NEARBY_ALLIE_COUNT_MAX,
+    DOT_MORALE_DROP_BY_NEARBY_ENEMY_COUNT_MAX,
+    DOT_MORALE_DROP_BY_NEARBY_DEAD_ALLIE_RADIUS,
+    DOT_MORALE_DROP_BY_NEARBY_DEAD_ALLIE_COUNT_MAX,
+    DOT_MORALE_DROP_BY_NEARBY_DEAD_ALLIE_COUNT,
 } from "../consts";
 import { DotsGrid } from "../DotsGrid";
 import {
@@ -50,6 +65,8 @@ export type Dot = DotTemplate & {
     attackTargetBuilding: Building | null;
     path: Point[];
     allowAttack: boolean;
+    morale: number;
+    isFleeing: boolean;
 };
 
 export type ProjectileToShoot = {
@@ -65,13 +82,16 @@ export type DotsControllerTickEffects = {
 
 export class DotsController {
     dotsGrid: DotsGrid;
+    dotsGridDead: DotsGrid;
     dots = new Set<Dot>();
+    dotsDead = new Set<Dot>();
 
     constructor(
         readonly width: number,
         readonly height: number,
     ) {
         this.dotsGrid = new DotsGrid(DOTS_GRID_SIZE, width, height);
+        this.dotsGridDead = new DotsGrid(DOTS_GRID_SIZE, width, height);
     }
 
     initDot(
@@ -91,6 +111,8 @@ export class DotsController {
             | "allowAttack"
             | "aimingTargetDot"
             | "attackTargetBuilding"
+            | "isFleeing"
+            | "morale"
         >,
     ): Dot {
         return {
@@ -110,6 +132,8 @@ export class DotsController {
             ),
             removed: false,
             allowAttack: true,
+            isFleeing: false,
+            morale: DOT_MORALE_BASELINE,
 
             squad: null,
             slot: null,
@@ -124,7 +148,7 @@ export class DotsController {
         dot.team.dotsCount++;
     }
 
-    removeDot(dot: Dot) {
+    killDot(dot: Dot) {
         dot.removed = true;
 
         this.dots.delete(dot);
@@ -139,6 +163,9 @@ export class DotsController {
         }
 
         dot.team.dotsCount--;
+
+        this.dotsDead.add(dot);
+        this.dotsGridDead.addDot(dot);
     }
 
     generateDotRandom(): Omit<Dot, "team"> {
@@ -162,10 +189,12 @@ export class DotsController {
             aimingTimeLeft: DOT_AIMING_DURATION,
             aimingTargetDot: null,
             health: DOT_HEALTH,
+            morale: DOT_MORALE_MAX,
             angle: 0,
             hitBox: this.calculateHitBox(position, 0, DOT_WIDTH, DOT_HEIGHT),
             removed: false,
             allowAttack: true,
+            isFleeing: false,
 
             squad: null,
             slot: null,
@@ -671,12 +700,83 @@ export class DotsController {
             assignDotAttackTarget(dot);
         };
 
-        const removeIfDead = (dot: Dot) => {
+        const checkIfDead = (dot: Dot) => {
             if (dot.health <= 0) {
-                this.removeDot(dot);
+                this.killDot(dot);
                 effects.dotsRemoved.push(dot);
             }
         };
+
+        const changeMorale = (dot: Dot) => {
+            const alliesNearby = this.dotsGrid.getDotsInRange(
+                dot.position,
+                DOT_MORALE_GAIN_BY_NEARBY_ALLIE_RADIUS,
+                (d) => d.team === dot.team && d.squad !== null && d !== dot,
+            );
+
+            const enemiesNearby = this.dotsGrid.getDotsInRange(
+                dot.position,
+                DOT_MORALE_DROP_BY_NEARBY_ENEMY_RADIUS,
+                (d) => d.team !== dot.team && d.squad !== null,
+            );
+
+            const deadAlliesNearby = this.dotsGridDead.getDotsInRange(
+                dot.position,
+                DOT_MORALE_DROP_BY_NEARBY_DEAD_ALLIE_RADIUS,
+                (d) => d.team === dot.team,
+            );
+
+            const moraleTargetChangeNearbyAllies = Math.min(
+                alliesNearby.length * DOT_MORALE_GAIN_BY_NEARBY_ALLIE_COUNT,
+                DOT_MORALE_GAIN_BY_NEARBY_ALLIE_COUNT_MAX,
+            );
+            const moraleTargetChangeNearbyEnemies =
+                -1 *
+                Math.min(
+                    enemiesNearby.length *
+                        DOT_MORALE_DROP_BY_NEARBY_ENEMY_COUNT,
+                    DOT_MORALE_DROP_BY_NEARBY_ENEMY_COUNT_MAX,
+                );
+            const moraleTargetChangeNearbyDeadAllies =
+                -1 *
+                Math.min(
+                    deadAlliesNearby.length *
+                        DOT_MORALE_DROP_BY_NEARBY_DEAD_ALLIE_COUNT,
+                    DOT_MORALE_DROP_BY_NEARBY_DEAD_ALLIE_COUNT_MAX,
+                );
+
+            const moraleTarget =
+                DOT_MORALE_BASELINE +
+                moraleTargetChangeNearbyAllies +
+                moraleTargetChangeNearbyEnemies +
+                moraleTargetChangeNearbyDeadAllies;
+
+            const moraleDiff = moraleTarget - dot.morale;
+            const moraleDiffAbs = Math.abs(moraleDiff);
+            const changeCapPerSecond =
+                Math.sign(moraleDiff) === -1
+                    ? DOT_MORALE_DROP_PER_SECOND_MAX
+                    : DOT_MORALE_GAIN_PER_SECOND_MAX;
+            const changeCap = changeCapPerSecond * timeDelta;
+            const moraleChangeAbs = Math.min(moraleDiffAbs, changeCap);
+            const moraleChange = Math.sign(moraleDiff) * moraleChangeAbs;
+
+            dot.morale = Math.min(
+                DOT_MORALE_MAX,
+                Math.max(DOT_MORALE_MIN, dot.morale + moraleChange),
+            );
+        };
+
+        const updateIsFleeing = (dot: Dot) => {
+            const isFleeing = dot.morale <= DOT_MORALE_FLEE_LEVEL;
+
+            dot.isFleeing = isFleeing;
+        };
+
+        for (const dot of this.dots) {
+            changeMorale(dot);
+            updateIsFleeing(dot);
+        }
 
         for (const dot of this.dots) {
             if (dot.path.length > 0) {
@@ -714,7 +814,7 @@ export class DotsController {
         }
 
         for (const dot of this.dots) {
-            removeIfDead(dot);
+            checkIfDead(dot);
         }
 
         for (const dot of this.dots) {

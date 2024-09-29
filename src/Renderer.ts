@@ -1,4 +1,4 @@
-import { DEFAULT_PROJECTILE } from "./consts";
+import { DEFAULT_PROJECTILE, DOT_MORALE_MAX } from "./consts";
 import type { DotsGrid } from "./DotsGrid";
 import type { Game } from "./Game";
 import type { Building, BuildingBase } from "./Game/BuildingsController";
@@ -17,10 +17,15 @@ import {
     type Rect,
 } from "./utils";
 
+const MORALE_BAR_WIDTH = 8;
+const MORALE_BAR_HEIGHT = 2;
+const MORALE_BAR_OFFSET = 1;
+
 interface Renderer {
     game: Game;
     ui: UI;
 }
+
 export class RendererCanvasSimple implements Renderer {
     ctx: CanvasRenderingContext2D;
     width: number;
@@ -51,6 +56,10 @@ export class RendererCanvasSimple implements Renderer {
         this.renderDotsGrid(dotsController.dotsGrid);
 
         renderDebugFigures?.(this.ctx);
+
+        for (const dot of dotsController.dotsDead) {
+            this.renderDotDead(dot);
+        }
 
         for (const building of buildingsController.buildings) {
             this.renderBuilding(building);
@@ -92,6 +101,10 @@ export class RendererCanvasSimple implements Renderer {
             }
 
             this.renderDot(dot);
+        }
+
+        for (const dot of dotsController.dots) {
+            this.renderDotMorale(dot);
         }
 
         for (const squad of squadsController.squads) {
@@ -316,6 +329,77 @@ export class RendererCanvasSimple implements Renderer {
         RendererUtils.drawRect(this.ctx, dot.hitBox);
 
         this.ctx.fill();
+        this.ctx.stroke();
+    }
+
+    renderDotDead(dot: Dot) {
+        this.ctx.fillStyle = "rgba(128, 128, 128, 0.1)";
+
+        RendererUtils.drawRect(this.ctx, dot.hitBox);
+
+        this.ctx.fill();
+    }
+
+    renderDotMorale(dot: Dot) {
+        const hitBoxPointsExceptP1 = [dot.hitBox.p2, dot.hitBox.p3, dot.hitBox.p4];
+
+        let topPoint = dot.hitBox.p1;
+        for (const point of hitBoxPointsExceptP1) {
+            if (point.y < topPoint.y) {
+                topPoint = point;
+            }
+        }
+
+        const moraleBarBottomCenter = {
+            x: dot.position.x,
+            y: topPoint.y - MORALE_BAR_OFFSET,
+        }
+
+        const moraleBarContainerRect = {
+            p1: {
+                x: moraleBarBottomCenter.x - MORALE_BAR_WIDTH / 2,
+                y: moraleBarBottomCenter.y - MORALE_BAR_HEIGHT,
+            },
+            p2: {
+                x: moraleBarBottomCenter.x + MORALE_BAR_WIDTH / 2,
+                y: moraleBarBottomCenter.y - MORALE_BAR_HEIGHT,
+            },
+            p3: {
+                x: moraleBarBottomCenter.x + MORALE_BAR_WIDTH / 2,
+                y: moraleBarBottomCenter.y,
+            },
+            p4: {
+                x: moraleBarBottomCenter.x - MORALE_BAR_WIDTH / 2,
+                y: moraleBarBottomCenter.y,
+            },
+        };
+
+        const moraleLevelPercent = dot.morale / DOT_MORALE_MAX;
+        const moraleLevelPixels = MORALE_BAR_WIDTH - moraleLevelPercent * MORALE_BAR_WIDTH;
+        
+        const moraleBarValueRect = {
+            p1: moraleBarContainerRect.p1,
+            p2: {
+                x: moraleBarContainerRect.p2.x - moraleLevelPixels,
+                y: moraleBarContainerRect.p2.y,
+            },
+            p3: {
+                x: moraleBarContainerRect.p3.x - moraleLevelPixels,
+                y: moraleBarContainerRect.p3.y,
+            },
+            p4: moraleBarContainerRect.p4,
+        };
+
+        this.ctx.strokeStyle = 'black';
+        this.ctx.fillStyle = 'yellow';
+        this.ctx.lineWidth = 0.1;
+        RendererUtils.drawRect(this.ctx, moraleBarValueRect);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.strokeStyle = dot.isFleeing ? 'red' : 'black';
+        this.ctx.lineWidth = 0.3;
+        RendererUtils.drawRect(this.ctx, moraleBarContainerRect);
         this.ctx.stroke();
     }
 

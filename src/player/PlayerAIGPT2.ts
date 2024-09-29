@@ -1,3 +1,6 @@
+/* eslint-disable */
+// @ts-nocheck
+
 import { SQUAD_MIN_DOTS, DOT_ATTACK_RANGE } from "../consts";
 import type { Game } from "../Game";
 import { BUILDINGS_CONFIGS } from "../Game/buildingsConfigs";
