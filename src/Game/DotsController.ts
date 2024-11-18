@@ -375,7 +375,7 @@ export class DotsController {
                 dot.attackTargetDot?.position;
 
             if (!attackTargetPosition) {
-                window.panic("attack target position must be valid", {
+                global.panic("attack target position must be valid", {
                     dot,
                     attackTargetPosition,
                 });
@@ -435,7 +435,7 @@ export class DotsController {
                 dot.attackTargetDot?.position;
 
             if (!attackTargetPosition) {
-                window.panic("attack target position must be valid", {
+                global.panic("attack target position must be valid", {
                     dot,
                     attackTargetPosition,
                 });
@@ -527,7 +527,7 @@ export class DotsController {
                 );
 
                 if (distance > dot.attackRange) {
-                    window.panic("distance must be less than attack range", {
+                    global.panic("distance must be less than attack range", {
                         dot,
                         dotInRange,
                     });
@@ -592,7 +592,7 @@ export class DotsController {
 
                 clearAttackTargetDot(dot);
 
-                window.assert(
+                global.assert(
                     dotTarget.removed !== true,
                     "attack target dot must not be removed",
                     { dot, target: dotTarget },

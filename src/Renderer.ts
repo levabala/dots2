@@ -79,7 +79,7 @@ export class RendererCanvasSimple implements Renderer {
                     dot.attackTargetDot?.position;
 
                 if (!attackTargetPosition) {
-                    window.panic("attack target position must be valid", {
+                    global.panic("attack target position must be valid", {
                         dot,
                         attackTargetPosition,
                     });

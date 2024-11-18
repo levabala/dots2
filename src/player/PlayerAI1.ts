@@ -271,7 +271,7 @@ class Warlord {
         );
 
         if (!enemyFrontlineCenter) {
-            window.panic("can't find an intersection", {
+            global.panic("can't find an intersection", {
                 squadMy,
                 squadEnemy,
             });
@@ -327,7 +327,7 @@ class Warlord {
 
             this.debugFrontLines.push(frontLine);
 
-            window.assert(
+            global.assert(
                 frontLine.length > 1,
                 "front line must be a line at least",
                 {
@@ -348,7 +348,7 @@ class Warlord {
                 frontLineLength += distanceBetween(pPrev, pCurr);
             }
 
-            window.assert(
+            global.assert(
                 frontLineSegments.length > 0,
                 "front line segments must be positive",
                 {
@@ -371,7 +371,7 @@ class Warlord {
                 const squad = squadsAssigned.pop();
 
                 if (!squad) {
-                    window.panic("squad must be available");
+                    global.panic("squad must be available");
                 }
 
                 const frontLineDistance = startGap + i * lengthPerSquad;
@@ -381,7 +381,7 @@ class Warlord {
                 );
 
                 if (!frontLineSegment) {
-                    window.panic("front line segment must be found", {
+                    global.panic("front line segment must be found", {
                         frontLineSegments,
                         frontLineDistance,
                     });
@@ -434,7 +434,7 @@ class Warlord {
             ),
         );
 
-        window.assert(
+        global.assert(
             multiPolygonForAttack.length > 2,
             "multiPolygonForAttack must be more than 0",
             {

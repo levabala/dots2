@@ -204,7 +204,7 @@ export class BuildingsController {
             const resources = args.teamToResources.get(team);
 
             if (resources === undefined) {
-                window.panic("team must have resources", {
+                global.panic("team must have resources", {
                     team,
                 });
             }
@@ -216,7 +216,7 @@ export class BuildingsController {
             const resourcesChangeBy = effects.resourcesChangeByMap.get(team);
 
             if (resourcesChangeBy === undefined) {
-                window.panic("team must have effects", {
+                global.panic("team must have effects", {
                     team,
                 });
             }
@@ -253,7 +253,7 @@ export class BuildingsController {
             }
 
             if (building.spawnQueue.length > 1){
-                window.panic("building spawn queue must be empty or have one element", {
+                global.panic("building spawn queue must be empty or have one element", {
                     building,
                 });
             }
@@ -296,7 +296,7 @@ export class BuildingsController {
             const dotTemplate = building.spawnQueue.shift();
 
             if (dotTemplate === undefined) {
-                window.panic("spawned with empty queue");
+                global.panic("spawned with empty queue");
             }
 
             const dot: DotSpawned = {

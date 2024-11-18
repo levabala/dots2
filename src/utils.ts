@@ -494,7 +494,7 @@ export function randomPointInPolygon(polygon: Polygon): Point {
         }
 
         if (attempts++ >= MAX_RANDOM_POINT_ATTEMPTS) {
-            window.panic("Failed to find a random point in the polygon");
+            global.panic("Failed to find a random point in the polygon");
         }
     }
 }

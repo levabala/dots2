@@ -9,9 +9,9 @@ import { SquadFrameUtils } from "../Game/SquadFrameUtils";
 import type { Squad } from "../Game/SquadsController";
 import type { Team } from "../Game/TeamController";
 import { distanceBetween, isPointInPolygon, rotateRect, type Point, type Polygon } from "../utils";
-import { Player } from "./Player";
+import { PlayerLegacy } from "./PlayerLegacy";
 
-export class PlayerAI extends Player {
+export class PlayerAI extends PlayerLegacy {
     private actionListeners: ((message: string) => void)[] = [];
     private intentionListeners: ((message: string) => void)[] = [];
     private actions: string[] = [];
@@ -55,7 +55,7 @@ export class PlayerAI extends Player {
     }
 
     startAI(): void {
-        this.intervalId = window.setInterval(() => {
+        this.intervalId = global.setInterval(() => {
             this.update();
         }, 200);
     }

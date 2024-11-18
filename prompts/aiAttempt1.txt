@@ -533,7 +533,7 @@ if there is a lack of some information then ask me before producing the output.
 otherwise emit only code.
 
 make the AI act periodically (like once every 200 ms).
-like do an window.setInterval (window! not just setInterval) in PlayerAI and do the stuff there.
+like do an global.setInterval (global! not just setInterval) in PlayerAI and do the stuff there.
 there should be no need to work with Game tick effects (you have no access anyway).
 
 building can be done via Game.tryBuild - it tries to build and returns true if it was successful.

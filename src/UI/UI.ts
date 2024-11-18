@@ -741,7 +741,7 @@ export class UI {
         );
 
         this.destination = targetRect;
-        window.assert(
+        global.assert(
             Object.values(this.destination).every(
                 (p) => Number.isFinite(p.x) && Number.isFinite(p.y),
             ),
@@ -810,7 +810,7 @@ export class UI {
             angle,
         });
 
-        window.assert(
+        global.assert(
             Object.values(this.destination).every(
                 (p) => Number.isFinite(p.x) && Number.isFinite(p.y),
             ),

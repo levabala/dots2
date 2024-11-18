@@ -3,7 +3,12 @@ import { UI } from "./UI/UI";
 import { RendererCanvasSimple } from "./Renderer";
 import { Logger } from "./Logger";
 import { VisualDebugger } from "./VisualDebugger";
-import { sceneFourAIs } from "./scenes";
+import { sceneOneTeam } from "./scenes/scenes2";
+import { setupGlobal } from "./setupGlobal";
+
+if (typeof global === 'undefined') {
+    window.global = window;
+}
 
 const container = document.createElement("div");
 container.style.position = "relative";
@@ -42,35 +47,14 @@ const renderer = new RendererCanvasSimple(game, ui, canvas);
 const logger = new Logger(game);
 const visualDebugger = new VisualDebugger(game, container);
 
-function panic(message: string, details?: object): never {
-    if (!details) {
-        console.trace("Failed:", message);
-    } else {
-        console.trace("Failed:", message, details);
-    }
-    console.log(game);
-    console.log(ui);
-    console.log(renderer);
-
-    throw new Error("Assertion failed");
-}
-
-function assert(condition: boolean, message: string, details?: object) {
-    if (condition) {
-        return;
-    }
-
-    panic(message, details);
-}
-window.assert = assert;
-window.panic = panic;
+setupGlobal(game);
 
 function renderLoop() {
     renderer.render();
     requestAnimationFrame(renderLoop);
 }
 
-window.timeScale = 4;
+global.timeScale = 4;
 
 let timeReal = Date.now();
 function gameLoop() {
@@ -78,7 +62,7 @@ function gameLoop() {
     const deltaReal = timeRealNew - timeReal;
 
     if (!isPauseRef.current) {
-        const timeScale = window.timeScale;
+        const timeScale = global.timeScale;
         game.tick(deltaReal * timeScale);
     }
 
@@ -86,16 +70,16 @@ function gameLoop() {
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-(window as any).game = game;
-(window as any).ui = ui;
-(window as any).renderer = renderer;
-(window as any).logger = logger;
-(window as any).visualDebugger = visualDebugger;
+(global as any).game = game;
+(global as any).ui = ui;
+(global as any).renderer = renderer;
+(global as any).logger = logger;
+(global as any).visualDebugger = visualDebugger;
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 ui.init();
 
-sceneFourAIs(game, ui);
+sceneOneTeam(game);
 
 renderLoop();
 gameLoop();

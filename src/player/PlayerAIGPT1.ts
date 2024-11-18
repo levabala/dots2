@@ -10,9 +10,9 @@ import { SquadFrameUtils } from "../Game/SquadFrameUtils";
 import type { Squad } from "../Game/SquadsController";
 import type { Team } from "../Game/TeamController";
 import { makeRectOrthogonal, orthogonalRect, type Point, type Rect } from "../utils";
-import { Player } from "./Player";
+import { PlayerLegacy } from "./PlayerLegacy";
 
-export class PlayerAI extends Player {
+export class PlayerAI extends PlayerLegacy {
     private logs: string[] = [];
     private eventListeners: Map<string, Function[]> = new Map();
     private intervalId: number | null = null;
@@ -37,7 +37,7 @@ export class PlayerAI extends Player {
     }
 
     startAI() {
-        this.intervalId = window.setInterval(() => {
+        this.intervalId = global.setInterval(() => {
             this.update();
         }, 200);
     }

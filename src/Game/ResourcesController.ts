@@ -29,7 +29,7 @@ export class ResourcesController {
 
         state.food = Math.min(state.food + foodDelta, state.foodCapacity);
 
-        window.assert(state.food >= 0, "food must be positive", {
+        global.assert(state.food >= 0, "food must be positive", {
             food: state.food,
         });
     }
@@ -39,7 +39,7 @@ export class ResourcesController {
 
         state.wood = Math.min(state.wood + woodDelta, state.woodCapacity);
 
-        window.assert(state.wood >= 0, "wood must be positive", {
+        global.assert(state.wood >= 0, "wood must be positive", {
             wood: state.wood,
         });
     }
@@ -55,7 +55,7 @@ export class ResourcesController {
 
         state.coins = state.coins + coinsDelta;
 
-        window.assert(state.coins >= 0, "coins must be positive", {
+        global.assert(state.coins >= 0, "coins must be positive", {
             coins: state.coins,
         });
     }
@@ -88,7 +88,7 @@ export class ResourcesController {
         const state = this.teamToState.get(team);
 
         if (state === undefined) {
-            window.panic("team must have state", {
+            global.panic("team must have state", {
                 team,
             });
         }
