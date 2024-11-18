@@ -136,10 +136,8 @@ export function sceneTwoTeamsSomeBuildings(game: Game) {
 }
 
 export function sceneTwoSquads(game: Game, ui: UI) {
-    const {
-        dotsController,
-        squadsController,
-    } = game.getPrivateStaffYouShouldNotUse();
+    const { dotsController, squadsController } =
+        game.getPrivateStaffYouShouldNotUse();
 
     for (const dot of dotsController.dots) {
         if (dot.team.name === "red") {
@@ -176,11 +174,8 @@ export function sceneTwoSquads(game: Game, ui: UI) {
 }
 
 export function sceneOneTeamLeftBottom(game: Game) {
-    const {
-        teamController,
-        resourcesController,
-        buildingsController,
-    } = game.getPrivateStaffYouShouldNotUse();
+    const { teamController, resourcesController, buildingsController } =
+        game.getPrivateStaffYouShouldNotUse();
 
     const team = teamController.createTeam({ name: "green" });
 
@@ -245,11 +240,8 @@ export function sceneOneTeamLeftBottom(game: Game) {
 }
 
 export function sceneOneTeamRightBottom(game: Game) {
-    const {
-        teamController,
-        resourcesController,
-        buildingsController,
-    } = game.getPrivateStaffYouShouldNotUse();
+    const { teamController, resourcesController, buildingsController } =
+        game.getPrivateStaffYouShouldNotUse();
 
     const team = teamController.createTeam({ name: "orange" });
 
@@ -311,4 +303,32 @@ export function sceneOneTeamRightBottom(game: Game) {
     resourcesController.setWood(team, 70);
 
     return team;
+}
+
+import { PlayerAI as PlayerAI1 } from "../player/PlayerAIGPT1";
+import { PlayerAI as PlayerAI2 } from "../player/PlayerAIGPT2";
+import { PlayerAI as PlayerAI3 } from "../player/PlayerAI1";
+
+export function sceneFourAIs(game: Game, ui: UI) {
+    const { team1, team2 } = sceneTwoTeamsSomeBuildings(game);
+
+    sceneTwoSquads(game, ui);
+
+    const player1 = new PlayerAI1(game, team1);
+    player1.startAI();
+
+    const player2 = new PlayerAI2(game, team2);
+    player2.startAI();
+
+    const team3 = sceneOneTeamLeftBottom(game);
+
+    sceneOneTeamLeftBottom(game);
+
+    const player3 = new PlayerAI2(game, team3);
+    player3.startAI();
+
+    const team4 = sceneOneTeamRightBottom(game);
+
+    const player4 = new PlayerAI3(game, team4);
+    player4.startAI();
 }
