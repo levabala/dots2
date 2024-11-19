@@ -11,6 +11,7 @@ import { SquadsController, type Squad } from "./SquadsController";
 import { ResourcesController } from "./ResourcesController";
 import { TeamController, type Team } from "./TeamController";
 import { createPolygonOffset } from "../shapes";
+import { BUILDINGS_CONFIGS } from "./buildingsConfigs";
 
 export enum GameEventTickName {
     squadsRemoved = "squads-removed",
@@ -45,12 +46,16 @@ export type GameEventListener<Name extends GameEventTick["name"]> = (
 ) => void;
 
 export class Game {
+    private time = 0;
+
     private dotsController: DotsController;
     private projectilesController: ProjectilesController;
     private squadsController: SquadsController;
     private buildingsController: BuildingsController;
     private resourcesController: ResourcesController;
     private teamController: TeamController;
+
+    public _controllers;
 
     private eventListeners: {
         [key in GameEventTick["name"]]: Set<GameEventListener<key>>;
@@ -76,10 +81,8 @@ export class Game {
         );
         this.squadsController = new SquadsController();
         this.resourcesController = new ResourcesController();
-    }
 
-    getPrivateStaffYouShouldNotUse() {
-        return {
+        this._controllers = {
             dotsController: this.dotsController,
             projectilesController: this.projectilesController,
             squadsController: this.squadsController,
@@ -87,6 +90,14 @@ export class Game {
             resourcesController: this.resourcesController,
             teamController: this.teamController,
         };
+    }
+
+    getTime() {
+        return this.time;
+    }
+
+    getPrivateStaffYouShouldNotUse() {
+        return this._controllers;
     }
 
     getDots() {
@@ -171,18 +182,23 @@ export class Game {
         this.dotsController.dotMoveTo(dot, destination);
     }
 
-    tryBuild(buildingWithoutFrame: Omit<Building, "frame">) {
+    tryBuild(kind: BuildingKind, center: Point, team: Team) {
         const building: Building = {
-            ...buildingWithoutFrame,
+            center,
             frame: createPolygonOffset(
-                buildingWithoutFrame.frameRelative,
-                buildingWithoutFrame.center,
+                BUILDINGS_CONFIGS[kind].frameRelative,
+                center,
             ),
-        } as Building;
+            team,
+            ...BUILDINGS_CONFIGS[kind],
+        };
 
         const resources = this.resourcesController.getState(building.team);
 
-        const cost = this.buildingsController.getBuildingCost(building.kind, building.team);
+        const cost = this.buildingsController.getBuildingCost(
+            building.kind,
+            building.team,
+        );
         if (!BuildingsController.canBuild(cost, resources)) {
             return false;
         }
@@ -190,10 +206,7 @@ export class Game {
         this.buildingsController.addBuilding(building);
 
         this.resourcesController.changeWood(building.team, -cost.wood);
-        this.resourcesController.changeCoins(
-            building.team,
-            -cost.coins,
-        );
+        this.resourcesController.changeCoins(building.team, -cost.coins);
 
         this.emitEvent(GameEventTickName.buildingsAdded, {
             buildings: [building],
@@ -310,5 +323,7 @@ export class Game {
                 squads: effectsSquads.squadsRemoved,
             });
         }
+
+        this.time += timeDelta;
     }
 }

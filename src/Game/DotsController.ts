@@ -51,6 +51,7 @@ export type DotTemplate = {
 };
 
 export type Dot = DotTemplate & {
+    id: number;
     position: Point;
     team: Team;
     removed: boolean;
@@ -85,6 +86,7 @@ export class DotsController {
     dotsGridDead: DotsGrid;
     dots = new Set<Dot>();
     dotsDead = new Set<Dot>();
+    dotsIdCounter = 0;
 
     constructor(
         readonly width: number,
@@ -97,6 +99,7 @@ export class DotsController {
     initDot(
         dotPartial: Omit<
             Dot,
+            | "id"
             | "path"
             | "attackTargetDot"
             | "attackCooldownLeft"
@@ -117,6 +120,7 @@ export class DotsController {
     ): Dot {
         return {
             ...dotPartial,
+            id: this.dotsIdCounter++,
             path: [],
             attackTargetDot: null,
             attackCooldownLeft: 0,
@@ -146,6 +150,8 @@ export class DotsController {
         this.dotsGrid.addDot(dot);
 
         dot.team.dotsCount++;
+
+        return dot;
     }
 
     killDot(dot: Dot) {
@@ -174,6 +180,7 @@ export class DotsController {
             y: randomInteger(1200, 1500),
         };
         return {
+            id: this.dotsIdCounter++,
             path: [],
             position,
             width: DOT_WIDTH,
@@ -203,7 +210,7 @@ export class DotsController {
     }
 
     addDotRandom(team: Team) {
-        this.addDot({ ...this.generateDotRandom(), team });
+        return this.addDot({ ...this.generateDotRandom(), team });
     }
 
     syncDotAndSlotAngle(dot: Dot, slot: Slot) {

@@ -165,7 +165,9 @@ export class UI {
                 case 0:
                     if (this.buildingPlacingGhost) {
                         const success = this.game.tryBuild(
-                            this.buildingPlacingGhost,
+                            this.buildingPlacingGhost.kind,
+                            this.buildingPlacingGhost.center,
+                            this.buildingPlacingGhost.team
                         );
                         this.buildingPlacingGhost = null;
 

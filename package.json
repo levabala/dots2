@@ -1,9 +1,9 @@
 {
   "name": "dots2",
-  "module": "src/index.ts",
+  "module": "src/web.ts",
   "type": "module",
   "scripts": {
-    "build:dev": "bun build src/index.ts --outdir .build --target=browser --sourcemap=linked --watch",
+    "build:dev": "bun build src/web.ts --outdir .build --target=browser --sourcemap=linked --watch --external bun:test",
     "tsc": "tsc --noEmit",
     "format": "prettier --write src"
   },
