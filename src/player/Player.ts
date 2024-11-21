@@ -119,14 +119,12 @@ export class PlayerInterface {
         return this.game.isInSquad(dot);
     }
 
-    moveSquadTo(squads: Squad[], targetFrame: Rect) {
-        for (const squad of squads) {
-            if (squad.team !== this.team) {
-                throw new Error("squad must be owned by this player");
-            }
+    moveSquadTo(squad: Squad, targetFrame: Rect) {
+        if (squad.team !== this.team) {
+            throw new Error("squad must be owned by this player");
         }
 
-        return this.game.moveSquadTo(squads, targetFrame);
+        return this.game.moveSquadTo(squad, targetFrame);
     }
 
     getBuildingCost(buildingKind: BuildingKind): BuildingCost {

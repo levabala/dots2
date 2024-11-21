@@ -268,8 +268,15 @@ export class SquadsController {
         return squad;
     }
 
+    moveSquadTo(squad: Squad, targetFrame: Rect) {
+        this.updateSlotPositionsAndReassignDots(squad, targetFrame);
+
+        squad.frame = targetFrame;
+    }
+
     // chatgpt (c)
-    moveSquadTo(squads: Squad[], targetFrame: Rect) {
+    /** @deprecated */
+    moveSquadsTo(squads: Squad[], targetFrame: Rect) {
         const N = squads.length;
         if (N === 0) return [];
 

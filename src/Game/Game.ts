@@ -238,8 +238,13 @@ export class Game {
         return this.squadsController.isInSquad(dot);
     }
 
-    moveSquadTo(squads: Squad[], targetFrame: Rect) {
-        return this.squadsController.moveSquadTo(squads, targetFrame);
+    /** @deprecated */
+    moveSquadsTo(squads: Squad[], targetFrame: Rect) {
+        return this.squadsController.moveSquadsTo(squads, targetFrame);
+    }
+
+    moveSquadTo(squad: Squad, targetFrame: Rect) {
+        return this.squadsController.moveSquadTo(squad, targetFrame);
     }
 
     getBuildingCost(buildingKind: BuildingKind, team: Team): BuildingCost {

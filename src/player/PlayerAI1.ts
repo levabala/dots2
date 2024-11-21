@@ -299,7 +299,7 @@ class Warlord {
             myFrontlineCenter,
         );
 
-        this.game.moveSquadTo([squadMy], frame);
+        this.game.moveSquadsTo([squadMy], frame);
     }
 
     private assignSquadToRepel(squadMy: Squad, squadToRepel: Squad) {
@@ -403,7 +403,7 @@ class Warlord {
                     frontLineCenterNew,
                 );
 
-                this.game.moveSquadTo([squad], squadFrameNew);
+                this.game.moveSquadsTo([squad], squadFrameNew);
             }
         }
     }

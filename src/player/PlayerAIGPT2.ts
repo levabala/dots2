@@ -422,7 +422,7 @@ export class PlayerAI extends PlayerLegacy {
         };
 
         // Move the squad
-        this.game.moveSquadTo([squad], rect);
+        this.game.moveSquadsTo([squad], rect);
 
         this.emitEvent('action', `Moved and oriented squad ${squad.key} towards enemy at (${enemyCenter.x.toFixed(2)}, ${enemyCenter.y.toFixed(2)}).`);
     }

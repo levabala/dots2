@@ -228,7 +228,7 @@ export class PlayerAI extends PlayerLegacy {
                         const targetFrame = this.createWideSquadFormation(squad.slots.length, attackPosition);
 
                         if (this.isPositionSafe(targetFrame, squad)) {
-                            this.game.moveSquadTo([squad], targetFrame);
+                            this.game.moveSquadsTo([squad], targetFrame);
                             this.updateSquadMoveTimer(squad);
                             this.squadPositions.set(squad.key, targetFrame);
                             this.logIntention(`Squad ${squad.key} moving to attack position`);
@@ -237,7 +237,7 @@ export class PlayerAI extends PlayerLegacy {
                             const alternativePosition = this.findAlternativePosition(attackPosition, squad);
                             if (alternativePosition) {
                                 const alternativeFrame = this.createWideSquadFormation(squad.slots.length, alternativePosition);
-                                this.game.moveSquadTo([squad], alternativeFrame);
+                                this.game.moveSquadsTo([squad], alternativeFrame);
                                 this.updateSquadMoveTimer(squad);
                                 this.squadPositions.set(squad.key, alternativeFrame);
                                 this.logIntention(`Squad ${squad.key} moving to alternative attack position`);
@@ -270,7 +270,7 @@ export class PlayerAI extends PlayerLegacy {
                             const targetFrame = this.createWideSquadFormation(squad.slots.length, attackPosition);
 
                             if (this.isPositionSafe(targetFrame, squad)) {
-                                this.game.moveSquadTo([squad], targetFrame);
+                                this.game.moveSquadsTo([squad], targetFrame);
                                 this.updateSquadMoveTimer(squad);
                                 this.squadPositions.set(squad.key, targetFrame);
                                 this.logIntention(`Squad ${squad.key} moving to attack building`);
@@ -278,7 +278,7 @@ export class PlayerAI extends PlayerLegacy {
                                 const alternativePosition = this.findAlternativePosition(attackPosition, squad);
                                 if (alternativePosition) {
                                     const alternativeFrame = this.createWideSquadFormation(squad.slots.length, alternativePosition);
-                                    this.game.moveSquadTo([squad], alternativeFrame);
+                                    this.game.moveSquadsTo([squad], alternativeFrame);
                                     this.updateSquadMoveTimer(squad);
                                     this.squadPositions.set(squad.key, alternativeFrame);
                                     this.logIntention(`Squad ${squad.key} moving to alternative attack position`);

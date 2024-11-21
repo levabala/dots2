@@ -864,7 +864,7 @@ export class UI {
     }
 
     commandMoveSquads(squads: Squad[], targetFrame: Rect) {
-        const squadRects = this.game.moveSquadTo(squads, targetFrame) as Array<
+        const squadRects = this.game.moveSquadsTo(squads, targetFrame) as Array<
             Rect | undefined
         >;
 
