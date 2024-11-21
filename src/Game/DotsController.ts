@@ -383,6 +383,16 @@ export class DotsController {
             dot.aimingTimeLeft = dot.aimingDuration;
         };
 
+        const clearTargetIfDead = (dot: Dot) => {
+            if (dot.attackTargetDot === null) {
+                return;
+            }
+
+            if (dot.attackTargetDot.health <= 0) {
+                dot.attackTargetDot = null;
+            }
+        };
+
         const proceedAiming = (dot: Dot) => {
             if (
                 (!dot.attackTargetDot && !dot.attackTargetBuilding) ||
@@ -805,6 +815,7 @@ export class DotsController {
                 continue;
             }
 
+            clearTargetIfDead(dot);
             proceedAiming(dot);
             proceedCooldown(dot);
         }

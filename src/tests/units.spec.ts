@@ -116,7 +116,6 @@ export function* testAttackDotToDot(): GameTestGenerator {
         expect(dot1.attackTargetDot).toBe(dot2);
 
         yield* spanGameTime(game, dot1.aimingTimeLeft);
-
         yield { game, mark: "span time to aim and shoot" };
 
         expect(dot1.attackTargetDot).toBe(dot2);
@@ -134,7 +133,6 @@ export function* testAttackDotToDot(): GameTestGenerator {
             distanceBetween(dot1.position, dot2.position) / projectile.speed,
         );
         yield* spanGameTime(game, TIME_MINIMAL);
-
         yield { game, mark: "span time to hit" };
 
         expect(projectilesController.projectiles.size).toBe(0);
@@ -152,6 +150,12 @@ export function* testAttackDotToDot(): GameTestGenerator {
     expect(dot2.health).toBe(0);
     expect(dotsController.dots.size).toBe(1);
     expect(Array.from(dotsController.dots)[0]).toBe(dot1);
+
+    yield* spanGameTime(game, dot1.aimingTimeLeft);
+    yield { game, mark: "span time to aim when the target is already dead" };
+
+    expect(dot1.attackTargetDot, 'a dot must not target a dead dot').toBe(null);
+    expect(projectilesController.projectiles.size).toBe(0);
 
     return { game };
 }
