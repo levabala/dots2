@@ -1,13 +1,14 @@
-import type { Game } from "../Game";
 import { RendererCanvasSimple } from "../Renderer";
 import { UI } from "../UI";
+import type { GameTestGenerator } from "./testUtils";
 
-export function playTest(
+export async function playTest(
     container: HTMLDivElement,
     canvas: HTMLCanvasElement,
-    generator: Generator<Game, Game>,
+    generator: GameTestGenerator,
 ) {
-    const game = generator.next().value;
+    console.log('--- test start');
+    const { game } = generator.next().value;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).game = game;
@@ -36,7 +37,35 @@ export function playTest(
     ui.init();
     renderLoop();
 
-    for (const _ of generator);
+    const waitOnTick =
+        Number(
+            new URLSearchParams(window.location.search).get("waitontick"),
+        ) === 1;
+
+    let skipUntilMark = false;
+    for (const { mark } of generator) {
+        if (mark === undefined && skipUntilMark) {
+            continue;
+        }
+
+        if (mark !== undefined) {
+            console.log(`mark: ${mark}`);
+        }
+
+        if (waitOnTick) {
+            skipUntilMark = await new Promise<boolean>((res) =>
+                window.addEventListener("keydown", (e) => {
+                    if (e.code === "Space") {
+                        res(false);
+                    } else if (e.code === "KeyN") {
+                        res(true);
+                    }
+                }),
+            );
+        }
+    }
+
+    console.log('--- test end');
 
     global.timeScale = 4;
 

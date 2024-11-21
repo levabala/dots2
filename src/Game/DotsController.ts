@@ -145,7 +145,17 @@ export class DotsController {
         };
     }
 
-    addDot(dot: Dot) {
+    addDot(dotRaw: Omit<Dot, 'hitBox'>) {
+        const dot: Dot = {
+            ...dotRaw,
+            hitBox: this.calculateHitBox(
+                dotRaw.position,
+                dotRaw.angle,
+                DOT_WIDTH,
+                DOT_HEIGHT,
+            ),
+        };
+
         this.dots.add(dot);
         this.dotsGrid.addDot(dot);
 
@@ -175,6 +185,7 @@ export class DotsController {
     }
 
     generateDotRandom(): Omit<Dot, "team"> {
+        // TODO: move an argument
         const position = {
             x: randomInteger(1200, 1500),
             y: randomInteger(1200, 1500),
@@ -316,6 +327,10 @@ export class DotsController {
         }
 
         return false;
+    }
+
+    orderAttackDot({ attacker, target }: { attacker: Dot, target: Dot }) {
+        attacker.attackTargetDot = target;
     }
 
     tick(timeDelta: number): DotsControllerTickEffects {

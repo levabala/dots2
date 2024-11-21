@@ -7,17 +7,18 @@ import {
     spanGameTime,
     TIME_1_MIN,
     setupGameTest,
+    type GameTestGenerator,
 } from "./testUtils";
 
-export function* buildAllBuildings() {
+export function* buildAllBuildings(): GameTestGenerator {
     const game = setupGameTest();
-    yield game;
+    yield { game };
 
-    const { team1 } = initOneTeamWithHQ(game, { x: 3000, y: 3000 });
+    const { team } = initOneTeamWithHQ(game, { x: 3000, y: 3000 });
 
     yield* spanGameTime(game, TIME_1_MIN);
 
-    const playerInterface = new PlayerInterface(game, team1);
+    const playerInterface = new PlayerInterface(game, team);
 
     expect(
         playerInterface.tryBuild("lumberMill", { x: 1000, y: 1000 }),
@@ -35,7 +36,7 @@ export function* buildAllBuildings() {
     yield* spanGameTime(game, TIME_1_MIN);
     expect(playerInterface.tryBuild("barracks", { x: 2000, y: 1000 })).toBeTrue();
 
-    return game;
+    return { game };
 }
 
 describe("economy", () => {

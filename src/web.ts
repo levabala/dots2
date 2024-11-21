@@ -1,6 +1,6 @@
 import { playLocal } from "./playLocal";
 import { playTest } from "./tests/playTest";
-import { testMoveSquad } from "./tests/units.spec.ts";
+import { testAttackDotToDot, testMoveSquad } from "./tests/units.spec.ts";
 
 if (typeof global === "undefined") {
     window.global = window;
@@ -22,5 +22,5 @@ canvas.style.border = "solid gray 1px";
 
 container.appendChild(canvas);
 
-playTest(container, canvas, testMoveSquad());
+playTest(container, canvas, testAttackDotToDot());
 // playLocal(container, canvas);

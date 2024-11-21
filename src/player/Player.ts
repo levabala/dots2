@@ -130,6 +130,14 @@ export class PlayerInterface {
     getBuildingCost(buildingKind: BuildingKind): BuildingCost {
         return this.game.getBuildingCost(buildingKind, this.team);
     }
+
+    orderAttackDot({ attacker, target }: { attacker: Dot, target: Dot }) {
+        if (attacker.team !== this.team) {
+            throw new Error("attacker must be owned by this player");
+        }
+
+        this.game.orderAttackDot({ attacker, target });
+    }
 }
 
 export class Player {

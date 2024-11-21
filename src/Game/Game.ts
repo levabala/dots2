@@ -139,6 +139,10 @@ export class Game {
         this.eventListeners[name].delete(listener);
     }
 
+    orderAttackDot({ attacker, target }: { attacker: Dot, target: Dot }) {
+        this.dotsController.orderAttackDot({ attacker, target });
+    }
+
     orderAttackOnlySquad({
         squadAttacker,
         squadTarget,

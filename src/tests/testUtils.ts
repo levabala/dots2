@@ -4,49 +4,55 @@ import { setupGlobal } from "../setupGlobal";
 import { createPolygonOffset } from "../shapes";
 import type { Point } from "../utils";
 
-const TICK_INTERVAL = 60;
+const IS_DEBUG =
+    typeof process !== "undefined" &&
+    process.env.SPAN_GAME_TIME_DEBUG === "true";
+
+const TICK_INTERVAL = 16;
 
 export function* spanGameTime(game: Game, time: number) {
-    const ticks = Math.floor(time / TICK_INTERVAL);
+    const ticks = Math.ceil(time / TICK_INTERVAL);
     let averageTickDuration = 0;
 
-    for (let i = 0; i < Math.floor(time / TICK_INTERVAL); i++) {
+    if (IS_DEBUG) {
+        console.log(`spanGameTime for ${time.toFixed(1)}ms = ${ticks} ticks`);
+    }
+
+    for (let i = 0; i < ticks; i++) {
         const t1 = performance.now();
         game.tick(TICK_INTERVAL);
         const t2 = performance.now();
 
         averageTickDuration += t2 - t1;
 
-        yield game;
+        yield { game };
     }
 
     averageTickDuration /= ticks;
 
-    if (
-        typeof process !== "undefined" &&
-        process.env.SPAN_GAME_TIME_DEBUG === "true"
-    ) {
-        console.log(`average tick duration: ${averageTickDuration}ms`);
+    if (IS_DEBUG) {
+        console.log(`average tick duration: ${averageTickDuration.toFixed(5)}ms`);
     }
 
     return game;
 }
 
+export const TIME_MINIMAL = 1;
 export const TIME_1_SEC = 1000;
 export const TIME_1_MIN = 60 * TIME_1_SEC;
 
-export function initOneTeamWithHQ(game: Game, hqPosition: Point) {
+export function initOneTeamWithHQ(game: Game, hqPosition: Point, name = "red") {
     const { teamController, resourcesController, buildingsController } =
         game.getPrivateStaffYouShouldNotUse();
 
-    const team1 = teamController.createTeam({ name: "red" });
+    const team = teamController.createTeam({ name });
 
-    resourcesController.initTeamResourcesState(team1);
+    resourcesController.initTeamResourcesState(team);
 
     buildingsController.addBuilding({
         ...BUILDINGS_CONFIGS.hq,
         kind: "hq",
-        team: team1,
+        team: team,
         frame: createPolygonOffset(
             BUILDINGS_CONFIGS.hq.frameRelative,
             hqPosition,
@@ -54,7 +60,7 @@ export function initOneTeamWithHQ(game: Game, hqPosition: Point) {
         center: hqPosition,
     });
 
-    return { team1 };
+    return { team };
 }
 
 export function setupGameTest() {
@@ -63,3 +69,6 @@ export function setupGameTest() {
 
     return game;
 }
+
+export type GameTestGeneratorStep = { game: Game; mark?: string };
+export type GameTestGenerator = Generator<GameTestGeneratorStep, GameTestGeneratorStep>;
