@@ -5,9 +5,9 @@ import {
     initOneTeamWithHQ,
     setupGameTest,
     spanGameTime,
-    TIME_1_MIN,
+    TIME_1_SEC,
 } from "./testUtils";
-import { orthogonalRect } from "../utils";
+import { isPointInRect, orthogonalRect } from "../utils";
 
 export function* testCreateSquad() {
     const game = setupGameTest();
@@ -17,6 +17,7 @@ export function* testCreateSquad() {
 
     const { team1 } = initOneTeamWithHQ(game, { x: 1000, y: 1000 });
 
+    // TODO: add dots not randomly
     const dots = times(10, () => dotsController.addDotRandom(team1));
 
     const playerInterface = new PlayerInterface(game, team1);
@@ -30,7 +31,7 @@ export function* testCreateSquad() {
             .map((slot) => slot.dot)
             .filter(isNonNull)
             .sort((a, b) => a.id - b.id),
-        'squad dots are the same as the dots passed to createSquad',
+        "squad dots are the same as the dots passed to createSquad",
     ).toEqual(dots.sort((a, b) => a.id - b.id));
 
     return game;
@@ -50,9 +51,22 @@ export function* testMoveSquad() {
         { x: 1300, y: 1100 },
         { x: 1350, y: 1150 },
     );
-    playerInterface.moveSquadTo([squad1], targetRect);
+    playerInterface.moveSquadTo(squad1, targetRect);
 
     expect(squad1.frame).toEqual(targetRect);
+
+    yield* spanGameTime(game, TIME_1_SEC * 10);
+
+    for (const slot of squad1.slots) {
+        if (!slot.dot) {
+            continue;
+        }
+
+        expect(
+            isPointInRect(slot.dot.position, targetRect),
+            "all dots must be inside the target frame",
+        ).toBeTrue();
+    }
 
     return game;
 }
