@@ -307,7 +307,7 @@ export function sceneOneTeamRightBottom(game: Game) {
 
 import { PlayerAI as PlayerAI1 } from "../player/PlayerAIGPT1";
 import { PlayerAI as PlayerAI2 } from "../player/PlayerAIGPT2";
-import { PlayerAI as PlayerAI3 } from "../player/PlayerAI1";
+import { PlayerAI1 as PlayerAI3 } from "../player/PlayerAI1";
 
 export function sceneFourAIs(game: Game, ui: UI) {
     const { team1, team2 } = sceneTwoTeamsSomeBuildings(game);

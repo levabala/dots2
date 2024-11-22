@@ -1,3 +1,4 @@
+import "../setupGlobalAuto";
 import type { Dot } from "../Game/DotsController";
 import { PlayerUtils } from "./PlayerUtils";
 

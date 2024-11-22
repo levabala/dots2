@@ -5,7 +5,6 @@ import {
     DOT_HEIGHT,
     DOT_IN_SQUAD_RADIUS_AROUND,
 } from "../consts";
-import type { Game } from "../Game";
 import { BUILDINGS_CONFIGS } from "../Game/buildingsConfigs";
 import type { Building, BuildingKind } from "../Game/BuildingsController";
 import type { Resource } from "../Game/ResourcesController";
@@ -16,44 +15,40 @@ import {
     createMultiPolygon,
     distanceBetween,
     getFacingSidesOfConvexPolygon,
-    getIntersectionFirstRect,
     getRectCenter,
     getVectorEndPoint,
     groupByOverlapping,
     hasIntersectionPolygons,
     orthogonalRect,
     rectToPolygon,
-    resizeRect,
     resizeRectByChange,
     rotateRect,
     translateRect,
-    type Line,
     type Point,
     type Polygon,
-    type Rect,
 } from "../shapes";
 import type { Dot } from "../Game/DotsController";
 import type { Squad } from "../Game/SquadsController";
 import { SquadFrameUtils } from "../Game/SquadFrameUtils";
 import { RendererUtils } from "../RendererUtils";
+import type { PlayerInterface } from "./PlayerInterface";
 
 const PLANNING_HORIZON_SECONDS = 10;
 const MY_SQUAD_MIN_SIZE = 30;
 const DANGER_HQ_PROXIMITY = 800;
-const REPEL_DISTANCE = DOT_ATTACK_RANGE - 10;
 
-export class PlayerAI1 {
+export class PlayerAI2 {
     economist: Economist;
     warlord: Warlord;
 
     actIntervalBetween: number = 100;
 
     constructor(
-        readonly game: Game,
+        readonly playerInterface: PlayerInterface,
         readonly team: Team,
     ) {
-        this.economist = new Economist(game, team);
-        this.warlord = new Warlord(game, team);
+        this.economist = new Economist(playerInterface, team);
+        this.warlord = new Warlord(playerInterface, team);
     }
 
     startAI() {
@@ -70,7 +65,7 @@ export class PlayerAI1 {
         this.warlord.drawDebugFigures(ctx);
     }
 
-    private act() {
+    act() {
         this.economist.act();
         this.warlord.act();
     }
@@ -94,14 +89,14 @@ class Warlord {
     enemySquadGroupsAssignments: SquadGroupWithFrontLine[] = [];
 
     constructor(
-        readonly game: Game,
+        readonly playerInterface: PlayerInterface,
         readonly team: Team,
     ) {
         this.baseCenter = this.calcBaseCenter();
     }
 
     private calcBaseCenter() {
-        const buildings = this.game.getBuildings();
+        const buildings = this.playerInterface.getBuildings();
 
         for (const building of buildings) {
             if (building.team !== this.team) {
@@ -113,7 +108,8 @@ class Warlord {
             }
         }
 
-        return { x: this.game.width / 2, y: this.game.height / 2 };
+        const mapSize = this.playerInterface.getMapSize();
+        return { x: mapSize.width / 2, y: mapSize.height / 2 };
     }
 
     private calcRallyPoint() {
@@ -121,14 +117,10 @@ class Warlord {
     }
 
     private getDotsWithoutSquad() {
-        const dots = this.game.getDots();
+        const dots = this.playerInterface.getDots();
         const dotsWithoutSquad = [];
 
         for (const dot of dots) {
-            if (dot.team !== this.team) {
-                continue;
-            }
-
             if (dot.squad) {
                 continue;
             }
@@ -142,7 +134,7 @@ class Warlord {
     private createSquad(dots: Dot[]) {
         const center = this.calcRallyPoint();
 
-        this.game.createSquad(dots, this.team, center);
+        this.playerInterface.createSquad(dots, center);
     }
 
     private createSquadIfNeeded() {
@@ -164,14 +156,10 @@ class Warlord {
     }
 
     private getSquadsDangerousToHQ() {
-        const squads = this.game.getSquads();
+        const squads = this.playerInterface.getSquads();
         const squadsDangerousToHQ = [];
 
         for (const squad of squads) {
-            if (squad.team === this.team) {
-                continue;
-            }
-
             if (!this.isSquadDangerousToHQ(squad)) {
                 continue;
             }
@@ -207,7 +195,7 @@ class Warlord {
     }
 
     private calcAvailableSquads() {
-        const squads = this.game.getSquads();
+        const squads = this.playerInterface.getSquads();
         const squadsAvailable = [];
 
         for (const squad of squads) {
@@ -252,52 +240,6 @@ class Warlord {
         );
 
         return frame;
-    }
-
-    private placeSquadInFrontOfSquad(
-        squadMy: Squad,
-        squadEnemy: Squad,
-        distance: number,
-    ) {
-        const enemyFrontlineCenter = getIntersectionFirstRect(
-            { p1: this.baseCenter, p2: getRectCenter(squadEnemy.frame) },
-            squadEnemy.frame,
-        );
-
-        if (!enemyFrontlineCenter) {
-            global.panic("can't find an intersection", {
-                squadMy,
-                squadEnemy,
-            });
-        }
-
-        const angleToEnemyFromBase = angleBetweenPoints(
-            this.baseCenter,
-            enemyFrontlineCenter,
-        );
-
-        const distanceToEnemyFromBase = distanceBetween(
-            this.baseCenter,
-            enemyFrontlineCenter,
-        );
-
-        const myFrontlineCenter = getVectorEndPoint(
-            this.baseCenter,
-            angleToEnemyFromBase,
-            distanceToEnemyFromBase - distance,
-        );
-
-        const frame = this.getSquadNewFrame(
-            squadMy,
-            angleToEnemyFromBase,
-            myFrontlineCenter,
-        );
-
-        this.game.moveSquadsTo([squadMy], frame);
-    }
-
-    private assignSquadToRepel(squadMy: Squad, squadToRepel: Squad) {
-        this.placeSquadInFrontOfSquad(squadMy, squadToRepel, REPEL_DISTANCE);
     }
 
     // private calcSquadGroupsAssignments(): SquadGroupWithFrontLine[] {
@@ -397,7 +339,7 @@ class Warlord {
                     frontLineCenterNew,
                 );
 
-                this.game.moveSquadsTo([squad], squadFrameNew);
+                this.playerInterface.moveSquadToRect(squad, squadFrameNew);
             }
         }
     }
@@ -448,23 +390,10 @@ class Warlord {
         return facingPoints;
     }
 
-    private calcSquadGroupForces(squadGroup: SquadGroup): {
-        dotsCount: number;
-    } {
-        let dotsCount = 0;
-
-        for (const squad of squadGroup.squads) {
-            // TODO: replace with squad.dots
-            dotsCount += squad.slots.length;
-        }
-
-        return { dotsCount };
-    }
-
     private calcEnemySquadGroups(): typeof this.enemySquadGroups {
         const teamToSquads = new Map<Team, Squad[]>();
 
-        for (const squad of this.game.getSquads()) {
+        for (const squad of this.playerInterface.getSquads()) {
             if (squad.team === this.team) {
                 continue;
             }
@@ -518,7 +447,7 @@ class Warlord {
     }
 
     drawDebugFigures(ctx: CanvasRenderingContext2D) {
-        const drawSquadGroup = (squads: Squad[], polygon: Polygon) => {
+        const drawSquadGroup = (_squads: Squad[], polygon: Polygon) => {
             ctx.strokeStyle = "gray";
             RendererUtils.drawPolygon(ctx, polygon);
             ctx.stroke();
@@ -579,17 +508,14 @@ class Economist {
         coins: 0,
         housing: 0,
     };
-    buildingsWanted: Record<
-        BuildingKind,
-        { count: number; inSeconds: number }
-    > = {
-        farm: { count: 0, inSeconds: 0 },
-        house: { count: 0, inSeconds: 0 },
-        lumberMill: { count: 0, inSeconds: 0 },
-        barracks: { count: 0, inSeconds: 0 },
-        coinMiner: { count: 0, inSeconds: 0 },
-        granary: { count: 0, inSeconds: 0 },
-        hq: { count: 0, inSeconds: 0 },
+    buildingsWanted: Record<BuildingKind, { priority: number }> = {
+        farm: { priority: 0 },
+        house: { priority: 0 },
+        lumberMill: { priority: 0 },
+        barracks: { priority: 0 },
+        coinMiner: { priority: 0 },
+        granary: { priority: 0 },
+        hq: { priority: 0 },
     };
     resourcesAtHorizon: Record<Resource, number> = {
         food: 0,
@@ -604,57 +530,48 @@ class Economist {
     debugInfo: Record<string, any> = {};
 
     constructor(
-        readonly game: Game,
+        readonly playerInterface: PlayerInterface,
         readonly team: Team,
     ) {
         this.baseCenter = this.calcBaseCenter();
     }
 
     private calcBaseCenter() {
-        const buildings = this.game.getBuildings();
+        const buildings = this.playerInterface.getBuildings();
 
         for (const building of buildings) {
-            if (building.team !== this.team) {
-                continue;
-            }
-
             if (building.kind === "hq") {
                 return building.center;
             }
         }
 
-        return { x: this.game.width / 2, y: this.game.height / 2 };
+        const mapSize = this.playerInterface.getMapSize();
+
+        return { x: mapSize.width / 2, y: mapSize.height / 2 };
     }
 
     private calcBuildingsWanted(): typeof this.buildingsWanted {
         const buildingsWanted = {
             farm: {
-                count: 0,
-                inSeconds: 0,
+                priority: 0,
             },
             house: {
-                count: 0,
-                inSeconds: 0,
+                priority: 0,
             },
             lumberMill: {
-                count: 0,
-                inSeconds: 0,
+                priority: 0,
             },
             barracks: {
-                count: 0,
-                inSeconds: 0,
+                priority: 0,
             },
             coinMiner: {
-                count: 0,
-                inSeconds: 0,
+                priority: 0,
             },
             granary: {
-                count: 0,
-                inSeconds: 0,
+                priority: 0,
             },
             hq: {
-                count: 0,
-                inSeconds: 0,
+                priority: 0,
             },
         };
 
@@ -665,34 +582,27 @@ class Economist {
         ).filter(([, countAtHorizon]) => countAtHorizon <= 0);
 
         if (resourcesNeededSorted.length > 0) {
-            resourcesNeededSorted.sort((a, b) => a[1] - b[1]);
+            resourcesNeededSorted.sort((a, b) => b[1] - a[1]);
+
+            for (const [index, [resource]] of resourcesNeededSorted.entries()) {
+                switch (resource) {
+                    case "food":
+                        buildingsWanted.farm.priority = index + 1;
+                        break;
+                    case "wood":
+                        buildingsWanted.lumberMill.priority = index + 1;
+                        break;
+                    case "coins":
+                        buildingsWanted.coinMiner.priority = index + 1;
+                        break;
+                    case "housing":
+                        buildingsWanted.house.priority = index + 1;
+                        break;
+                }
+            }
+        } else {
+            buildingsWanted.barracks.priority = 1;
         }
-
-        const resourceMostNeeded = resourcesNeededSorted[0] as
-            | [Resource, number]
-            | undefined;
-
-        const mostNecessity = resourceMostNeeded && {
-            resource: resourceMostNeeded[0],
-            countAtHorizon: resourceMostNeeded[1],
-        };
-
-        this.debugInfo.mostNecessity = mostNecessity;
-
-        if (!mostNecessity || mostNecessity.countAtHorizon > 0) {
-            buildingsWanted.barracks.count = 1;
-            buildingsWanted.barracks.inSeconds = PLANNING_HORIZON_SECONDS;
-
-            return buildingsWanted;
-        }
-
-        const buildingWanted =
-            ResourceToBuildingToBeProductedBy[mostNecessity.resource];
-
-        buildingsWanted[buildingWanted] = {
-            count: 1,
-            inSeconds: 30,
-        };
 
         return buildingsWanted;
     }
@@ -712,7 +622,7 @@ class Economist {
                 productionPerSecond * PLANNING_HORIZON_SECONDS;
         }
 
-        const teamResources = this.game.getTeamResources(this.team);
+        const teamResources = this.playerInterface.getTeamResources();
         for (const [resource, storage] of Object.entries(teamResources)) {
             if (resourcesAtHorizon[resource as Resource] === undefined) {
                 continue;
@@ -722,19 +632,17 @@ class Economist {
         }
 
         const buildingToBuildRaw = Object.entries(this.buildingsWanted).sort(
-            (a, b) => b[1].count - a[1].count,
+            (a, b) => b[1].priority - a[1].priority,
         )[0];
         const buildingToBuild = {
             kind: buildingToBuildRaw[0] as BuildingKind,
-            count: buildingToBuildRaw[1].count,
-            inSeconds: buildingToBuildRaw[1].inSeconds,
+            count: buildingToBuildRaw[1].priority,
         };
 
         const buildingNeededConfig = BUILDINGS_CONFIGS[buildingToBuild.kind];
 
-        const cost = this.game.getBuildingCost(
+        const cost = this.playerInterface.getBuildingCost(
             buildingNeededConfig.kind,
-            this.team,
         );
 
         resourcesAtHorizon.wood -= cost.wood;
@@ -766,7 +674,7 @@ class Economist {
     }
 
     private calcExpectedProduction(): Record<Resource | "units", number> {
-        const buildings = this.game.getBuildings();
+        const buildings = this.playerInterface.getBuildings();
 
         const production: Record<Resource | "units", number> = {
             food: 0,
@@ -855,7 +763,7 @@ class Economist {
     private controlUnitProduction() {
         const isInCoinsDeficit = this.resourcesAtHorizon.coins < 0;
 
-        for (const building of this.game.getBuildings()) {
+        for (const building of this.playerInterface.getBuildings()) {
             if (building.team !== this.team) {
                 continue;
             }
@@ -878,51 +786,37 @@ class Economist {
 
     private build() {
         const buildingKind = Object.entries(this.buildingsWanted).sort(
-            (a, b) => b[1].count - a[1].count,
+            (a, b) => b[1].priority - a[1].priority,
         )[0][0] as BuildingKind;
 
-        const canBuild = this.game.canBuild(buildingKind, this.team);
+        const canBuild = this.playerInterface.canBuild(buildingKind);
 
         if (!canBuild) {
             return;
         }
 
-        const building: Building = {
-            ...BUILDINGS_CONFIGS[buildingKind],
-            kind: buildingKind,
-            team: this.team,
-            frame: BUILDINGS_CONFIGS.barracks.frameRelative,
-            center: {
-                x: this.baseCenter.x + randomInteger(-100, 300),
-                y: this.baseCenter.y + randomInteger(-100, 300),
-            },
-        } as Building;
-        void building;
-
-        // const isBuilt = this.game.tryBuild(building);
-
-        // this.log();
-        // console.log("isBuilt", isBuilt, building);
+        this.playerInterface.tryBuild(buildingKind, {
+            x: this.baseCenter.x + randomInteger(-100, 300),
+            y: this.baseCenter.y + randomInteger(-100, 300),
+        });
     }
 
     log() {
         console.log(
             "resources",
-            mapValues(this.game.getTeamResources(this.team), (v) =>
+            mapValues(this.playerInterface.getTeamResources(), (v) =>
                 Math.floor(v),
             ),
             "buildingsWanted",
-            mapValues(this.buildingsWanted, (v) => v.count),
+            mapValues(this.buildingsWanted, (v) => v.priority),
             "expectedProductionPerSecond",
             mapValues(this.expectedProductionPerSecond, (v) => v.toFixed(1)),
             "expectedConsumptionPerSecond",
             mapValues(this.expectedConsumptionPerSecond, (v) => v.toFixed(1)),
             "resourcesAtHorizon",
             mapValues(this.debugInfo.resourcesAtHorizon, (v) => v.toFixed(1)),
-            "\nmostNecessity",
-            this.debugInfo.mostNecessity,
             "\nbarracks online",
-            Array.from(this.game.getBuildings()).filter(
+            Array.from(this.playerInterface.getBuildings()).filter(
                 (b) =>
                     b.kind === "barracks" &&
                     b.team === this.team &&

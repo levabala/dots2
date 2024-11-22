@@ -68,7 +68,7 @@ export const BUILDINGS_CONFIGS: {
             { x: -25, y: 25 },
         ],
         health: 100,
-        capacity: 110,
+        unitsCapacity: 110,
         getCost: (countAlreadyBuilt: number) =>
             getArrayElementByIndexOrLast(
                 [
@@ -219,6 +219,7 @@ export const BUILDINGS_CONFIGS: {
         ],
         health: 500,
         coinsPerSecond: 10,
+        unitsCapacity: 100,
         getCost: () => ({
             wood: Infinity,
             coins: Infinity,

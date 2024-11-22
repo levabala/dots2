@@ -156,6 +156,7 @@ export class RendererCanvasSimple implements Renderer {
 
         this.ctx.resetTransform();
         this.renderPerformance();
+        this.renderTime(this.game.getTime());
     }
 
     adjustViewport() {
@@ -195,6 +196,21 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.lineWidth = 6;
         this.ctx.fillStyle = "black";
         this.ctx.fillText(str, 2, 10);
+    }
+
+    renderTime(time: number) {
+        const timeSeconds = time / 1000;
+
+        const str = `time passed: ${timeSeconds.toFixed(1)}s`;
+
+        this.setupText({});
+        this.ctx.lineWidth = 4;
+        this.ctx.strokeStyle = "white";
+        this.ctx.strokeText(str, 2, 20);
+
+        this.ctx.lineWidth = 6;
+        this.ctx.fillStyle = "black";
+        this.ctx.fillText(str, 2, 20);
     }
 
     private setupText({

@@ -37,7 +37,7 @@ export function* spanGameTime(game: Game, time: number) {
     return game;
 }
 
-export function* spanGameTimeUntil(game: Game, condition: () => boolean, timeout: number) {
+export function* spanGameTimeUntil(game: Game, condition: () => boolean, timeout: number, onTick?: (tickIndex: number) => void) {
     const maxTicks = Math.ceil(timeout / TICK_INTERVAL);
     let ticks = 0;
     let averageTickDuration = 0;
@@ -49,6 +49,7 @@ export function* spanGameTimeUntil(game: Game, condition: () => boolean, timeout
     while (!condition()) {
         const t1 = performance.now();
         game.tick(TICK_INTERVAL);
+        onTick?.(ticks);
         const t2 = performance.now();
 
         averageTickDuration += t2 - t1;

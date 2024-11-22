@@ -30,7 +30,7 @@ export type BuildingBarracks = BuildingBase & {
 
 export type BuildingHouse = BuildingBase & {
     kind: "house";
-    capacity: number;
+    unitsCapacity: number;
 };
 
 export type BuildingFarm = BuildingBase & {
@@ -53,6 +53,7 @@ export type BuildingLumberMill = BuildingBase & {
 export type BuildingHQ = BuildingBase & {
     kind: "hq";
     coinsPerSecond: number;
+    unitsCapacity: number;
 };
 
 export type BuildingCoinMiner = BuildingBase & {
@@ -127,8 +128,8 @@ export class BuildingsController {
                 continue;
             }
 
-            if (building.kind === "house") {
-                count += building.capacity;
+            if (building.kind === "house" || building.kind === "hq") {
+                count += building.unitsCapacity;
             }
         }
 

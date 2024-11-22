@@ -17,11 +17,16 @@ import {
     type Rect,
 } from "../shapes";
 
+// TODO: wrap all returns in a Proxy that denies mutations
 export class PlayerInterface {
     constructor(
         readonly game: Game,
         readonly team: Team,
     ) {}
+
+    getMapSize() {
+        return { width: this.game.width, height: this.game.height };
+    }
 
     getDots() {
         return Array.from(this.game.getDots()).filter(

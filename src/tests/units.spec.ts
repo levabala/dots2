@@ -1,6 +1,6 @@
+import "../setupGlobalAuto";
 import { isNonNull, times } from "remeda";
 import { PlayerInterface } from "../player/PlayerInterface";
-import "../setupGlobalAuto";
 import {
     initOneTeamWithHQ,
     setupGameTest,
