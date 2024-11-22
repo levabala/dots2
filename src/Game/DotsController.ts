@@ -4,7 +4,7 @@ import {
     DOT_AIMING_DURATION,
     DOT_ATTACK_COOLDOWN,
     DOT_ATTACK_RANGE,
-    DOT_HEALTH,
+    DOT_HEALTH_MAX,
     DOT_HEIGHT,
     DOT_MORALE_BASELINE,
     DOT_MORALE_DROP_BY_NEARBY_ENEMY_COUNT,
@@ -47,6 +47,7 @@ export type DotTemplate = {
     aimingDuration: number;
     hitBox: Rect;
     health: number;
+    healthMax: number;
     angle: number;
 };
 
@@ -206,7 +207,8 @@ export class DotsController {
             aimingDuration: DOT_AIMING_DURATION,
             aimingTimeLeft: DOT_AIMING_DURATION,
             aimingTargetDot: null,
-            health: DOT_HEALTH,
+            health: DOT_HEALTH_MAX,
+            healthMax: DOT_HEALTH_MAX,
             morale: DOT_MORALE_MAX,
             angle: 0,
             hitBox: this.calculateHitBox(position, 0, DOT_WIDTH, DOT_HEIGHT),

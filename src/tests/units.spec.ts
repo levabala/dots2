@@ -95,6 +95,7 @@ export function* testAttackDotToDot(): GameTestGenerator {
         team: team2,
         allowAttack: false,
         health: 5,
+        healthMax: 5,
     });
 
     yield { game, mark: "dots created" };

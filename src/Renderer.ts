@@ -20,6 +20,9 @@ import {
 const MORALE_BAR_WIDTH = 8;
 const MORALE_BAR_HEIGHT = 2;
 const MORALE_BAR_OFFSET = 1;
+const HEALTH_BAR_OFFSET = MORALE_BAR_HEIGHT + MORALE_BAR_OFFSET + 0.5;
+const HEALTH_BAR_HEIGHT = 2;
+const HEALTH_BAR_WIDTH = MORALE_BAR_WIDTH;
 
 interface Renderer {
     game: Game;
@@ -105,6 +108,7 @@ export class RendererCanvasSimple implements Renderer {
 
         for (const dot of dotsController.dots) {
             this.renderDotMorale(dot);
+            this.renderDotHealth(dot);
         }
 
         for (const squad of squadsController.squads) {
@@ -340,8 +344,81 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.fill();
     }
 
+    renderDotHealth(dot: Dot) {
+        const hitBoxPointsExceptP1 = [
+            dot.hitBox.p2,
+            dot.hitBox.p3,
+            dot.hitBox.p4,
+        ];
+
+        let topPoint = dot.hitBox.p1;
+        for (const point of hitBoxPointsExceptP1) {
+            if (point.y < topPoint.y) {
+                topPoint = point;
+            }
+        }
+
+        const healthBarBottomCenter = {
+            x: dot.position.x,
+            y: topPoint.y - HEALTH_BAR_OFFSET,
+        };
+
+        const healthBarContainerRect = {
+            p1: {
+                x: healthBarBottomCenter.x - HEALTH_BAR_WIDTH / 2,
+                y: healthBarBottomCenter.y - HEALTH_BAR_HEIGHT,
+            },
+            p2: {
+                x: healthBarBottomCenter.x + HEALTH_BAR_WIDTH / 2,
+                y: healthBarBottomCenter.y - HEALTH_BAR_HEIGHT,
+            },
+            p3: {
+                x: healthBarBottomCenter.x + HEALTH_BAR_WIDTH / 2,
+                y: healthBarBottomCenter.y,
+            },
+            p4: {
+                x: healthBarBottomCenter.x - HEALTH_BAR_WIDTH / 2,
+                y: healthBarBottomCenter.y,
+            },
+        };
+
+        const healthLevelPercent = dot.health / dot.healthMax;
+        const healthLevelPixels =
+            HEALTH_BAR_WIDTH - healthLevelPercent * HEALTH_BAR_WIDTH;
+
+        const healthBarValueRect = {
+            p1: healthBarContainerRect.p1,
+            p2: {
+                x: healthBarContainerRect.p2.x - healthLevelPixels,
+                y: healthBarContainerRect.p2.y,
+            },
+            p3: {
+                x: healthBarContainerRect.p3.x - healthLevelPixels,
+                y: healthBarContainerRect.p3.y,
+            },
+            p4: healthBarContainerRect.p4,
+        };
+
+        this.ctx.strokeStyle = "black";
+        this.ctx.fillStyle =
+            dot.health < Math.ceil(dot.healthMax / 2) ? "red" : "green";
+        this.ctx.lineWidth = 0.1;
+        RendererUtils.drawRect(this.ctx, healthBarValueRect);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.strokeStyle = "black";
+        this.ctx.lineWidth = 0.3;
+        RendererUtils.drawRect(this.ctx, healthBarContainerRect);
+        this.ctx.stroke();
+    }
+
     renderDotMorale(dot: Dot) {
-        const hitBoxPointsExceptP1 = [dot.hitBox.p2, dot.hitBox.p3, dot.hitBox.p4];
+        const hitBoxPointsExceptP1 = [
+            dot.hitBox.p2,
+            dot.hitBox.p3,
+            dot.hitBox.p4,
+        ];
 
         let topPoint = dot.hitBox.p1;
         for (const point of hitBoxPointsExceptP1) {
@@ -353,7 +430,7 @@ export class RendererCanvasSimple implements Renderer {
         const moraleBarBottomCenter = {
             x: dot.position.x,
             y: topPoint.y - MORALE_BAR_OFFSET,
-        }
+        };
 
         const moraleBarContainerRect = {
             p1: {
@@ -375,8 +452,9 @@ export class RendererCanvasSimple implements Renderer {
         };
 
         const moraleLevelPercent = dot.morale / DOT_MORALE_MAX;
-        const moraleLevelPixels = MORALE_BAR_WIDTH - moraleLevelPercent * MORALE_BAR_WIDTH;
-        
+        const moraleLevelPixels =
+            MORALE_BAR_WIDTH - moraleLevelPercent * MORALE_BAR_WIDTH;
+
         const moraleBarValueRect = {
             p1: moraleBarContainerRect.p1,
             p2: {
@@ -390,14 +468,14 @@ export class RendererCanvasSimple implements Renderer {
             p4: moraleBarContainerRect.p4,
         };
 
-        this.ctx.strokeStyle = 'black';
-        this.ctx.fillStyle = 'yellow';
+        this.ctx.strokeStyle = "black";
+        this.ctx.fillStyle = "yellow";
         this.ctx.lineWidth = 0.1;
         RendererUtils.drawRect(this.ctx, moraleBarValueRect);
         this.ctx.fill();
         this.ctx.stroke();
 
-        this.ctx.strokeStyle = dot.isFleeing ? 'red' : 'black';
+        this.ctx.strokeStyle = dot.isFleeing ? "red" : "black";
         this.ctx.lineWidth = 0.3;
         RendererUtils.drawRect(this.ctx, moraleBarContainerRect);
         this.ctx.stroke();
