@@ -37,6 +37,40 @@ export function* spanGameTime(game: Game, time: number) {
     return game;
 }
 
+export function* spanGameTimeUntil(game: Game, condition: () => boolean, timeout: number) {
+    const maxTicks = Math.ceil(timeout / TICK_INTERVAL);
+    let ticks = 0;
+    let averageTickDuration = 0;
+
+    if (IS_DEBUG) {
+        console.log(`spanGameTimeUntil for max ${timeout.toFixed(1)}ms = ${ticks} ticks`);
+    }
+
+    while (!condition()) {
+        const t1 = performance.now();
+        game.tick(TICK_INTERVAL);
+        const t2 = performance.now();
+
+        averageTickDuration += t2 - t1;
+
+        yield { game };
+
+        ticks++;
+
+        if (ticks >= maxTicks) {
+            throw new Error('spanGameTimeUntil timeout reached');
+        }
+    }
+
+    averageTickDuration /= ticks;
+
+    if (IS_DEBUG) {
+        console.log(`average tick duration: ${averageTickDuration.toFixed(5)}ms`);
+    }
+
+    return game;
+}
+
 export const TIME_MINIMAL = 1;
 export const TIME_1_SEC = 1000;
 export const TIME_1_MIN = 60 * TIME_1_SEC;

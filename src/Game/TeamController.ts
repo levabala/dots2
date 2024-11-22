@@ -6,9 +6,10 @@ export type Team = {
 
 export class TeamController {
     teams = new Set<Team>();
+    teamCounter = 0;
 
     createTeam(teamParams: Omit<Team, "index" | "dotsCount">): Team {
-        const team = { ...teamParams, dotsCount: 0, index: this.teams.size };
+        const team = { ...teamParams, dotsCount: 0, index: this.teamCounter++ };
         this.teams.add(team);
 
         return team;

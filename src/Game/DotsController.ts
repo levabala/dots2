@@ -146,7 +146,7 @@ export class DotsController {
         };
     }
 
-    addDot(dotRaw: Omit<Dot, 'hitBox'>) {
+    addDot(dotRaw: Omit<Dot, "hitBox">) {
         const dot: Dot = {
             ...dotRaw,
             hitBox: this.calculateHitBox(
@@ -331,7 +331,7 @@ export class DotsController {
         return false;
     }
 
-    orderAttackDot({ attacker, target }: { attacker: Dot, target: Dot }) {
+    orderAttackDot({ attacker, target }: { attacker: Dot; target: Dot }) {
         attacker.attackTargetDot = target;
     }
 
@@ -445,15 +445,20 @@ export class DotsController {
         };
 
         const tryShoot = (dot: Dot) => {
-            if (
-                dot.squad &&
-                dot.squad.allowAttack === false &&
-                !(
-                    dot.squad.allowShootOnce &&
-                    dot.squad.dotsToShootOnce.has(dot)
-                )
-            ) {
-                return;
+            if (dot.squad) {
+                if (
+                    dot.squad.allowAttack === false &&
+                    !(
+                        dot.squad.allowShootOnce &&
+                        dot.squad.dotsToShootOnce.has(dot)
+                    )
+                ) {
+                    return;
+                }
+            } else {
+                if (dot.allowAttack === false) {
+                    return;
+                }
             }
 
             if (

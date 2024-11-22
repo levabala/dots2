@@ -22,6 +22,15 @@ export function rectToPolygon(rect: Rect): Polygon {
     return [rect.p1, rect.p2, rect.p3, rect.p4];
 }
 
+export function polygonToRect(polygon: Polygon): Rect {
+    return {
+        p1: polygon[0],
+        p2: polygon[1],
+        p3: polygon[2],
+        p4: polygon[3],
+    };
+}
+
 // chatgpt (c)
 export function randomPointInRect({ p1, p2, p3 }: Rect): Point {
     // Calculate the width and height of the rectangle
@@ -786,4 +795,17 @@ export function getPolygonCenter(points: Point[]): Point {
         x: sumX / points.length,
         y: sumY / points.length,
     };
+}
+
+export function alignRectToRect(rect1: Rect, rect2: Rect): Rect {
+    const center1 = getRectCenter(rect1);
+    const center2 = getRectCenter(rect2);
+
+    const angle = angleBetweenPoints(center1, center2);
+
+    return rotateRect({ rect: rect1, anchor: center1, angle });
+}
+
+export function getPointOffset(p1: Point, p2: Point): Point {
+    return { x: p2.x - p1.x, y: p2.y - p1.y };
 }

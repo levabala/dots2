@@ -1,43 +1,64 @@
 import type { Game, GameEventTick, GameEventListener } from "../Game";
-import type { Building, BuildingKind, BuildingCost } from "../Game/BuildingsController";
+import type {
+    Building,
+    BuildingKind,
+    BuildingCost,
+} from "../Game/BuildingsController";
 import type { Dot } from "../Game/DotsController";
 import type { Squad } from "../Game/SquadsController";
 import type { Team } from "../Game/TeamController";
-import type { Point, Rect } from "../shapes";
-
+import {
+    createPolygonOffset,
+    getPointOffset,
+    getRectCenter,
+    isPointInRect,
+    polygonToRect,
+    rectToPolygon,
+    type Point,
+    type Rect,
+} from "../shapes";
 
 export class PlayerInterface {
-    constructor(readonly game: Game, readonly team: Team) {
-    }
+    constructor(
+        readonly game: Game,
+        readonly team: Team,
+    ) {}
 
     getDots() {
-        return Array.from(this.game.getDots()).filter((dot) => dot.team === this.team);
+        return Array.from(this.game.getDots()).filter(
+            (dot) => dot.team === this.team,
+        );
     }
 
     getSquads() {
-        return Array.from(this.game.getSquads()).filter((squad) => squad.team === this.team);
+        return Array.from(this.game.getSquads()).filter(
+            (squad) => squad.team === this.team,
+        );
     }
 
     getBuildings() {
-        return Array.from(this.game.getBuildings()).filter((building) => building.team === this.team);
+        return Array.from(this.game.getBuildings()).filter(
+            (building) => building.team === this.team,
+        );
     }
 
     addEventListener<Name extends GameEventTick["name"]>(
         name: Name,
-        listener: GameEventListener<Name>
+        listener: GameEventListener<Name>,
     ) {
         this.game.addEventListener(name, listener);
     }
 
     removeEventListener<Name extends GameEventTick["name"]>(
         name: Name,
-        listener: GameEventListener<Name>
+        listener: GameEventListener<Name>,
     ) {
         this.game.removeEventListener(name, listener);
     }
 
     orderAttackOnlySquad({
-        squadAttacker, squadTarget,
+        squadAttacker,
+        squadTarget,
     }: {
         squadAttacker: Squad;
         squadTarget: Squad;
@@ -53,7 +74,8 @@ export class PlayerInterface {
     }
 
     orderAttackOnlyBuilding({
-        squadAttacker, buildingTarget,
+        squadAttacker,
+        buildingTarget,
     }: {
         squadAttacker: Squad;
         buildingTarget: Building;
@@ -118,7 +140,7 @@ export class PlayerInterface {
         return this.game.isInSquad(dot);
     }
 
-    moveSquadTo(squad: Squad, targetFrame: Rect) {
+    moveSquadToRect(squad: Squad, targetFrame: Rect) {
         if (squad.team !== this.team) {
             throw new Error("squad must be owned by this player");
         }
@@ -126,11 +148,22 @@ export class PlayerInterface {
         return this.game.moveSquadTo(squad, targetFrame);
     }
 
+    moveSquadToPoint(squad: Squad, targetPoint: Point) {
+        const offset = getPointOffset(getRectCenter(squad.frame), targetPoint);
+
+        return this.moveSquadToRect(
+            squad,
+            polygonToRect(
+                createPolygonOffset(rectToPolygon(squad.frame), offset),
+            ),
+        );
+    }
+
     getBuildingCost(buildingKind: BuildingKind): BuildingCost {
         return this.game.getBuildingCost(buildingKind, this.team);
     }
 
-    orderAttackDot({ attacker, target }: { attacker: Dot; target: Dot; }) {
+    orderAttackDot({ attacker, target }: { attacker: Dot; target: Dot }) {
         if (attacker.team !== this.team) {
             throw new Error("attacker must be owned by this player");
         }
@@ -138,4 +171,3 @@ export class PlayerInterface {
         this.game.orderAttackDot({ attacker, target });
     }
 }
-
