@@ -486,7 +486,6 @@ export class UI {
     }
 
     handleKeypress(e: KeyboardEvent) {
-        console.log(e);
         switch (e.code) {
             case "KeyP": {
                 if (this.isRunningRef.current) {

@@ -11,9 +11,7 @@ import {
     type GameTestGenerator,
 } from "./testUtils";
 import {
-    arePointsEqual,
     distanceBetween,
-    getRectCenter,
     isPointInRect,
     orthogonalRect,
 } from "../shapes";

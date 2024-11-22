@@ -11,7 +11,6 @@ import {
     createPolygonOffset,
     getPointOffset,
     getRectCenter,
-    isPointInRect,
     polygonToRect,
     rectToPolygon,
     type Point,
