@@ -903,8 +903,9 @@ class Economist {
                 y: this.baseCenter.y + randomInteger(-100, 300),
             },
         } as Building;
+        void building;
 
-        const isBuilt = this.game.tryBuild(building);
+        // const isBuilt = this.game.tryBuild(building);
 
         // this.log();
         // console.log("isBuilt", isBuilt, building);
