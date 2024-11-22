@@ -9,7 +9,7 @@ import type { Dot, DotTemplate } from "../Game/DotsController";
 import { SquadFrameUtils } from "../Game/SquadFrameUtils";
 import type { Squad } from "../Game/SquadsController";
 import type { Team } from "../Game/TeamController";
-import { makeRectOrthogonal, orthogonalRect, type Point, type Rect } from "../utils";
+import { makeRectOrthogonal, orthogonalRect, type Point, type Rect } from "../shapes";
 import { PlayerLegacy } from "./PlayerLegacy";
 
 export class PlayerAI extends PlayerLegacy {

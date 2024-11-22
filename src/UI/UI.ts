@@ -8,7 +8,7 @@ import {
     sortRectPoints,
     type Point,
     type Rect,
-} from "../utils";
+} from "../shapes";
 import { DOT_WIDTH, BETWEEN_SQUADS_GAP } from "../consts";
 import { GameEventTickName, type Game } from "../Game/Game";
 import {

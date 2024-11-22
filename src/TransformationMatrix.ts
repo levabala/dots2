@@ -1,4 +1,4 @@
-import type { Point } from "./utils";
+import type { Point } from "./shapes";
 
 const DEFAULT_VALUE = [1, 0, 0, 1, 0, 0] as [
     number,

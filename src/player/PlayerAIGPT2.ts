@@ -8,7 +8,7 @@ import type { BuildingKind, Building, BuildingHQ } from "../Game/BuildingsContro
 import { SquadFrameUtils } from "../Game/SquadFrameUtils";
 import type { Squad } from "../Game/SquadsController";
 import type { Team } from "../Game/TeamController";
-import { distanceBetween, isPointInPolygon, rotateRect, type Point, type Polygon } from "../utils";
+import { distanceBetween, isPointInPolygon, rotateRect, type Point, type Polygon } from "../shapes";
 import { PlayerLegacy } from "./PlayerLegacy";
 
 export class PlayerAI extends PlayerLegacy {

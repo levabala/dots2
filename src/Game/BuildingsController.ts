@@ -1,5 +1,5 @@
 import { DOT_COST_COINS, DOT_COST_FOOD } from "../consts";
-import { randomPointInPolygon, type Point, type Polygon } from "../utils";
+import { randomPointInPolygon, type Point, type Polygon } from "../shapes";
 import { BUILDINGS_CONFIGS } from "./buildingsConfigs";
 import type { DotTemplate, Dot } from "./DotsController";
 import type { ResourcesState } from "./ResourcesController";

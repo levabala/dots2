@@ -32,7 +32,7 @@ import {
     type Point,
     type Rect,
     rotatePoint,
-} from "../utils";
+} from "../shapes";
 import type { Slot, Squad } from "./SquadsController";
 import type { Projectile } from "./ProjectilesController";
 import type { Team } from "./TeamController";

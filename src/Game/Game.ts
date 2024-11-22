@@ -1,4 +1,4 @@
-import { type Point, type Rect } from "../utils";
+import { type Point, type Rect } from "../shapes";
 import {
     BuildingsController,
     type Building,

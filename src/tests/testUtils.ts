@@ -2,7 +2,7 @@ import { Game } from "../Game";
 import { BUILDINGS_CONFIGS } from "../Game/buildingsConfigs";
 import { setupGlobal } from "../setupGlobal";
 import { createPolygonOffset } from "../shapes";
-import type { Point } from "../utils";
+import type { Point } from "../shapes";
 
 const IS_DEBUG =
     typeof process !== "undefined" &&

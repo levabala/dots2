@@ -7,7 +7,7 @@ import {
     roundSinCos,
     type Line,
     type Point,
-} from "./utils";
+} from "./shapes";
 
 export class DotsGrid {
     dotsGridCols: number;

@@ -7,7 +7,7 @@ import {
     rotateRect,
     type Point,
     type Rect,
-} from "../utils";
+} from "../shapes";
 import type { Building } from "./BuildingsController";
 import type { Dot } from "./DotsController";
 import { SquadFrameUtils } from "./SquadFrameUtils";

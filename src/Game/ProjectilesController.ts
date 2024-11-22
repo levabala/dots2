@@ -3,7 +3,7 @@ import {
     getIntersectionAnyPolygon,
     getIntersectionAnyRect,
     type Point,
-} from "../utils";
+} from "../shapes";
 import type { Building } from "./BuildingsController";
 import type { Dot } from "./DotsController";
 

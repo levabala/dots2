@@ -3,7 +3,7 @@ import {
     DOT_IN_SQUAD_RADIUS_AROUND,
     DOT_WIDTH,
 } from "../consts";
-import { orthogonalRect, type Point } from "../utils";
+import { orthogonalRect, type Point } from "../shapes";
 
 export class SquadFrameUtils {
     static calcDotsSquadArea(dotsCount: number) {

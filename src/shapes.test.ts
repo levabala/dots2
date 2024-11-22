@@ -4,7 +4,7 @@ import {
     groupPolygonsByOverlapping,
     type Point,
     type Polygon,
-} from "./utils";
+} from "./shapes";
 
 describe("groupPolygonsByOverlapping", () => {
     // chatgpt (c)

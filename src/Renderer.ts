@@ -15,7 +15,7 @@ import {
     rotatePoint,
     type Point,
     type Rect,
-} from "./utils";
+} from "./shapes";
 
 const MORALE_BAR_WIDTH = 8;
 const MORALE_BAR_HEIGHT = 2;

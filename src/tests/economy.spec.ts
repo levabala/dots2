@@ -1,6 +1,6 @@
 import '../setupGlobalAuto';
 import { Game } from "../Game";
-import { PlayerInterface } from "../player/Player";
+import { PlayerInterface } from "../player/PlayerInterface";
 import { setupGlobal } from "../setupGlobal";
 import {
     initOneTeamWithHQ,

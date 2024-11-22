@@ -1,5 +1,5 @@
 import { isNonNull, pick, times } from "remeda";
-import { PlayerInterface } from "../player/Player";
+import { PlayerInterface } from "../player/PlayerInterface";
 import "../setupGlobalAuto";
 import {
     initOneTeamWithHQ,
@@ -9,7 +9,7 @@ import {
     TIME_MINIMAL,
     type GameTestGenerator,
 } from "./testUtils";
-import { distanceBetween, isPointInRect, orthogonalRect } from "../utils";
+import { distanceBetween, isPointInRect, orthogonalRect } from "../shapes";
 
 export function* testCreateSquad(): GameTestGenerator {
     const game = setupGameTest();

@@ -1,4 +1,4 @@
-import type { Point, Rect } from "./utils";
+import type { Point, Rect } from "./shapes";
 
 export class RendererUtils {
     static drawPolygon(ctx: CanvasRenderingContext2D, points: Point[]) {

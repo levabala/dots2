@@ -1,5 +1,5 @@
 import { TransformationMatrix } from "../TransformationMatrix";
-import type { Point, RectOrth } from "../utils";
+import type { Point, RectOrth } from "../shapes";
 
 export class ViewPort {
     viewAngleHorizontal: number;

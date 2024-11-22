@@ -31,7 +31,7 @@ import {
     type Point,
     type Polygon,
     type Rect,
-} from "../utils";
+} from "../shapes";
 import type { Dot } from "../Game/DotsController";
 import type { Squad } from "../Game/SquadsController";
 import { SquadFrameUtils } from "../Game/SquadFrameUtils";
