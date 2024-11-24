@@ -38,6 +38,9 @@ export function* spanGameTime(game: Game, time: number) {
 }
 
 export function* spanGameTimeUntil(game: Game, condition: () => boolean, timeout: number, onTick?: (tickIndex: number) => void) {
+    const gameTimeStart = game.getTime();
+    const realTimeStart = performance.now();
+
     const maxTicks = Math.ceil(timeout / TICK_INTERVAL);
     let ticks = 0;
     let averageTickDuration = 0;
@@ -60,6 +63,15 @@ export function* spanGameTimeUntil(game: Game, condition: () => boolean, timeout
 
         if (ticks >= maxTicks) {
             throw new Error('spanGameTimeUntil timeout reached');
+        }
+
+        if (IS_DEBUG && ticks % 1000 === 0) {
+            const gameTimeCurrent = game.getTime();
+            const gameTimeElapsed = gameTimeCurrent - gameTimeStart;
+            const realTimeCurrent = performance.now();
+            const realTimeElapsed = realTimeCurrent - realTimeStart;
+
+            console.log(`ticks elapsed: ${ticks} (${gameTimeElapsed / 1000}s game time (x${(gameTimeElapsed / realTimeElapsed).toFixed(1)}))`);
         }
     }
 

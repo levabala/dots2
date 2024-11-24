@@ -15,6 +15,7 @@ import {
     createMultiPolygon,
     distanceBetween,
     getFacingSidesOfConvexPolygon,
+    getPolygonCenter,
     getRectCenter,
     getVectorEndPoint,
     groupByOverlapping,
@@ -96,7 +97,7 @@ class Warlord {
     }
 
     private calcBaseCenter() {
-        const buildings = this.playerInterface.getBuildings();
+        const buildings = this.playerInterface.getBuildingsMy();
 
         for (const building of buildings) {
             if (building.team !== this.team) {
@@ -117,7 +118,7 @@ class Warlord {
     }
 
     private getDotsWithoutSquad() {
-        const dots = this.playerInterface.getDots();
+        const dots = this.playerInterface.getDotsMy();
         const dotsWithoutSquad = [];
 
         for (const dot of dots) {
@@ -156,7 +157,7 @@ class Warlord {
     }
 
     private getSquadsDangerousToHQ() {
-        const squads = this.playerInterface.getSquads();
+        const squads = this.playerInterface.getSquadsMy();
         const squadsDangerousToHQ = [];
 
         for (const squad of squads) {
@@ -195,7 +196,7 @@ class Warlord {
     }
 
     private calcAvailableSquads() {
-        const squads = this.playerInterface.getSquads();
+        const squads = this.playerInterface.getSquadsMy();
         const squadsAvailable = [];
 
         for (const squad of squads) {
@@ -393,7 +394,7 @@ class Warlord {
     private calcEnemySquadGroups(): typeof this.enemySquadGroups {
         const teamToSquads = new Map<Team, Squad[]>();
 
-        for (const squad of this.playerInterface.getSquads()) {
+        for (const squad of this.playerInterface.getSquadsMy()) {
             if (squad.team === this.team) {
                 continue;
             }
@@ -433,6 +434,28 @@ class Warlord {
         return squadGroups;
     }
 
+    private ATTACKHQ() {
+        const enemyHQ = this.playerInterface.getBuildingsAll().find(
+            (building) => building.kind === "hq" && building.team !== this.team,
+        );
+
+        if (!enemyHQ) {
+            return;
+        }
+
+        const point = getPolygonCenter(enemyHQ.frame);
+
+        for (const squad of this.playerInterface.getSquadsMy()) {
+            this.playerInterface.moveSquadToPoint(squad, point);
+            this.playerInterface.orderAttackOnlyBuilding({
+                squadAttacker: squad,
+                buildingTarget: enemyHQ,
+            });
+
+            return; // lol
+        }
+    }
+
     private updateInfo() {
         this.squadsToRepel = this.calcSquadsToRepel();
         this.enemySquadGroups = this.calcEnemySquadGroups();
@@ -444,6 +467,8 @@ class Warlord {
         this.updateInfo();
         this.createSquadIfNeeded();
         this.assignSquads();
+
+        this.ATTACKHQ();
     }
 
     drawDebugFigures(ctx: CanvasRenderingContext2D) {
@@ -537,7 +562,7 @@ class Economist {
     }
 
     private calcBaseCenter() {
-        const buildings = this.playerInterface.getBuildings();
+        const buildings = this.playerInterface.getBuildingsMy();
 
         for (const building of buildings) {
             if (building.kind === "hq") {
@@ -622,7 +647,7 @@ class Economist {
                 productionPerSecond * PLANNING_HORIZON_SECONDS;
         }
 
-        const teamResources = this.playerInterface.getTeamResources();
+        const teamResources = this.playerInterface.getTeamResourcesMy();
         for (const [resource, storage] of Object.entries(teamResources)) {
             if (resourcesAtHorizon[resource as Resource] === undefined) {
                 continue;
@@ -674,7 +699,7 @@ class Economist {
     }
 
     private calcExpectedProduction(): Record<Resource | "units", number> {
-        const buildings = this.playerInterface.getBuildings();
+        const buildings = this.playerInterface.getBuildingsMy();
 
         const production: Record<Resource | "units", number> = {
             food: 0,
@@ -763,7 +788,7 @@ class Economist {
     private controlUnitProduction() {
         const isInCoinsDeficit = this.resourcesAtHorizon.coins < 0;
 
-        for (const building of this.playerInterface.getBuildings()) {
+        for (const building of this.playerInterface.getBuildingsMy()) {
             if (building.team !== this.team) {
                 continue;
             }
@@ -804,7 +829,7 @@ class Economist {
     log() {
         console.log(
             "resources",
-            mapValues(this.playerInterface.getTeamResources(), (v) =>
+            mapValues(this.playerInterface.getTeamResourcesMy(), (v) =>
                 Math.floor(v),
             ),
             "buildingsWanted",
@@ -816,7 +841,7 @@ class Economist {
             "resourcesAtHorizon",
             mapValues(this.debugInfo.resourcesAtHorizon, (v) => v.toFixed(1)),
             "\nbarracks online",
-            Array.from(this.playerInterface.getBuildings()).filter(
+            Array.from(this.playerInterface.getBuildingsMy()).filter(
                 (b) =>
                     b.kind === "barracks" &&
                     b.team === this.team &&

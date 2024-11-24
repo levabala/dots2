@@ -262,8 +262,8 @@ export function* testCreate2Teams2Squads(): GameTestGenerator {
         TIME_1_SEC * 10,
     );
 
-    expect(playerInterface1.getSquads().length).toBe(1);
-    expect(playerInterface2.getSquads().length).toBe(1);
+    expect(playerInterface1.getSquadsMy().length).toBe(1);
+    expect(playerInterface2.getSquadsMy().length).toBe(1);
 
     return { game };
 }
@@ -283,8 +283,8 @@ export function* testAttackSquadToSquad(): GameTestGenerator {
     const playerInterface1 = new PlayerInterface(game, team1);
     const playerInterface2 = new PlayerInterface(game, team2);
 
-    const squad1 = playerInterface1.getSquads()[0];
-    const squad2 = playerInterface2.getSquads()[0];
+    const squad1 = playerInterface1.getSquadsMy()[0];
+    const squad2 = playerInterface2.getSquadsMy()[0];
 
     squad1.allowAttack = false;
     squad2.allowAttack = false;

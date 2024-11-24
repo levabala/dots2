@@ -28,22 +28,30 @@ export class PlayerInterface {
         return { width: this.game.width, height: this.game.height };
     }
 
-    getDots() {
+    getDotsMy() {
         return Array.from(this.game.getDots()).filter(
             (dot) => dot.team === this.team,
         );
     }
 
-    getSquads() {
+    getDotsAll() {
+        return Array.from(this.game.getDots());
+    }
+
+    getSquadsMy() {
         return Array.from(this.game.getSquads()).filter(
             (squad) => squad.team === this.team,
         );
     }
 
-    getBuildings() {
+    getBuildingsMy() {
         return Array.from(this.game.getBuildings()).filter(
             (building) => building.team === this.team,
         );
+    }
+
+    getBuildingsAll() {
+        return Array.from(this.game.getBuildings());
     }
 
     addEventListener<Name extends GameEventTick["name"]>(
@@ -118,7 +126,7 @@ export class PlayerInterface {
         return this.game.canBuild(buildingKind, this.team);
     }
 
-    getTeamResources() {
+    getTeamResourcesMy() {
         return this.game.getTeamResources(this.team);
     }
 

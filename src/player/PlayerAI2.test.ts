@@ -31,10 +31,10 @@ export function* testBuildBasicBase(): GameTestGenerator {
             (["barracks", "farm", "lumberMill"] satisfies BuildingKind[]).every(
                 (kind) =>
                     playerInterface
-                        .getBuildings()
+                        .getBuildingsMy()
                         .some((building) => building.kind === kind),
             ),
-        TIME_1_MIN * 10,
+        TIME_1_MIN * 3,
         (i) => {
             if (i % 100 === 0) {
                 ai.act();
@@ -82,7 +82,7 @@ export function* testSpawnUnits(): GameTestGenerator {
 
             return dotsSpawnedTotal1 > 4;
         },
-        TIME_1_MIN * 10,
+        TIME_1_MIN * 3,
         (i) => {
             if (i % 100 === 0) {
                 ai.act();
@@ -120,9 +120,9 @@ export function* testCreateSquads(): GameTestGenerator {
     yield* spanGameTimeUntil(
         game,
         () => {
-            return playerInterface1.getSquads().length > 0;
+            return playerInterface1.getSquadsMy().length > 0;
         },
-        TIME_1_MIN * 10,
+        TIME_1_MIN * 3,
         (i) => {
             if (i % 100 === 0) {
                 ai.act();
@@ -130,6 +130,47 @@ export function* testCreateSquads(): GameTestGenerator {
         },
     );
     yield { game, mark: "1 squad created" };
+
+    return { game };
+}
+
+export function* testDestroyEnemyWithoutArmy(): GameTestGenerator {
+    const game = setupGameTest();
+    yield { game };
+
+    const { dotsController } = game._controllers;
+
+    const { team: team1 } = initOneTeamWithHQ(game, { x: 1000, y: 1000 });
+    const { team: team2 } = initOneTeamWithHQ(game, { x: 2000, y: 1000 });
+
+    times(10, () => {
+        return dotsController.addDot({
+            ...dotsController.generateDotRandom(),
+            position: { x: 1900, y: randomInteger(1000, 1100) },
+            team: team2,
+            allowAttack: false,
+        });
+    });
+
+    const playerInterface1 = new PlayerInterface(game, team1);
+    const playerInterface2 = new PlayerInterface(game, team2);
+
+    const ai = new PlayerAI2(playerInterface1, team1);
+
+    yield { game, mark: "init" };
+    yield* spanGameTimeUntil(
+        game,
+        () => {
+            return playerInterface2.getBuildingsMy().length === 0;
+        },
+        TIME_1_MIN * 3,
+        (i) => {
+            if (i % 100 === 0) {
+                ai.act();
+            }
+        },
+    );
+    yield { game, mark: "enemy destroyed" };
 
     return { game };
 }
@@ -145,5 +186,9 @@ describe("PlayerAI2", () => {
 
     test("creates squads", () => {
         for (const _ of testCreateSquads());
+    });
+
+    test("destroys enemy without army", () => {
+        for (const _ of testDestroyEnemyWithoutArmy());
     });
 });

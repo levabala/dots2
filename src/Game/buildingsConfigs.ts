@@ -217,7 +217,7 @@ export const BUILDINGS_CONFIGS: {
             { x: 40, y: 50 },
             { x: -40, y: 50 },
         ],
-        health: 500,
+        health: 100,
         coinsPerSecond: 10,
         unitsCapacity: 100,
         getCost: () => ({

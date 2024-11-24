@@ -7,7 +7,7 @@ export async function playTest(
     canvas: HTMLCanvasElement,
     generator: GameTestGenerator,
 ) {
-    console.log('--- test start');
+    console.log("--- test start");
     const { game } = generator.next().value;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -42,30 +42,50 @@ export async function playTest(
             new URLSearchParams(window.location.search).get("waitontick"),
         ) === 1;
 
-    let skipUntilMark = false;
-    for (const { mark } of generator) {
-        if (mark === undefined && skipUntilMark) {
-            continue;
-        }
+    try {
+        const renderInterval = 100;
+        let lastRenderTime = performance.now();
 
-        if (mark !== undefined) {
-            console.log(`mark: ${mark}`);
-        }
+        let skipUntilMark = false;
+        for (const { mark } of generator) {
+            if (mark === undefined && skipUntilMark) {
+                continue;
+            }
 
-        if (waitOnTick) {
-            skipUntilMark = await new Promise<boolean>((res) =>
-                window.addEventListener("keydown", (e) => {
-                    if (e.code === "Space") {
-                        res(false);
-                    } else if (e.code === "KeyN") {
-                        res(true);
-                    }
-                }),
-            );
+            if (mark !== undefined) {
+                console.log(`mark: ${mark}`);
+            }
+
+            if (waitOnTick) {
+                skipUntilMark = await new Promise<boolean>((res) =>
+                    window.addEventListener("keydown", (e) => {
+                        if (e.code === "Space") {
+                            res(false);
+                        } else if (e.code === "KeyN") {
+                            res(true);
+                        }
+                    }),
+                );
+            }
+
+            await new Promise<void>((res) => {
+                if (performance.now() - lastRenderTime > renderInterval) {
+                    setTimeout(() => {
+                        renderer.render();
+                        lastRenderTime = performance.now();
+                        res();
+                    });
+                } else {
+                    res();
+                }
+            });
         }
+    } catch (e) {
+        console.error(e);
+        console.warn("--- test failed");
     }
 
-    console.log('--- test end');
+    console.log("--- test end");
 
     global.timeScale = 4;
 
