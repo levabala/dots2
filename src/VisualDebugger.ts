@@ -1,4 +1,4 @@
-import { type Game, GameEventTickName } from "./Game";
+import { type Game, GameEventName } from "./Game";
 import type { Dot } from "./Game/DotsController";
 
 export type DotWithNode = Dot & { node: HTMLDivElement };
@@ -24,7 +24,7 @@ export class VisualDebugger {
 
         anchorElement.appendChild(container);
 
-        game.addEventListener(GameEventTickName.dotsAdded, ({ dots }) => {
+        game.addEventListener(GameEventName.dotsAdded, ({ dots }) => {
             for (const dot of dots) {
                 const node = document.createElement("div");
 
@@ -40,7 +40,7 @@ export class VisualDebugger {
             }
         });
 
-        game.addEventListener(GameEventTickName.dotsMoved, ({ dots }) => {
+        game.addEventListener(GameEventName.dotsMoved, ({ dots }) => {
             for (const dot of dots) {
                 this.dotsToUpdate.add(dot);
             }

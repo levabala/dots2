@@ -10,7 +10,7 @@ import {
     type Rect,
 } from "../shapes";
 import { DOT_WIDTH, BETWEEN_SQUADS_GAP } from "../consts";
-import { GameEventTickName, type Game } from "../Game/Game";
+import { GameEventName, type Game } from "../Game/Game";
 import {
     CommandPanelUI,
     type CommandPanelCallbacks,
@@ -108,16 +108,16 @@ export class UI {
     }
 
     initGameEventListeners() {
-        this.game.addEventListener(GameEventTickName.dotsRemoved, () =>
+        this.game.addEventListener(GameEventName.dotsRemoved, () =>
             this.renderCommandPanel(),
         );
 
-        this.game.addEventListener(GameEventTickName.resourcesChanged, () =>
+        this.game.addEventListener(GameEventName.resourcesChanged, () =>
             this.renderCommandPanel(),
         );
 
         this.game.addEventListener(
-            GameEventTickName.buildingsAdded,
+            GameEventName.buildingsAdded,
             ({ buildings }) => {
                 for (const building of buildings) {
                     this.addLog(

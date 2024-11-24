@@ -13,7 +13,7 @@ import { TeamController, type Team } from "./TeamController";
 import { createPolygonOffset } from "../shapes";
 import { BUILDINGS_CONFIGS } from "./buildingsConfigs";
 
-export enum GameEventTickName {
+export enum GameEventName {
     squadsRemoved = "squads-removed",
     dotsAdded = "dots-added",
     dotsRemoved = "dots-removed",
@@ -23,16 +23,16 @@ export enum GameEventTickName {
 }
 
 export type GameEventTick =
-    | { name: GameEventTickName.squadsRemoved; payload: { squads: Squad[] } }
-    | { name: GameEventTickName.dotsAdded; payload: { dots: Dot[] } }
-    | { name: GameEventTickName.dotsRemoved; payload: { dots: Dot[] } }
-    | { name: GameEventTickName.dotsMoved; payload: { dots: Dot[] } }
+    | { name: GameEventName.squadsRemoved; payload: { squads: Squad[] } }
+    | { name: GameEventName.dotsAdded; payload: { dots: Dot[] } }
+    | { name: GameEventName.dotsRemoved; payload: { dots: Dot[] } }
+    | { name: GameEventName.dotsMoved; payload: { dots: Dot[] } }
     | {
-          name: GameEventTickName.resourcesChanged;
+          name: GameEventName.resourcesChanged;
           payload: null;
       }
     | {
-          name: GameEventTickName.buildingsAdded;
+          name: GameEventName.buildingsAdded;
           payload: { buildings: Building[] };
       };
 
@@ -60,12 +60,12 @@ export class Game {
     private eventListeners: {
         [key in GameEventTick["name"]]: Set<GameEventListener<key>>;
     } = {
-        [GameEventTickName.squadsRemoved]: new Set(),
-        [GameEventTickName.dotsAdded]: new Set(),
-        [GameEventTickName.dotsRemoved]: new Set(),
-        [GameEventTickName.dotsMoved]: new Set(),
-        [GameEventTickName.resourcesChanged]: new Set(),
-        [GameEventTickName.buildingsAdded]: new Set(),
+        [GameEventName.squadsRemoved]: new Set(),
+        [GameEventName.dotsAdded]: new Set(),
+        [GameEventName.dotsRemoved]: new Set(),
+        [GameEventName.dotsMoved]: new Set(),
+        [GameEventName.resourcesChanged]: new Set(),
+        [GameEventName.buildingsAdded]: new Set(),
     };
 
     constructor(
@@ -212,7 +212,7 @@ export class Game {
         this.resourcesController.changeWood(building.team, -cost.wood);
         this.resourcesController.changeCoins(building.team, -cost.coins);
 
-        this.emitEvent(GameEventTickName.buildingsAdded, {
+        this.emitEvent(GameEventName.buildingsAdded, {
             buildings: [building],
         });
 
@@ -315,20 +315,20 @@ export class Game {
             );
         }
 
-        this.emitEvent(GameEventTickName.resourcesChanged, null);
+        this.emitEvent(GameEventName.resourcesChanged, null);
 
         for (const dotSpawned of effectsBuildings.dotsSpawned) {
             this.dotsController.addDot(this.dotsController.initDot(dotSpawned));
         }
 
         if (effectsDots.dotsRemoved.length) {
-            this.emitEvent(GameEventTickName.dotsRemoved, {
+            this.emitEvent(GameEventName.dotsRemoved, {
                 dots: effectsDots.dotsRemoved,
             });
         }
 
         if (effectsSquads.squadsRemoved.length) {
-            this.emitEvent(GameEventTickName.squadsRemoved, {
+            this.emitEvent(GameEventName.squadsRemoved, {
                 squads: effectsSquads.squadsRemoved,
             });
         }

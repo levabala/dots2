@@ -1,4 +1,4 @@
-import { testBuildBase } from "./player/PlayerAI2.test.ts";
+import { testBuildBasicBase, testCreateSquads, testSpawnUnits } from "./player/PlayerAI2.test.ts";
 import { playLocal } from "./playLocal";
 import { playTest } from "./tests/playTest";
 import { testAttackDotToDot, testAttackSquadToSquad, testMoveSquad } from "./tests/units.spec.ts";
@@ -23,5 +23,5 @@ canvas.style.border = "solid gray 1px";
 
 container.appendChild(canvas);
 
-playTest(container, canvas, testBuildBase());
+playTest(container, canvas, testCreateSquads());
 // playLocal(container, canvas);
