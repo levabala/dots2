@@ -813,7 +813,10 @@ export class DotsController {
         };
 
         for (const dot of this.dots) {
-            changeMorale(dot);
+            if ("TEMPORARY_DISABLED".length === 0) {
+                changeMorale(dot);
+            }
+
             updateIsFleeing(dot);
         }
 
