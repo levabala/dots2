@@ -1,7 +1,7 @@
 import '../setupGlobalAuto';
 import { Game } from "../Game";
 import { PlayerInterface } from "../player/PlayerInterface";
-import { setupGlobal } from "../setupGlobal";
+import { setupPanicAssert } from "../setupPanicAssert";
 import {
     initOneTeamWithHQ,
     spanGameTime,
@@ -44,7 +44,7 @@ describe("economy", () => {
 
     beforeEach(() => {
         game = new Game(3000, 3000);
-        setupGlobal(game);
+        setupPanicAssert(game);
     });
 
     test("can build all building from just a hq", () => {

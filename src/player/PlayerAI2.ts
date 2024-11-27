@@ -1,42 +1,25 @@
-import {
-    DOT_ATTACK_RANGE,
-    DOT_COST_COINS,
-    DOT_COST_FOOD,
-    DOT_HEIGHT,
-    DOT_IN_SQUAD_RADIUS_AROUND,
-} from "../consts";
+import { DOT_ATTACK_RANGE, DOT_COST_COINS, DOT_COST_FOOD } from "../consts";
 import { BUILDINGS_CONFIGS } from "../Game/buildingsConfigs";
 import type { Building, BuildingKind } from "../Game/BuildingsController";
 import type { Resource } from "../Game/ResourcesController";
 import type { Team } from "../Game/TeamController";
 import { mapValues, randomInteger } from "remeda";
 import {
-    angleBetweenPoints,
-    createMultiPolygon,
     distanceBetween,
-    getFacingSidesOfConvexPolygon,
     getPolygonCenter,
     getRectCenter,
-    getVectorEndPoint,
-    groupByOverlapping,
-    hasIntersectionPolygons,
-    orthogonalRect,
     rectToPolygon,
-    resizeRectByChange,
-    rotateRect,
-    translateRect,
     type Point,
     type Polygon,
 } from "../shapes";
 import type { Dot } from "../Game/DotsController";
 import type { Squad } from "../Game/SquadsController";
-import { SquadFrameUtils } from "../Game/SquadFrameUtils";
 import { RendererUtils } from "../RendererUtils";
 import type { PlayerInterface } from "./PlayerInterface";
+import { PlayerUtils } from "./PlayerUtils";
 
 const PLANNING_HORIZON_SECONDS = 10;
 const MY_SQUAD_MIN_SIZE = 30;
-const DANGER_HQ_PROXIMITY = 800;
 
 export class PlayerAI2 {
     economist: Economist;
@@ -62,10 +45,6 @@ export class PlayerAI2 {
         // }, 1000);
     }
 
-    drawDebugFigures(ctx: CanvasRenderingContext2D) {
-        this.warlord.drawDebugFigures(ctx);
-    }
-
     act() {
         this.economist.act();
         this.warlord.act();
@@ -77,17 +56,18 @@ type SquadGroup = {
     polygon: Polygon;
 };
 
-type SquadGroupWithFrontLine = SquadGroup & {
-    frontLine: Point[];
-    squadsMy: Squad[];
-};
+type Target = Squad | Building;
+
+enum WarStage {
+    DefendBase = "DefendBase",
+    DestroyEnemySquads = "DestroyEnemySquads",
+    AttackEnemyBase = "AttackEnemyBase",
+}
 
 class Warlord {
     squadsToRepel: Squad[] = [];
     baseCenter: Point;
-    enemySquadGroups: SquadGroup[] = [];
-    enemySquadGroupsToAttack: SquadGroup[] = [];
-    enemySquadGroupsAssignments: SquadGroupWithFrontLine[] = [];
+    warStage: WarStage = WarStage.DefendBase;
 
     constructor(
         readonly playerInterface: PlayerInterface,
@@ -148,370 +128,162 @@ class Warlord {
         this.createSquad(dots);
     }
 
-    private isSquadDangerousToHQ(squad: Squad) {
-        const squadCenter = getRectCenter(squad.frame);
+    squadsAssignments: Map<Squad, Target> = new Map();
+    private updateSquadsAssignments() {
+        const squadsMy = this.playerInterface.getSquadsMy();
+        const targets = this.attackTargets;
+        const targetsWithoutSquadMy = new Set(targets);
+        const squadsMyWithoutTarget = new Set(squadsMy);
 
-        const distance = distanceBetween(squadCenter, this.baseCenter);
-
-        return distance <= DANGER_HQ_PROXIMITY;
-    }
-
-    private getSquadsDangerousToHQ() {
-        const squads = this.playerInterface.getSquadsMy();
-        const squadsDangerousToHQ = [];
-
-        for (const squad of squads) {
-            if (!this.isSquadDangerousToHQ(squad)) {
+        for (const [squadMy, target] of this.squadsAssignments.entries()) {
+            if (squadsMy.includes(squadMy) && targets.includes(target)) {
+                targetsWithoutSquadMy.delete(target);
+                squadsMyWithoutTarget.delete(squadMy);
                 continue;
             }
 
-            squadsDangerousToHQ.push(squad);
+            this.squadsAssignments.delete(squadMy);
         }
 
-        return squadsDangerousToHQ;
-    }
+        const targetsToAssign = Array.from(targetsWithoutSquadMy);
+        const squadsMyToAssign = Array.from(squadsMyWithoutTarget);
+        for (const target of targetsToAssign) {
+            const squadMy = squadsMyToAssign.pop();
 
-    private calcSquadGroupsDangerousToHQ() {
-        const squadGroups = [];
-
-        for (const squadGroup of this.enemySquadGroups) {
-            const isDangerousToHQ = squadGroup.squads.some((squad) =>
-                this.isSquadDangerousToHQ(squad),
-            );
-
-            if (!isDangerousToHQ) {
-                continue;
-            }
-
-            squadGroups.push(squadGroup);
-        }
-
-        return squadGroups;
-    }
-
-    private calcSquadsToRepel() {
-        const squadsDangerousToHQ = this.getSquadsDangerousToHQ();
-
-        return squadsDangerousToHQ;
-    }
-
-    private calcAvailableSquads() {
-        const squads = this.playerInterface.getSquadsMy();
-        const squadsAvailable = [];
-
-        for (const squad of squads) {
-            if (squad.team !== this.team) {
-                continue;
-            }
-
-            squadsAvailable.push(squad);
-        }
-
-        return squadsAvailable;
-    }
-
-    private getSquadNewFrame(
-        squad: Squad,
-        angle: number,
-        frontLineCenter: Point,
-    ) {
-        const rowHeight = DOT_HEIGHT + DOT_IN_SQUAD_RADIUS_AROUND;
-        const sideLength = rowHeight * 3;
-
-        const frontLength = SquadFrameUtils.calcSquadFrontLength(
-            squad.slots.length,
-            sideLength,
-        );
-
-        const frameOrthZero = orthogonalRect(
-            { x: -frontLength / 2, y: 0 },
-            { x: frontLength / 2, y: sideLength },
-        );
-
-        const frameZero = rotateRect({
-            rect: frameOrthZero,
-            anchor: { x: 0, y: 0 },
-            angle: angle + Math.PI / 2,
-        });
-
-        const frame = translateRect(
-            frameZero,
-            frontLineCenter.x,
-            frontLineCenter.y,
-        );
-
-        return frame;
-    }
-
-    // private calcSquadGroupsAssignments(): SquadGroupWithFrontLine[] {
-
-    // }
-
-    debugFrontLines: Point[][] = [];
-    private assignSquads() {
-        const squadsAvailable = this.calcAvailableSquads();
-
-        this.debugFrontLines = [];
-        for (const squadGroupToAttack of this.enemySquadGroupsToAttack) {
-            if (!squadsAvailable.length) {
+            if (!squadMy) {
                 return;
             }
 
-            const frontLine = this.calcAttackFrontline(
-                this.baseCenter,
-                squadGroupToAttack,
+            this.squadsAssignments.set(squadMy, target);
+        }
+    }
+
+    private controlSquads() {
+        for (const [squadMy, target] of this.squadsAssignments) {
+            const targetFrame = PlayerUtils.isBuilding(target)
+                ? target.frame
+                : rectToPolygon(target.frame);
+
+            const frame = PlayerUtils.getNewSquadFrameInFrontOf(
+                squadMy,
+                getPolygonCenter(targetFrame),
+                DOT_ATTACK_RANGE * 0.7,
             );
 
-            this.debugFrontLines.push(frontLine);
+            this.playerInterface.moveSquadToRect(squadMy, frame);
 
-            global.assert(
-                frontLine.length > 1,
-                "front line must be a line at least",
-                {
-                    frontLine,
-                },
-            );
-
-            const frontLineSegments = [];
-            let frontLineLength = 0;
-            for (let i = 1; i < frontLine.length; i++) {
-                const pPrev = frontLine[i - 1];
-                const pCurr = frontLine[i];
-
-                frontLineSegments.push({
-                    segment: { p1: pPrev, p2: pCurr },
-                    distanceStart: frontLineLength,
+            if (PlayerUtils.isBuilding(target)) {
+                this.playerInterface.orderAttackOnlyBuilding({
+                    squadAttacker: squadMy,
+                    buildingTarget: target,
                 });
-                frontLineLength += distanceBetween(pPrev, pCurr);
-            }
-
-            global.assert(
-                frontLineSegments.length > 0,
-                "front line segments must be positive",
-                {
-                    frontLineSegments,
-                    frontLine,
-                },
-            );
-
-            const squadsToAssignDesired = 3; // TODO: calc
-            const squadsToAssign = Math.min(
-                squadsToAssignDesired,
-                squadsAvailable.length,
-            );
-            const lengthPerSquad = frontLineLength / squadsToAssign;
-
-            const startGap = lengthPerSquad * 0.5;
-
-            const squadsAssigned = squadsAvailable.splice(0, squadsToAssign);
-            for (let i = 0; i < squadsToAssign; i++) {
-                const squad = squadsAssigned.pop();
-
-                if (!squad) {
-                    global.panic("squad must be available");
-                }
-
-                const frontLineDistance = startGap + i * lengthPerSquad;
-
-                const frontLineSegment = frontLineSegments.findLast(
-                    (segment) => frontLineDistance >= segment.distanceStart,
-                );
-
-                if (!frontLineSegment) {
-                    global.panic("front line segment must be found", {
-                        frontLineSegments,
-                        frontLineDistance,
-                    });
-                }
-
-                const frontLineSegmentAngle = angleBetweenPoints(
-                    frontLineSegment.segment.p1,
-                    frontLineSegment.segment.p2,
-                );
-                const squadFrameAngleNew = frontLineSegmentAngle - Math.PI / 2;
-                const frontLineCenterNew = getVectorEndPoint(
-                    frontLineSegment.segment.p1,
-                    frontLineSegmentAngle,
-                    frontLineDistance - frontLineSegment.distanceStart,
-                );
-                const squadFrameNew = this.getSquadNewFrame(
-                    squad,
-                    squadFrameAngleNew,
-                    frontLineCenterNew,
-                );
-
-                this.playerInterface.moveSquadToRect(squad, squadFrameNew);
             }
         }
     }
 
-    private calcSquadAttackRangePolygon(
-        squadEnemy: Squad,
-        { rowsDeep }: { rowsDeep: number } = { rowsDeep: 0 },
-    ): Polygon {
-        const rowHeight = DOT_HEIGHT + DOT_IN_SQUAD_RADIUS_AROUND;
-        const rowsHeight = rowHeight * rowsDeep;
+    baseCloseProximityDistance = DOT_ATTACK_RANGE * 3;
 
-        const attackRangeRect = resizeRectByChange(
-            squadEnemy.frame,
-            DOT_ATTACK_RANGE * 2 - rowsHeight,
-            DOT_ATTACK_RANGE * 2 - rowsHeight,
-        );
+    enemySquadsAroundMyBase: Array<{ squad: Squad; distance: number }> = [];
+    private calcSquadsAroundMyBase(): typeof this.enemySquadsAroundMyBase {
+        const squadsEnemy = this.playerInterface
+            .getSquadsAll()
+            .filter((squad) => squad.team !== this.team);
 
-        return rectToPolygon(attackRangeRect);
-    }
-
-    private calcAttackFrontline(
-        origin: Point,
-        squadGroup: SquadGroup,
-    ): Point[] {
-        const multiPolygonForAttack = createMultiPolygon(
-            squadGroup.squads.map((squad) =>
-                this.calcSquadAttackRangePolygon(squad, { rowsDeep: 6 }),
-            ),
-        );
-
-        global.assert(
-            multiPolygonForAttack.length > 2,
-            "multiPolygonForAttack must be more than 0",
-            {
-                multiPolygonForAttack,
-            },
-        );
-
-        const facingPoints = getFacingSidesOfConvexPolygon(
-            origin,
-            multiPolygonForAttack,
-        );
-
-        if (facingPoints.length < 2) {
-            return [...multiPolygonForAttack];
-        }
-
-        return facingPoints;
-    }
-
-    private calcEnemySquadGroups(): typeof this.enemySquadGroups {
-        const teamToSquads = new Map<Team, Squad[]>();
-
-        for (const squad of this.playerInterface.getSquadsMy()) {
-            if (squad.team === this.team) {
-                continue;
-            }
-
-            let squadArr = teamToSquads.get(squad.team);
-
-            if (!squadArr) {
-                squadArr = [];
-                teamToSquads.set(squad.team, squadArr);
-            }
-
-            squadArr.push(squad);
-        }
-
-        const squadGroups = [];
-        for (const squads of teamToSquads.values()) {
-            const squadsWithAttackRangePolygons = squads.map((squad) => ({
+        return squadsEnemy
+            .map((squad) => ({
                 squad,
-                polygon: this.calcSquadAttackRangePolygon(squad),
-            }));
-
-            const squadsGroupedByAttackRangeOverlapping = groupByOverlapping(
-                squadsWithAttackRangePolygons,
-                (sp1, sp2) => hasIntersectionPolygons(sp1.polygon, sp2.polygon),
-            );
-
-            for (const squadsGrouped of squadsGroupedByAttackRangeOverlapping) {
-                squadGroups.push({
-                    squads: squadsGrouped.map((sp) => sp.squad),
-                    polygon: createMultiPolygon(
-                        squadsGrouped.map((sp) => sp.polygon),
-                    ),
-                });
-            }
-        }
-
-        return squadGroups;
+                distance: distanceBetween(
+                    getRectCenter(squad.frame),
+                    this.baseCenter,
+                ),
+            }))
+            .filter((pair) => pair.distance <= this.baseCloseProximityDistance);
     }
 
-    private ATTACKHQ() {
-        const enemyHQ = this.playerInterface.getBuildingsAll().find(
-            (building) => building.kind === "hq" && building.team !== this.team,
+    private calcWarStage() {
+        const squadsMy = this.playerInterface.getSquadsMy();
+        const squadsEnemy = this.playerInterface
+            .getSquadsAll()
+            .filter((squad) => squad.team !== this.team);
+
+        const dotsMyCount = squadsMy.reduce(
+            (acc, squad) =>
+                acc +
+                squad.slots.reduce((acc, slot) => acc + (slot.dot ? 1 : 0), 0),
+            0,
         );
+        const dotsEnemyCount = squadsEnemy.reduce(
+            (acc, squad) =>
+                acc +
+                squad.slots.reduce((acc, slot) => acc + (slot.dot ? 1 : 0), 0),
+            0,
+        );
+        const dotsAdvantage = dotsMyCount - dotsEnemyCount;
 
-        if (!enemyHQ) {
-            return;
+        const dotsCountThreshold = 20;
+
+        switch (this.warStage) {
+            case WarStage.DefendBase:
+                if (dotsAdvantage > dotsCountThreshold) {
+                    return WarStage.DestroyEnemySquads;
+                }
+
+                return WarStage.DefendBase;
+            case WarStage.DestroyEnemySquads:
+                if (dotsAdvantage < 0) {
+                    return WarStage.DefendBase;
+                }
+
+                if (this.enemySquadsAroundMyBase.length === 0) {
+                    return WarStage.AttackEnemyBase;
+                }
+
+                return WarStage.DestroyEnemySquads;
+            case WarStage.AttackEnemyBase:
+                if (this.enemySquadsAroundMyBase.length > 0) {
+                    return WarStage.DestroyEnemySquads;
+                }
+
+                return WarStage.AttackEnemyBase;
         }
+    }
 
-        const point = getPolygonCenter(enemyHQ.frame);
-
-        for (const squad of this.playerInterface.getSquadsMy()) {
-            this.playerInterface.moveSquadToPoint(squad, point);
-            this.playerInterface.orderAttackOnlyBuilding({
-                squadAttacker: squad,
-                buildingTarget: enemyHQ,
-            });
-
-            return; // lol
+    attackTargets: Array<Squad | Building> = [];
+    private calcAttackTargets(): typeof this.attackTargets {
+        switch (this.warStage) {
+            case WarStage.DefendBase:
+                return this.enemySquadsAroundMyBase
+                    .sort((a, b) => b.distance - a.distance)
+                    .map((pair) => pair.squad);
+            case WarStage.DestroyEnemySquads:
+                return this.playerInterface
+                    .getSquadsAll()
+                    .filter((squad) => squad.team !== this.team);
+            case WarStage.AttackEnemyBase:
+                return [
+                    ...this.playerInterface
+                        .getSquadsAll()
+                        .filter((squad) => squad.team !== this.team),
+                    ...this.playerInterface
+                        .getBuildingsAll()
+                        .filter((building) => building.team !== this.team),
+                ];
         }
     }
 
     private updateInfo() {
-        this.squadsToRepel = this.calcSquadsToRepel();
-        this.enemySquadGroups = this.calcEnemySquadGroups();
-        this.enemySquadGroupsToAttack = this.calcSquadGroupsDangerousToHQ();
-        // this.enemySquadGroupsAssignments = this.calcSquadGroupsAssignments();
+        this.enemySquadsAroundMyBase = this.calcSquadsAroundMyBase();
+        this.attackTargets = this.calcAttackTargets();
+        this.warStage = this.calcWarStage();
     }
 
     act() {
         this.updateInfo();
         this.createSquadIfNeeded();
-        this.assignSquads();
-
-        this.ATTACKHQ();
-    }
-
-    drawDebugFigures(ctx: CanvasRenderingContext2D) {
-        const drawSquadGroup = (_squads: Squad[], polygon: Polygon) => {
-            ctx.strokeStyle = "gray";
-            RendererUtils.drawPolygon(ctx, polygon);
-            ctx.stroke();
-        };
-
-        const drawFrontLine = (points: Point[]) => {
-            ctx.strokeStyle = "green";
-            ctx.lineWidth = 4;
-
-            for (let i = 1; i < points.length; i++) {
-                const p1 = points[i - 1];
-                const p2 = points[i];
-
-                ctx.setLineDash([8, 16]);
-                RendererUtils.drawPolygon(ctx, [p1, p2]);
-                ctx.stroke();
-                ctx.setLineDash([]);
-
-                RendererUtils.drawArrowHead(ctx, p1, p2, 10);
-                ctx.stroke();
-            }
-        };
-
-        for (const { squads, polygon } of this.enemySquadGroups) {
-            drawSquadGroup(squads, polygon);
-        }
-
-        for (const frontLine of this.debugFrontLines) {
-            drawFrontLine(frontLine);
-        }
+        this.updateSquadsAssignments();
+        this.controlSquads();
     }
 }
-
-const ResourceToBuildingToBeProductedBy: Record<Resource, BuildingKind> = {
-    food: "farm",
-    wood: "lumberMill",
-    coins: "coinMiner",
-    housing: "house",
-};
 
 class Economist {
     resourcesProductionBalance: Record<Resource, number> = {

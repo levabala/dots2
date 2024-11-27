@@ -263,3 +263,5 @@ export const BUILDINGS_CONFIGS: {
             ),
     },
 };
+
+export const BUILDING_KINDS = Object.keys(BUILDINGS_CONFIGS) as BuildingKind[];

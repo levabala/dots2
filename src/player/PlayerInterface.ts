@@ -44,6 +44,10 @@ export class PlayerInterface {
         );
     }
 
+    getSquadsAll() {
+        return Array.from(this.game.getSquads());
+    }
+
     getBuildingsMy() {
         return Array.from(this.game.getBuildings()).filter(
             (building) => building.team === this.team,

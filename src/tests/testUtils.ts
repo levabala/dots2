@@ -1,6 +1,6 @@
 import { Game } from "../Game";
 import { BUILDINGS_CONFIGS } from "../Game/buildingsConfigs";
-import { setupGlobal } from "../setupGlobal";
+import { setupPanicAssert } from "../setupPanicAssert";
 import { createPolygonOffset } from "../shapes";
 import type { Point } from "../shapes";
 
@@ -112,7 +112,7 @@ export function initOneTeamWithHQ(game: Game, hqPosition: Point, name = "red") {
 
 export function setupGameTest() {
     const game = new Game(3000, 3000);
-    setupGlobal(game);
+    setupPanicAssert(game);
 
     return game;
 }

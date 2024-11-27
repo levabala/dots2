@@ -1,6 +1,6 @@
 import type { Game } from "./Game";
 
-export function setupGlobal(game: Game) {
+export function setupPanicAssert(game: Game) {
     if (typeof global === "undefined") {
         window.global = window;
     }

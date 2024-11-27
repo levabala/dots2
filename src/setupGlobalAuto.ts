@@ -4,3 +4,7 @@ if (typeof window === "undefined") {
 } else {
     require("./setupGlobalWeb");
 }
+
+import { setupPanicAssert } from "./setupPanicAssert";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+setupPanicAssert({ "no game initialized": "for the panic" } as any);

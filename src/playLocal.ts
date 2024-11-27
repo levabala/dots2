@@ -1,5 +1,5 @@
 import { Game } from "./Game";
-import { setupGlobal } from "./setupGlobal";
+import { setupPanicAssert } from "./setupPanicAssert";
 import { Logger } from "./Logger";
 import { RendererCanvasSimple } from "./Renderer";
 import { sceneOneTeam } from "./scenes/scenes2";
@@ -31,7 +31,7 @@ export function playLocal(
     const logger = new Logger(game);
     const visualDebugger = new VisualDebugger(game, container);
 
-    setupGlobal(game);
+    setupPanicAssert(game);
 
     function renderLoop() {
         renderer.render();
