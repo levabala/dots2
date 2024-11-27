@@ -10,15 +10,21 @@ import {
 } from "./shapes";
 
 export class DotsGrid {
-    dotsGridCols: number;
-    dotsGridRows: number;
-    dotsGrid: Set<Dot>[];
+    readonly dotsGridSquadSize: number;
+    readonly dotsGridCols: number;
+    readonly dotsGridRows: number;
+    readonly dotsGrid: Set<Dot>[];
 
-    constructor(
-        readonly dotsGridSquadSize: number,
-        width: number,
-        height: number,
-    ) {
+    constructor({
+        dotsGridSquadSize,
+        width,
+        height,
+    }: {
+        dotsGridSquadSize: number;
+        width: number;
+        height: number;
+    }) {
+        this.dotsGridSquadSize = dotsGridSquadSize;
         this.dotsGridCols = Math.ceil(width / this.dotsGridSquadSize);
         this.dotsGridRows = Math.ceil(height / this.dotsGridSquadSize);
 
@@ -193,10 +199,22 @@ export class DotsGrid {
         const gridRadiusForSure = Math.ceil(range / this.dotsGridSquadSize);
 
         const center = this.calcIndexXY(point);
-        const fromX = Math.min(Math.max(center.x - gridRadiusForSure, 0), this.dotsGridCols - 1);
-        const fromY = Math.min(Math.max(center.y - gridRadiusForSure, 0), this.dotsGridRows - 1);
-        const toX = Math.min(Math.max(center.x + gridRadiusForSure, 0), this.dotsGridCols - 1);
-        const toY = Math.min(Math.max(center.y + gridRadiusForSure, 0), this.dotsGridRows - 1);
+        const fromX = Math.min(
+            Math.max(center.x - gridRadiusForSure, 0),
+            this.dotsGridCols - 1,
+        );
+        const fromY = Math.min(
+            Math.max(center.y - gridRadiusForSure, 0),
+            this.dotsGridRows - 1,
+        );
+        const toX = Math.min(
+            Math.max(center.x + gridRadiusForSure, 0),
+            this.dotsGridCols - 1,
+        );
+        const toY = Math.min(
+            Math.max(center.y + gridRadiusForSure, 0),
+            this.dotsGridRows - 1,
+        );
 
         const dotsGridSquadDiagonalHalf = Math.sqrt(
             this.dotsGridSquadSize ** 2 * 2,
@@ -235,7 +253,7 @@ export class DotsGrid {
         range: number,
         predicate?: (dot: Dot) => boolean,
     ): Dot[] {
-        const dots = [];
+        const dots = new Set<Dot>();
 
         const { definitelyInRange, maybeInRange } =
             this.getDotsGridIndicesInRange(point, range);
@@ -246,7 +264,7 @@ export class DotsGrid {
                     continue;
                 }
 
-                dots.push(dot);
+                dots.add(dot);
             }
         }
 
@@ -260,10 +278,10 @@ export class DotsGrid {
                     continue;
                 }
 
-                dots.push(dot);
+                dots.add(dot);
             }
         }
 
-        return dots;
+        return Array.from(dots);
     }
 }
