@@ -308,6 +308,8 @@ export function sceneOneTeamRightBottom(game: Game) {
 import { PlayerAI as PlayerAI1 } from "../player/PlayerAIGPT1";
 import { PlayerAI as PlayerAI2 } from "../player/PlayerAIGPT2";
 import { PlayerAI1 as PlayerAI3 } from "../player/PlayerAI1";
+import { PlayerAI2 as PlayerAI4 } from '../player/PlayerAI2';
+import { PlayerInterface } from "../player/PlayerInterface";
 
 export function sceneFourAIs(game: Game, ui: UI) {
     const { team1, team2 } = sceneTwoTeamsSomeBuildings(game);
@@ -322,13 +324,11 @@ export function sceneFourAIs(game: Game, ui: UI) {
 
     const team3 = sceneOneTeamLeftBottom(game);
 
-    sceneOneTeamLeftBottom(game);
-
-    const player3 = new PlayerAI2(game, team3);
+    const player3 = new PlayerAI3(game, team3);
     player3.startAI();
 
     const team4 = sceneOneTeamRightBottom(game);
 
-    const player4 = new PlayerAI3(game, team4);
+    const player4 = new PlayerAI4(new PlayerInterface(game, team4));
     player4.startAI();
 }

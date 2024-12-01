@@ -24,6 +24,7 @@ import {
     DOT_MORALE_DROP_BY_NEARBY_DEAD_ALLIE_RADIUS,
     DOT_MORALE_DROP_BY_NEARBY_DEAD_ALLIE_COUNT_MAX,
     DOT_MORALE_DROP_BY_NEARBY_DEAD_ALLIE_COUNT,
+    DOT_SCAN_INTERVAL,
 } from "../consts";
 import { DotsGrid } from "../DotsGrid";
 import {
@@ -65,6 +66,8 @@ export type Dot = DotTemplate & {
     attackTargetedByDots: Set<Dot>;
     attackTargetDot: Dot | null;
     attackTargetBuilding: Building | null;
+    scanInterval: number;
+    scanIn: number;
     path: Point[];
     allowAttack: boolean;
     morale: number;
@@ -93,8 +96,16 @@ export class DotsController {
         readonly width: number,
         readonly height: number,
     ) {
-        this.dotsGrid = new DotsGrid({ dotsGridSquareSize: DOTS_GRID_SIZE, width, height });
-        this.dotsGridDead = new DotsGrid({ dotsGridSquareSize: DOTS_GRID_SIZE, width, height });
+        this.dotsGrid = new DotsGrid({
+            dotsGridSquareSize: DOTS_GRID_SIZE,
+            width,
+            height,
+        });
+        this.dotsGridDead = new DotsGrid({
+            dotsGridSquareSize: DOTS_GRID_SIZE,
+            width,
+            height,
+        });
     }
 
     initDot(
@@ -107,6 +118,8 @@ export class DotsController {
             | "attackTargetedByDots"
             | "aimingTimeLeft"
             | "aimingTarget"
+            | "scanInterval"
+            | "scanIn"
             | "hitBox"
             | "squad"
             | "slot"
@@ -129,6 +142,8 @@ export class DotsController {
             attackTargetBuilding: null,
             aimingTimeLeft: dotPartial.aimingDuration,
             aimingTargetDot: null,
+            scanInterval: DOT_SCAN_INTERVAL,
+            scanIn: DOT_SCAN_INTERVAL,
             hitBox: DotsController.calculateHitBox(
                 dotPartial.position,
                 0,
@@ -210,8 +225,15 @@ export class DotsController {
             health: DOT_HEALTH_MAX,
             healthMax: DOT_HEALTH_MAX,
             morale: DOT_MORALE_MAX,
+            scanInterval: DOT_SCAN_INTERVAL,
+            scanIn: DOT_SCAN_INTERVAL,
             angle: 0,
-            hitBox: DotsController.calculateHitBox(position, 0, DOT_WIDTH, DOT_HEIGHT),
+            hitBox: DotsController.calculateHitBox(
+                position,
+                0,
+                DOT_WIDTH,
+                DOT_HEIGHT,
+            ),
             removed: false,
             allowAttack: true,
             isFleeing: false,
@@ -287,7 +309,11 @@ export class DotsController {
             },
         };
 
-        return DotsController.calculateRotatedHitBox(position, initialHitBox, angle);
+        return DotsController.calculateRotatedHitBox(
+            position,
+            initialHitBox,
+            angle,
+        );
     }
 
     // chatgpt (c)
@@ -838,6 +864,14 @@ export class DotsController {
             if (dot.attackCooldownLeft > 0) {
                 continue;
             }
+
+            dot.scanIn -= timeDelta;
+
+            if (dot.scanIn > 0) {
+                continue;
+            }
+
+            dot.scanIn = dot.scanInterval;
 
             assignDotAttackTargetButTryNotToReassign(dot);
         }

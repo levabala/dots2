@@ -23,5 +23,5 @@ canvas.style.border = "solid gray 1px";
 
 container.appendChild(canvas);
 
-playTest(container, canvas, prioritizeAttackCloseSquadInsteadOfHQ());
-// playLocal(container, canvas);
+// playTest(container, canvas, prioritizeAttackCloseSquadInsteadOfHQ());
+playLocal(container, canvas);

@@ -5,6 +5,7 @@ import { RendererCanvasSimple } from "./Renderer";
 import { sceneOneTeam } from "./scenes/scenes2";
 import { UI } from "./UI";
 import { VisualDebugger } from "./VisualDebugger";
+import { sceneFourAIs } from "./scenes";
 
 export function playLocal(
     container: HTMLDivElement,
@@ -63,7 +64,8 @@ export function playLocal(
 
     ui.init();
 
-    sceneOneTeam(game);
+    // sceneOneTeam(game);
+    sceneFourAIs(game, ui);
 
     renderLoop();
     gameLoop();

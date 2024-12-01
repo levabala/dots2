@@ -1,5 +1,4 @@
 /* eslint-disable */
-// @ts-nocheck
 
 import { SQUAD_MIN_DOTS, DOT_ATTACK_RANGE } from "../consts";
 import type { Game } from "../Game";
@@ -8,7 +7,7 @@ import type { BuildingKind, Building, BuildingHQ } from "../Game/BuildingsContro
 import { SquadFrameUtils } from "../Game/SquadFrameUtils";
 import type { Squad } from "../Game/SquadsController";
 import type { Team } from "../Game/TeamController";
-import { distanceBetween, isPointInPolygon, rotateRect, type Point, type Polygon } from "../shapes";
+import { distanceBetween, isPointInPolygon, rotateRect, type Point, type Polygon, type Rect } from "../shapes";
 import { PlayerLegacy } from "./PlayerLegacy";
 
 export class PlayerAI extends PlayerLegacy {
@@ -57,7 +56,7 @@ export class PlayerAI extends PlayerLegacy {
     startAI(): void {
         this.intervalId = global.setInterval(() => {
             this.update();
-        }, 200);
+        }, 200) as unknown as number;
     }
 
     private update(): void {
@@ -241,14 +240,7 @@ export class PlayerAI extends PlayerLegacy {
             return false;
         }
 
-        const building: Building = {
-            ...config,
-            frame: config.frameRelative.map(p => ({ x: p.x + position.x, y: p.y + position.y })),
-            center: position,
-            team: this.team,
-        } as Building;
-
-        const success = this.game.tryBuild(building);
+        const success = this.game.tryBuild(config.kind, position, this.team);
 
         if (success) {
             this.emitEvent('action', `Built ${kind} at (${position.x.toFixed(2)}, ${position.y.toFixed(2)}).`);

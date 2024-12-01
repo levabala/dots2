@@ -19,7 +19,7 @@ export function* testBuildBasicBase(): GameTestGenerator {
 
     const playerInterface = new PlayerInterface(game, team);
 
-    const ai = new PlayerAI2(playerInterface, team);
+    const ai = new PlayerAI2(playerInterface);
 
     yield { game, mark: "init" };
     yield* spanGameTimeUntil(
@@ -63,7 +63,7 @@ export function* testSpawnUnits(): GameTestGenerator {
 
     const playerInterface1 = new PlayerInterface(game, team1);
 
-    const ai = new PlayerAI2(playerInterface1, team1);
+    const ai = new PlayerAI2(playerInterface1);
 
     yield { game, mark: "init" };
     yield* spanGameTimeUntil(
@@ -111,7 +111,7 @@ export function* testCreateSquads(): GameTestGenerator {
 
     const playerInterface1 = new PlayerInterface(game, team1);
 
-    const ai = new PlayerAI2(playerInterface1, team1);
+    const ai = new PlayerAI2(playerInterface1);
 
     yield { game, mark: "init" };
     yield* spanGameTimeUntil(
@@ -152,7 +152,7 @@ export function* testDestroyEnemyWithoutArmy(): GameTestGenerator {
     const playerInterface1 = new PlayerInterface(game, team1);
     const playerInterface2 = new PlayerInterface(game, team2);
 
-    const ai = new PlayerAI2(playerInterface1, team1);
+    const ai = new PlayerAI2(playerInterface1);
 
     yield { game, mark: "init" };
     yield* spanGameTimeUntil(
@@ -205,7 +205,7 @@ export function* prioritizeAttackCloseSquadInsteadOfHQ(): GameTestGenerator {
         { x: 1900, y: 1100 },
     );
 
-    const ai = new PlayerAI2(playerInterface1, team1);
+    const ai = new PlayerAI2(playerInterface1);
 
     yield { game, mark: "init" };
     yield* spanGameTimeUntil(

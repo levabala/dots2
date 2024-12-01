@@ -27,12 +27,9 @@ export class PlayerAI2 {
 
     actIntervalBetween: number = 100;
 
-    constructor(
-        readonly playerInterface: PlayerInterface,
-        readonly team: Team,
-    ) {
-        this.economist = new Economist(playerInterface, team);
-        this.warlord = new Warlord(playerInterface, team);
+    constructor(readonly playerInterface: PlayerInterface) {
+        this.economist = new Economist(playerInterface);
+        this.warlord = new Warlord(playerInterface);
     }
 
     startAI() {
@@ -69,10 +66,7 @@ class Warlord {
     baseCenter: Point;
     warStage: WarStage = WarStage.DefendBase;
 
-    constructor(
-        readonly playerInterface: PlayerInterface,
-        readonly team: Team,
-    ) {
+    constructor(readonly playerInterface: PlayerInterface) {
         this.baseCenter = this.calcBaseCenter();
     }
 
@@ -80,10 +74,6 @@ class Warlord {
         const buildings = this.playerInterface.getBuildingsMy();
 
         for (const building of buildings) {
-            if (building.team !== this.team) {
-                continue;
-            }
-
             if (building.kind === "hq") {
                 return building.center;
             }
@@ -187,7 +177,7 @@ class Warlord {
     private calcSquadsAroundMyBase(): typeof this.enemySquadsAroundMyBase {
         const squadsEnemy = this.playerInterface
             .getSquadsAll()
-            .filter((squad) => squad.team !== this.team);
+            .filter((squad) => squad.team !== this.playerInterface.team);
 
         return squadsEnemy
             .map((squad) => ({
@@ -204,7 +194,7 @@ class Warlord {
         const squadsMy = this.playerInterface.getSquadsMy();
         const squadsEnemy = this.playerInterface
             .getSquadsAll()
-            .filter((squad) => squad.team !== this.team);
+            .filter((squad) => squad.team !== this.playerInterface.team);
 
         const dotsMyCount = squadsMy.reduce(
             (acc, squad) =>
@@ -258,15 +248,15 @@ class Warlord {
             case WarStage.DestroyEnemySquads:
                 return this.playerInterface
                     .getSquadsAll()
-                    .filter((squad) => squad.team !== this.team);
+                    .filter((squad) => squad.team !== this.playerInterface.team);
             case WarStage.AttackEnemyBase:
                 return [
                     ...this.playerInterface
                         .getSquadsAll()
-                        .filter((squad) => squad.team !== this.team),
+                        .filter((squad) => squad.team !== this.playerInterface.team),
                     ...this.playerInterface
                         .getBuildingsAll()
-                        .filter((building) => building.team !== this.team),
+                        .filter((building) => building.team !== this.playerInterface.team),
                 ];
         }
     }
@@ -326,10 +316,7 @@ class Economist {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     debugInfo: Record<string, any> = {};
 
-    constructor(
-        readonly playerInterface: PlayerInterface,
-        readonly team: Team,
-    ) {
+    constructor(readonly playerInterface: PlayerInterface) {
         this.baseCenter = this.calcBaseCenter();
     }
 
@@ -482,10 +469,6 @@ class Economist {
         };
 
         for (const building of buildings) {
-            if (building.team !== this.team) {
-                continue;
-            }
-
             switch (building.kind) {
                 case "farm":
                     production.food += building.foodPerSecond;
@@ -561,10 +544,6 @@ class Economist {
         const isInCoinsDeficit = this.resourcesAtHorizon.coins < 0;
 
         for (const building of this.playerInterface.getBuildingsMy()) {
-            if (building.team !== this.team) {
-                continue;
-            }
-
             if (building.kind === "barracks") {
                 if (isInCoinsDeficit) {
                     if (building.allowSpawning) {
@@ -616,7 +595,7 @@ class Economist {
             Array.from(this.playerInterface.getBuildingsMy()).filter(
                 (b) =>
                     b.kind === "barracks" &&
-                    b.team === this.team &&
+                    b.team === this.playerInterface.team &&
                     b.allowSpawning,
             ).length,
         );

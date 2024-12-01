@@ -1,5 +1,4 @@
 /* eslint-disable */
-// @ts-nocheck
 
 import { DOT_COST_COINS, DOT_COST_FOOD, DOT_WIDTH, DOT_HEIGHT, DOT_SPEED, SQUAD_MIN_DOTS, DOT_AIMING_DURATION, DOT_ATTACK_COOLDOWN, DOT_ATTACK_RANGE, DOT_HEALTH_MAX } from "../consts";
 import type { Game } from "../Game";
@@ -9,7 +8,7 @@ import type { Dot, DotTemplate } from "../Game/DotsController";
 import { SquadFrameUtils } from "../Game/SquadFrameUtils";
 import type { Squad } from "../Game/SquadsController";
 import type { Team } from "../Game/TeamController";
-import { makeRectOrthogonal, orthogonalRect, type Point, type Rect } from "../shapes";
+import { makeRectOrthogonal, orthogonalRect, type Point, type Rect, type RectOrth } from "../shapes";
 import { PlayerLegacy } from "./PlayerLegacy";
 
 export class PlayerAI extends PlayerLegacy {
@@ -39,7 +38,7 @@ export class PlayerAI extends PlayerLegacy {
     startAI() {
         this.intervalId = global.setInterval(() => {
             this.update();
-        }, 200);
+        }, 200) as unknown as number;
     }
 
     private update() {
@@ -73,6 +72,9 @@ export class PlayerAI extends PlayerLegacy {
             house: 0,
             lumberMill: 0,
             barracks: 0,
+            granary: 0,
+            hq: 0,
+            coinMiner: 0,
         };
 
         for (const building of this.myBuildings) {
@@ -87,6 +89,9 @@ export class PlayerAI extends PlayerLegacy {
             house: 2,
             lumberMill: 1,
             barracks: 1,
+            granary: 0,
+            hq: 0,
+            coinMiner: 0,
         };
 
         const buildingsOrder: BuildingKind[] = ['farm', 'house', 'lumberMill', 'barracks'];
@@ -136,19 +141,7 @@ export class PlayerAI extends PlayerLegacy {
 
             const position = { x, y };
 
-            const frame = buildingConfig.frameRelative.map(p => ({
-                x: p.x + position.x,
-                y: p.y + position.y,
-            }));
-
-            const building: Building = {
-                ...buildingConfig,
-                team: this.team,
-                center: position,
-                frame: frame,
-            } as Building;
-
-            const success = this.game.tryBuild(building);
+            const success = this.game.tryBuild(buildingConfig.kind, position, this.team);
 
             if (success) {
                 this.logAction(`Built ${buildingKind} at (${position.x.toFixed(2)}, ${position.y.toFixed(2)})`);
