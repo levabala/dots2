@@ -1,3 +1,520 @@
+you got an rts 2d game. you need to place buildings. 
+develop economy. 
+destroy enemy squads and buildings. 
+winning is the destruction of enemy HQ. 
+losing is the destruction of yours.
+
+there are some declaration files to give you hints on types and entities:
+
+
+---------------
+import type { Game, GameEventTick, GameEventListener } from "../Game";
+import type { Building, BuildingKind, BuildingCost } from "../Game/BuildingsController";
+import type { Dot } from "../Game/DotsController";
+import type { Squad } from "../Game/SquadsController";
+import type { Team } from "../Game/TeamController";
+import { type Point, type Rect } from "../shapes";
+export declare class PlayerInterface {
+    readonly game: Game;
+    readonly team: Team;
+    constructor(game: Game, team: Team);
+    getMapSize(): {
+        width: number;
+        height: number;
+    };
+    getDotsMy(): Dot[];
+    getDotsAll(): Dot[];
+    getSquadsMy(): Squad[];
+    getSquadsAll(): Squad[];
+    getBuildingsMy(): Building[];
+    getBuildingsAll(): Building[];
+    addEventListener<Name extends GameEventTick["name"]>(name: Name, listener: GameEventListener<Name>): void;
+    removeEventListener<Name extends GameEventTick["name"]>(name: Name, listener: GameEventListener<Name>): void;
+    orderAttackOnlySquad({ squadAttacker, squadTarget, }: {
+        squadAttacker: Squad;
+        squadTarget: Squad;
+    }): void;
+    orderAttackOnlyBuilding({ squadAttacker, buildingTarget, }: {
+        squadAttacker: Squad;
+        buildingTarget: Building;
+    }): void;
+    cancelAttackSquadAll(squadAttacker: Squad): void;
+    dotWithoutSquadMoveTo(dot: Dot, destination: Point): void;
+    tryBuild(kind: BuildingKind, center: Point): boolean;
+    canBuild(buildingKind: BuildingKind): boolean;
+    getTeamResourcesMy(): import("../Game/ResourcesController").ResourcesState;
+    createSquad(dots: Dot[], center: Point): {
+        readonly isSuccess: false;
+        readonly error: "no enough dots";
+        readonly squad?: undefined;
+    } | {
+        readonly isSuccess: true;
+        readonly squad: Squad;
+        readonly error?: undefined;
+    };
+    removeSquad(squad: Squad): void;
+    isInSquad(dot: Dot): boolean;
+    moveSquadToRect(squad: Squad, targetFrame: Rect): void;
+    moveSquadToPoint(squad: Squad, targetPoint: Point): void;
+    getBuildingCost(buildingKind: BuildingKind): BuildingCost;
+    orderAttackDot({ attacker, target }: {
+        attacker: Dot;
+        target: Dot;
+    }): void;
+}
+----------------
+
+export type DotTemplate = {
+    width: number;
+    height: number;
+    speed: number;
+    attackRange: number;
+    attackCooldown: number;
+    aimingDuration: number;
+    hitBox: Rect;
+    health: number;
+    healthMax: number;
+    angle: number;
+};
+export type Dot = DotTemplate & {
+    id: number;
+    position: Point;
+    team: Team;
+    removed: boolean;
+    squad: Squad | null;
+    slot: Slot | null;
+    gridSquareIndexes: number[];
+    attackCooldownLeft: number;
+    aimingTimeLeft: number;
+    aimingTargetDot: Dot | null;
+    attackTargetedByDots: Set<Dot>;
+    attackTargetDot: Dot | null;
+    attackTargetBuilding: Building | null;
+    scanInterval: number;
+    scanIn: number;
+    path: Point[];
+    allowAttack: boolean;
+    morale: number;
+    isFleeing: boolean;
+};
+export type ProjectileToShoot = {
+    fromDot: Dot;
+    toPoint: Point;
+    params: Pick<Projectile, "speed" | "damage" | "flyDistanceLeft" | "radius">;
+};
+
+---------------
+
+export type BuildingCost = {
+    coins: number;
+    wood: number;
+};
+export type BuildingBase = {
+    kind: string;
+    frameRelative: Polygon;
+    frame: Polygon;
+    center: Point;
+    health: number;
+    team: Team;
+};
+export type BuildingBarracks = BuildingBase & {
+    kind: "barracks";
+    spawnDuration: number;
+    spawnTimeLeft: number;
+    spawnQueue: DotTemplate[];
+    isSpawning: boolean;
+    allowSpawning: boolean;
+};
+export type BuildingHouse = BuildingBase & {
+    kind: "house";
+    unitsCapacity: number;
+};
+export type BuildingFarm = BuildingBase & {
+    kind: "farm";
+    foodPerSecond: number;
+    foodCapacity: number;
+};
+export type BuildingGranary = BuildingBase & {
+    kind: "granary";
+    foodCapacity: number;
+};
+export type BuildingLumberMill = BuildingBase & {
+    kind: "lumberMill";
+    woodPerSecond: number;
+    woodCapacity: number;
+};
+export type BuildingHQ = BuildingBase & {
+    kind: "hq";
+    coinsPerSecond: number;
+    unitsCapacity: number;
+};
+export type BuildingCoinMiner = BuildingBase & {
+    kind: "coinMiner";
+    coinsPerSecond: number;
+};
+export type Building = BuildingBarracks | BuildingHouse | BuildingFarm | BuildingGranary | BuildingLumberMill | BuildingHQ | BuildingCoinMiner;
+export type BuildingKind = Building["kind"];
+export type DotSpawned = DotTemplate & Pick<Dot, "position" | "team">;
+
+-------------------
+
+
+export type Projectile = {
+    position: Point;
+    angle: number;
+    speed: number;
+    damage: number;
+    flyDistanceLeft: number;
+    fromDot: Dot;
+    radius: number;
+};
+
+
+--------------
+
+
+export type Squad = {
+    key: string;
+    index: number;
+    frame: Rect;
+    slots: Slot[];
+    attackTargetBuildings: Set<Building>;
+    attackTargetSquads: Set<Squad>;
+    attackTargetedBySquads: Set<Squad>;
+    allowAttack: boolean;
+    allowShootOnce: boolean;
+    dotsToShootOnce: Set<Dot>;
+    team: Team;
+    removed: boolean;
+};
+export type Slot = {
+    position: Point;
+    angle: number;
+    dot: Dot | null;
+};
+
+
+
+
+--------------
+
+
+
+
+
+export type Team = {
+    index: number;
+    name: string;
+    dotsCount: number;
+};
+
+
+
+--------------
+
+export type BuildingConfig<B extends Building> = Omit<
+    B,
+    "frame" | "center" | "team"
+> & {
+    getCost: (countAlreadyBuilt: number) => BuildingCost;
+};
+
+export const BUILDINGS_CONFIGS: {
+    [Kind in BuildingKind]: BuildingConfig<Extract<Building, { kind: Kind }>>;
+} = {
+    barracks: {
+        kind: "barracks",
+        frameRelative: [
+            { x: -50, y: -40 },
+            { x: 50, y: -40 },
+            { x: 50, y: 40 },
+            { x: -50, y: 40 },
+        ],
+        health: 100,
+        spawnDuration: 500,
+        spawnTimeLeft: 500,
+        spawnQueue: [],
+        isSpawning: false,
+        allowSpawning: true,
+        getCost: (countAlreadyBuilt: number) =>
+            getArrayElementByIndexOrLast(
+                [
+                    {
+                        wood: 50,
+                        coins: 100,
+                    },
+                    {
+                        wood: 100,
+                        coins: 150,
+                    },
+                    {
+                        wood: 300,
+                        coins: 200,
+                    },
+                    {
+                        wood: 600,
+                        coins: 400,
+                    },
+                    {
+                        wood: 1000,
+                        coins: 1500,
+                    },
+                ],
+                countAlreadyBuilt,
+            ),
+    },
+    house: {
+        kind: "house",
+        frameRelative: [
+            { x: -25, y: -25 },
+            { x: 25, y: -25 },
+            { x: 25, y: 25 },
+            { x: -25, y: 25 },
+        ],
+        health: 100,
+        unitsCapacity: 110,
+        getCost: (countAlreadyBuilt: number) =>
+            getArrayElementByIndexOrLast(
+                [
+                    {
+                        wood: 20,
+                        coins: 20,
+                    },
+                    {
+                        wood: 40,
+                        coins: 40,
+                    },
+                    {
+                        wood: 80,
+                        coins: 80,
+                    },
+                    {
+                        wood: 300,
+                        coins: 300,
+                    },
+                    {
+                        wood: 1000,
+                        coins: 1000,
+                    },
+                ],
+                countAlreadyBuilt,
+            ),
+    },
+    farm: {
+        kind: "farm",
+        frameRelative: [
+            { x: -50, y: -50 },
+            { x: 50, y: -50 },
+            { x: 50, y: 50 },
+            { x: -50, y: 50 },
+        ],
+        health: 100,
+        foodPerSecond: 20,
+        foodCapacity: 100,
+        getCost: (countAlreadyBuilt: number) =>
+            getArrayElementByIndexOrLast(
+                [
+                    {
+                        wood: 80,
+                        coins: 50,
+                    },
+                    {
+                        wood: 160,
+                        coins: 100,
+                    },
+                    {
+                        wood: 320,
+                        coins: 200,
+                    },
+                    {
+                        wood: 640,
+                        coins: 400,
+                    },
+                    {
+                        wood: 1280,
+                        coins: 1000,
+                    },
+                ],
+                countAlreadyBuilt,
+            ),
+    },
+    granary: {
+        kind: "granary",
+        frameRelative: [
+            { x: -30, y: -30 },
+            { x: 30, y: -30 },
+            { x: 30, y: 30 },
+            { x: -30, y: 30 },
+        ],
+        health: 100,
+        foodCapacity: 100,
+        getCost: (countAlreadyBuilt: number) =>
+            getArrayElementByIndexOrLast(
+                [
+                    {
+                        wood: 80,
+                        coins: 50,
+                    },
+                    {
+                        wood: 160,
+                        coins: 100,
+                    },
+                    {
+                        wood: 320,
+                        coins: 200,
+                    },
+                    {
+                        wood: 640,
+                        coins: 400,
+                    },
+                    {
+                        wood: 1280,
+                        coins: 1000,
+                    },
+                ],
+                countAlreadyBuilt,
+            ),
+    },
+    lumberMill: {
+        kind: "lumberMill",
+        frameRelative: [
+            { x: -50, y: -50 },
+            { x: 50, y: -50 },
+            { x: 50, y: 50 },
+            { x: -50, y: 50 },
+        ],
+        health: 100,
+        woodPerSecond: 5,
+        woodCapacity: 100,
+        getCost: (countAlreadyBuilt: number) =>
+            getArrayElementByIndexOrLast(
+                [
+                    {
+                        wood: 0,
+                        coins: 200,
+                    },
+                    {
+                        wood: 0,
+                        coins: 400,
+                    },
+                    {
+                        wood: 0,
+                        coins: 800,
+                    },
+                    {
+                        wood: 0,
+                        coins: 2000,
+                    },
+                    {
+                        wood: 0,
+                        coins: 5000,
+                    },
+                ],
+                countAlreadyBuilt,
+            ),
+    },
+    hq: {
+        kind: "hq",
+        frameRelative: [
+            { x: -40, y: -50 },
+            { x: 40, y: -50 },
+            { x: 40, y: 50 },
+            { x: -40, y: 50 },
+        ],
+        health: 100,
+        coinsPerSecond: 10,
+        unitsCapacity: 100,
+        getCost: () => ({
+            wood: Infinity,
+            coins: Infinity,
+        }),
+    },
+    coinMiner: {
+        kind: "coinMiner",
+        frameRelative: [
+            { x: -60, y: -50 },
+            { x: 60, y: -50 },
+            { x: 60, y: 50 },
+            { x: -60, y: 50 },
+        ],
+        health: 80,
+        coinsPerSecond: 5,
+        getCost: (countAlreadyBuilt: number) =>
+            getArrayElementByIndexOrLast(
+                [
+                    {
+                        wood: 100,
+                        coins: 200,
+                    },
+                    {
+                        wood: 200,
+                        coins: 400,
+                    },
+                    {
+                        wood: 400,
+                        coins: 800,
+                    },
+                    {
+                        wood: 800,
+                        coins: 2000,
+                    },
+                    {
+                        wood: 5000,
+                        coins: 10000,
+                    },
+                ],
+                countAlreadyBuilt,
+            ),
+    },
+};
+
+export const BUILDING_KINDS = Object.keys(BUILDINGS_CONFIGS) as BuildingKind[];
+
+---------------
+
+export const DEFAULT_PROJECTILE = {
+    radius: 4,
+    speed: 1500 / 1000,
+    damage: 1,
+    flyDistanceLeft: 500,
+};
+export const BETWEEN_SQUADS_GAP = 30;
+export const SQUAD_MIN_DOTS = 10;
+
+export const DOT_WIDTH = 8;
+export const DOT_HEIGHT = 6;
+export const DOT_SPEED = 70 / 1000;
+export const DOT_IN_SQUAD_RADIUS_AROUND = 8;
+export const DOTS_GRID_SIZE = Math.max(DOT_WIDTH, DOT_HEIGHT) * 5;
+export const DOT_COST_FOOD = 10;
+export const DOT_COST_COINS = 1;
+export const DOT_ATTACK_RANGE = 200;
+export const DOT_ATTACK_COOLDOWN = 2000;
+export const DOT_AIMING_DURATION = 500;
+export const DOT_HEALTH_MAX = 2;
+export const DOT_MORALE_BASELINE = 50;
+export const DOT_MORALE_GAIN_BY_NEARBY_ALLIE_COUNT = 5;
+export const DOT_MORALE_GAIN_BY_NEARBY_ALLIE_RADIUS = DOT_ATTACK_RANGE;
+export const DOT_MORALE_DROP_BY_NEARBY_ENEMY_COUNT = 1;
+export const DOT_MORALE_DROP_BY_NEARBY_ENEMY_RADIUS = DOT_ATTACK_RANGE * 1.5;
+export const DOT_MORALE_DROP_BY_NEARBY_DEAD_ALLIE_RADIUS = 30;
+export const DOT_MORALE_DROP_BY_NEARBY_DEAD_ALLIE_COUNT = 5;
+export const DOT_MORALE_FLEE_LEVEL = 10;
+export const DOT_MORALE_DROP_PER_SECOND_MAX = 20;
+export const DOT_MORALE_GAIN_PER_SECOND_MAX = 5;
+export const DOT_MORALE_MIN = 0;
+export const DOT_MORALE_MAX = 200;
+export const DOT_MORALE_GAIN_BY_NEARBY_ALLIE_COUNT_MAX = 150;
+export const DOT_MORALE_DROP_BY_NEARBY_ENEMY_COUNT_MAX = 100;
+export const DOT_MORALE_DROP_BY_NEARBY_DEAD_ALLIE_COUNT_MAX = 50;
+export const DOT_SCAN_INTERVAL = 100;
+
+
+---------------
+
+
+there is a basic AI that you can extend on top of:
+
 import { DOT_ATTACK_RANGE, DOT_COST_COINS, DOT_COST_FOOD } from "../consts";
 import { BUILDINGS_CONFIGS } from "../Game/buildingsConfigs";
 import type { Building, BuildingKind } from "../Game/BuildingsController";
@@ -605,3 +1122,17 @@ class Economist {
         this.controlUnitProduction();
     }
 }
+
+
+game mechanics:
+- dots attack enemy dots on sight
+- dots attack enemy buildings on command
+- dots can walk through buildings
+- dots are slow and fragile
+- dots can't shoot while moving (IMPORTANT)
+- barracks are essential because no units = you die
+- dots can't shoot enemy through buildings (even allied buildings)
+- dots won't shoot through allied dots (so the must not be placed over each other)
+
+
+output just code in a single file:

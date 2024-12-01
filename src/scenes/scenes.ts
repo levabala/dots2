@@ -305,30 +305,30 @@ export function sceneOneTeamRightBottom(game: Game) {
     return team;
 }
 
-import { PlayerAI as PlayerAI1 } from "../player/PlayerAIGPT1";
+import { PlayerAI as PlayerAI1 } from "../player/PlayerAIGPT3";
 import { PlayerAI as PlayerAI2 } from "../player/PlayerAIGPT2";
 import { PlayerAI1 as PlayerAI3 } from "../player/PlayerAI1";
 import { PlayerAI2 as PlayerAI4 } from '../player/PlayerAI2';
 import { PlayerInterface } from "../player/PlayerInterface";
 
 export function sceneFourAIs(game: Game, ui: UI) {
-    const { team1, team2 } = sceneTwoTeamsSomeBuildings(game);
+    const { team1: teamRed, team2: teamBlue } = sceneTwoTeamsSomeBuildings(game);
 
     sceneTwoSquads(game, ui);
 
-    const player1 = new PlayerAI1(game, team1);
-    player1.startAI();
+    const playerRed = new PlayerAI1(new PlayerInterface(game, teamRed));
+    playerRed.startAI();
 
-    const player2 = new PlayerAI2(game, team2);
-    player2.startAI();
+    const playerBlue = new PlayerAI2(game, teamBlue);
+    playerBlue.startAI();
 
-    const team3 = sceneOneTeamLeftBottom(game);
+    const teamGreen = sceneOneTeamLeftBottom(game);
 
-    const player3 = new PlayerAI3(game, team3);
-    player3.startAI();
+    const playerGreen = new PlayerAI3(game, teamGreen);
+    playerGreen.startAI();
 
-    const team4 = sceneOneTeamRightBottom(game);
+    const teamOrange = sceneOneTeamRightBottom(game);
 
-    const player4 = new PlayerAI4(new PlayerInterface(game, team4));
-    player4.startAI();
+    const playerOrange = new PlayerAI4(new PlayerInterface(game, teamOrange));
+    playerOrange.startAI();
 }

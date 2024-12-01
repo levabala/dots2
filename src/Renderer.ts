@@ -535,7 +535,7 @@ export class RendererCanvasSimple implements Renderer {
     }
 
     renderSquadFrameAttackArrowToSquad(squadFrom: Squad, squadTo: Squad) {
-        this.ctx.lineWidth = 2;
+        this.ctx.lineWidth = 1;
         this.ctx.strokeStyle = "red";
 
         const from = getRectCenter(squadFrom.frame);
@@ -562,7 +562,7 @@ export class RendererCanvasSimple implements Renderer {
         squadFrom: Squad,
         buildingTo: Building,
     ) {
-        this.ctx.lineWidth = 2;
+        this.ctx.lineWidth = 1;
         this.ctx.strokeStyle = "red";
 
         const from = getRectCenter(squadFrom.frame);
