@@ -609,18 +609,18 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.beginPath();
 
         for (let col = 0; col < dotsGrid.dotsGridCols; col++) {
-            this.ctx.moveTo(col * dotsGrid.dotsGridSquadSize, 0);
+            this.ctx.moveTo(col * dotsGrid.dotsGridSquareSize, 0);
             this.ctx.lineTo(
-                col * dotsGrid.dotsGridSquadSize,
-                dotsGrid.dotsGridRows * dotsGrid.dotsGridSquadSize,
+                col * dotsGrid.dotsGridSquareSize,
+                dotsGrid.dotsGridRows * dotsGrid.dotsGridSquareSize,
             );
         }
 
         for (let row = 0; row < dotsGrid.dotsGridRows; row++) {
-            this.ctx.moveTo(0, row * dotsGrid.dotsGridSquadSize);
+            this.ctx.moveTo(0, row * dotsGrid.dotsGridSquareSize);
             this.ctx.lineTo(
-                dotsGrid.dotsGridCols * dotsGrid.dotsGridSquadSize,
-                row * dotsGrid.dotsGridSquadSize,
+                dotsGrid.dotsGridCols * dotsGrid.dotsGridSquareSize,
+                row * dotsGrid.dotsGridSquareSize,
             );
         }
 
@@ -635,8 +635,8 @@ export class RendererCanvasSimple implements Renderer {
             for (let col = 0; col < dotsGrid.dotsGridCols; col++) {
                 this.ctx.strokeText(
                     dotsGrid.calcIndexFromXY(col, row).toString(),
-                    col * dotsGrid.dotsGridSquadSize + 5,
-                    row * dotsGrid.dotsGridSquadSize + 10,
+                    col * dotsGrid.dotsGridSquareSize + 5,
+                    row * dotsGrid.dotsGridSquareSize + 10,
                 );
             }
         }

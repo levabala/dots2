@@ -93,8 +93,8 @@ export class DotsController {
         readonly width: number,
         readonly height: number,
     ) {
-        this.dotsGrid = new DotsGrid(DOTS_GRID_SIZE, width, height);
-        this.dotsGridDead = new DotsGrid(DOTS_GRID_SIZE, width, height);
+        this.dotsGrid = new DotsGrid({ dotsGridSquareSize: DOTS_GRID_SIZE, width, height });
+        this.dotsGridDead = new DotsGrid({ dotsGridSquareSize: DOTS_GRID_SIZE, width, height });
     }
 
     initDot(
@@ -129,7 +129,7 @@ export class DotsController {
             attackTargetBuilding: null,
             aimingTimeLeft: dotPartial.aimingDuration,
             aimingTargetDot: null,
-            hitBox: this.calculateHitBox(
+            hitBox: DotsController.calculateHitBox(
                 dotPartial.position,
                 0,
                 DOT_WIDTH,
@@ -149,7 +149,7 @@ export class DotsController {
     addDot(dotRaw: Omit<Dot, "hitBox">) {
         const dot: Dot = {
             ...dotRaw,
-            hitBox: this.calculateHitBox(
+            hitBox: DotsController.calculateHitBox(
                 dotRaw.position,
                 dotRaw.angle,
                 DOT_WIDTH,
@@ -211,7 +211,7 @@ export class DotsController {
             healthMax: DOT_HEALTH_MAX,
             morale: DOT_MORALE_MAX,
             angle: 0,
-            hitBox: this.calculateHitBox(position, 0, DOT_WIDTH, DOT_HEIGHT),
+            hitBox: DotsController.calculateHitBox(position, 0, DOT_WIDTH, DOT_HEIGHT),
             removed: false,
             allowAttack: true,
             isFleeing: false,
@@ -228,7 +228,7 @@ export class DotsController {
 
     syncDotAndSlotAngle(dot: Dot, slot: Slot) {
         dot.angle = slot.angle;
-        dot.hitBox = this.calculateHitBox(
+        dot.hitBox = DotsController.calculateHitBox(
             dot.position,
             dot.angle,
             dot.width,
@@ -246,7 +246,7 @@ export class DotsController {
             dot.height * 2,
         );
 
-        dot.hitBox = this.calculateHitBox(
+        dot.hitBox = DotsController.calculateHitBox(
             dot.position,
             dot.angle,
             dot.width,
@@ -262,7 +262,7 @@ export class DotsController {
     }
 
     // chatgpt (c)
-    calculateHitBox(
+    static calculateHitBox(
         position: Point,
         angle: number,
         width: number,
@@ -287,11 +287,11 @@ export class DotsController {
             },
         };
 
-        return this.calculateRotatedHitBox(position, initialHitBox, angle);
+        return DotsController.calculateRotatedHitBox(position, initialHitBox, angle);
     }
 
     // chatgpt (c)
-    private calculateRotatedHitBox(
+    static calculateRotatedHitBox(
         position: Point,
         hitBox: Rect,
         angle: number,

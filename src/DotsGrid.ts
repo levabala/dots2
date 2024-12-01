@@ -3,6 +3,7 @@ import {
     Direction,
     distanceBetween,
     getIntersectedSquareOrth,
+    isRectInCircle,
     roundAngle,
     roundSinCos,
     type Line,
@@ -10,17 +11,23 @@ import {
 } from "./shapes";
 
 export class DotsGrid {
-    dotsGridCols: number;
-    dotsGridRows: number;
-    dotsGrid: Set<Dot>[];
+    readonly dotsGridSquareSize: number;
+    readonly dotsGridCols: number;
+    readonly dotsGridRows: number;
+    readonly dotsGrid: Set<Dot>[];
 
-    constructor(
-        readonly dotsGridSquadSize: number,
-        width: number,
-        height: number,
-    ) {
-        this.dotsGridCols = Math.ceil(width / this.dotsGridSquadSize);
-        this.dotsGridRows = Math.ceil(height / this.dotsGridSquadSize);
+    constructor({
+        dotsGridSquareSize,
+        width,
+        height,
+    }: {
+        dotsGridSquareSize: number;
+        width: number;
+        height: number;
+    }) {
+        this.dotsGridSquareSize = dotsGridSquareSize;
+        this.dotsGridCols = Math.ceil(width / this.dotsGridSquareSize);
+        this.dotsGridRows = Math.ceil(height / this.dotsGridSquareSize);
 
         this.dotsGrid = Array(this.dotsGridCols * this.dotsGridRows)
             .fill(null)
@@ -31,32 +38,28 @@ export class DotsGrid {
         return y * this.dotsGridCols + x;
     }
 
+    calcXYFromIndex(index: number) {
+        return {
+            x: index % this.dotsGridCols,
+            y: Math.floor(index / this.dotsGridCols),
+        };
+    }
+
     private calcIndexXY(point: Point) {
         const x = Math.min(
-            Math.max(Math.floor(point.x / this.dotsGridSquadSize), 0),
+            Math.max(Math.floor(point.x / this.dotsGridSquareSize), 0),
             this.dotsGridCols - 1,
         );
         const y = Math.min(
-            Math.max(Math.floor(point.y / this.dotsGridSquadSize), 0),
+            Math.max(Math.floor(point.y / this.dotsGridSquareSize), 0),
             this.dotsGridRows - 1,
         );
 
         return { x, y, index: this.calcIndexFromXY(x, y) };
     }
 
-    private calcIndex(point: Point): number {
-        return this.calcIndexXY(point).index;
-    }
-
     private calcIndexesDot(dot: Dot): number[] {
-        return Array.from(
-            new Set([
-                this.calcIndex(dot.hitBox.p1),
-                this.calcIndex(dot.hitBox.p2),
-                this.calcIndex(dot.hitBox.p3),
-                this.calcIndex(dot.hitBox.p4),
-            ]),
-        );
+        return [this.calcIndexXY(dot.position).index];
     }
 
     addDot(dot: Dot) {
@@ -119,10 +122,10 @@ export class DotsGrid {
         let pointer = line.p1;
         let { index, x: gridX, y: gridY } = this.calcIndexXY(pointer);
         const square = {
-            top: this.dotsGridSquadSize * gridY,
-            bottom: this.dotsGridSquadSize * (gridY + 1),
-            left: this.dotsGridSquadSize * gridX,
-            right: this.dotsGridSquadSize * (gridX + 1),
+            top: this.dotsGridSquareSize * gridY,
+            bottom: this.dotsGridSquareSize * (gridY + 1),
+            left: this.dotsGridSquareSize * gridX,
+            right: this.dotsGridSquareSize * (gridX + 1),
         };
 
         while (true) {
@@ -139,23 +142,23 @@ export class DotsGrid {
             switch (side) {
                 case Direction.top:
                     gridY -= 1;
-                    square.top = this.dotsGridSquadSize * gridY;
-                    square.bottom = this.dotsGridSquadSize * (gridY + 1);
+                    square.top = this.dotsGridSquareSize * gridY;
+                    square.bottom = this.dotsGridSquareSize * (gridY + 1);
                     break;
                 case Direction.bottom:
                     gridY += 1;
-                    square.top = this.dotsGridSquadSize * gridY;
-                    square.bottom = this.dotsGridSquadSize * (gridY + 1);
+                    square.top = this.dotsGridSquareSize * gridY;
+                    square.bottom = this.dotsGridSquareSize * (gridY + 1);
                     break;
                 case Direction.left:
                     gridX -= 1;
-                    square.left = this.dotsGridSquadSize * gridX;
-                    square.right = this.dotsGridSquadSize * (gridX + 1);
+                    square.left = this.dotsGridSquareSize * gridX;
+                    square.right = this.dotsGridSquareSize * (gridX + 1);
                     break;
                 case Direction.right:
                     gridX += 1;
-                    square.left = this.dotsGridSquadSize * gridX;
-                    square.right = this.dotsGridSquadSize * (gridX + 1);
+                    square.left = this.dotsGridSquareSize * gridX;
+                    square.right = this.dotsGridSquareSize * (gridX + 1);
                     break;
             }
 
@@ -183,6 +186,29 @@ export class DotsGrid {
         }
     }
 
+    getSquareAsRect(index: number) {
+        const { x, y } = this.calcXYFromIndex(index);
+
+        return {
+            p1: {
+                x: x * this.dotsGridSquareSize,
+                y: y * this.dotsGridSquareSize,
+            },
+            p2: {
+                x: (x + 1) * this.dotsGridSquareSize,
+                y: y * this.dotsGridSquareSize,
+            },
+            p3: {
+                x: (x + 1) * this.dotsGridSquareSize,
+                y: (y + 1) * this.dotsGridSquareSize,
+            },
+            p4: {
+                x: x * this.dotsGridSquareSize,
+                y: (y + 1) * this.dotsGridSquareSize,
+            },
+        };
+    }
+
     getDotsGridIndicesInRange(
         point: Point,
         range: number,
@@ -190,18 +216,25 @@ export class DotsGrid {
         definitelyInRange: number[];
         maybeInRange: number[];
     } {
-        const gridRadiusForSure = Math.ceil(range / this.dotsGridSquadSize);
+        const gridRadiusForSure = Math.ceil(range / this.dotsGridSquareSize);
 
         const center = this.calcIndexXY(point);
-        const fromX = Math.min(Math.max(center.x - gridRadiusForSure, 0), this.dotsGridCols - 1);
-        const fromY = Math.min(Math.max(center.y - gridRadiusForSure, 0), this.dotsGridRows - 1);
-        const toX = Math.min(Math.max(center.x + gridRadiusForSure, 0), this.dotsGridCols - 1);
-        const toY = Math.min(Math.max(center.y + gridRadiusForSure, 0), this.dotsGridRows - 1);
-
-        const dotsGridSquadDiagonalHalf = Math.sqrt(
-            this.dotsGridSquadSize ** 2 * 2,
+        const fromX = Math.min(
+            Math.max(center.x - gridRadiusForSure, 0),
+            this.dotsGridCols - 1,
         );
-
+        const fromY = Math.min(
+            Math.max(center.y - gridRadiusForSure, 0),
+            this.dotsGridRows - 1,
+        );
+        const toX = Math.min(
+            Math.max(center.x + gridRadiusForSure, 0),
+            this.dotsGridCols - 1,
+        );
+        const toY = Math.min(
+            Math.max(center.y + gridRadiusForSure, 0),
+            this.dotsGridRows - 1,
+        );
         const maybeInRange: number[] = [];
         const definitelyInRange: number[] = [];
 
@@ -209,20 +242,16 @@ export class DotsGrid {
             for (let y = fromY; y <= toY; y++) {
                 const index = this.calcIndexFromXY(x, y);
 
-                const squadCenter = {
-                    x: this.dotsGridSquadSize * x + this.dotsGridSquadSize / 2,
-                    y: this.dotsGridSquadSize * y + this.dotsGridSquadSize / 2,
-                };
+                const isDefinitelyInRange = isRectInCircle(
+                    this.getSquareAsRect(index),
+                    point,
+                    range,
+                );
 
-                const distance = distanceBetween(point, squadCenter);
-
-                const isMaybeInRange =
-                    distance >= range - dotsGridSquadDiagonalHalf;
-
-                if (isMaybeInRange) {
-                    maybeInRange.push(index);
-                } else {
+                if (isDefinitelyInRange) {
                     definitelyInRange.push(index);
+                } else {
+                    maybeInRange.push(index);
                 }
             }
         }
@@ -235,7 +264,7 @@ export class DotsGrid {
         range: number,
         predicate?: (dot: Dot) => boolean,
     ): Dot[] {
-        const dots = [];
+        const dots = new Set<Dot>();
 
         const { definitelyInRange, maybeInRange } =
             this.getDotsGridIndicesInRange(point, range);
@@ -246,7 +275,7 @@ export class DotsGrid {
                     continue;
                 }
 
-                dots.push(dot);
+                dots.add(dot);
             }
         }
 
@@ -260,10 +289,10 @@ export class DotsGrid {
                     continue;
                 }
 
-                dots.push(dot);
+                dots.add(dot);
             }
         }
 
-        return dots;
+        return Array.from(dots);
     }
 }

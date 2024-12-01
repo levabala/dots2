@@ -337,7 +337,10 @@ export function getIntersectionsAllPolygon(
             side.p1,
             side.p2,
         );
-        if (intersection && intersections.every(i => !arePointsEqual(i, intersection))) {
+        if (
+            intersection &&
+            intersections.every((i) => !arePointsEqual(i, intersection))
+        ) {
             intersections.push(intersection);
         }
     }
@@ -808,4 +811,13 @@ export function alignRectToRect(rect1: Rect, rect2: Rect): Rect {
 
 export function getPointOffset(p1: Point, p2: Point): Point {
     return { x: p2.x - p1.x, y: p2.y - p1.y };
+}
+
+export function isRectInCircle(rect: Rect, point: Point, radius: number) {
+    return (
+        distanceBetween(rect.p1, point) <= radius &&
+        distanceBetween(rect.p2, point) <= radius &&
+        distanceBetween(rect.p3, point) <= radius &&
+        distanceBetween(rect.p4, point) <= radius
+    );
 }
