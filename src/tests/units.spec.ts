@@ -61,7 +61,7 @@ export function* testMoveSquad(): GameTestGenerator {
     );
     playerInterface.moveSquadToRect(squad1, targetRect);
 
-    expect(squad1.frame).toEqual(targetRect);
+    expect(squad1.frameTarget).toEqual(targetRect);
 
     yield* spanGameTimeUntil(
         game,
@@ -290,8 +290,8 @@ export function* testAttackSquadToSquad(): GameTestGenerator {
     squad2.allowAttack = false;
 
     const targetPoint = {
-        x: squad2.frame.p1.x - 50,
-        y: squad2.frame.p1.y - 50,
+        x: squad2.frameTarget.p1.x - 50,
+        y: squad2.frameTarget.p1.y - 50,
     };
     playerInterface1.moveSquadToPoint(squad1, targetPoint);
 

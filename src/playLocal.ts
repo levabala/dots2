@@ -5,7 +5,7 @@ import { RendererCanvasSimple } from "./Renderer";
 import { sceneOneTeam } from "./scenes/scenes2";
 import { UI } from "./UI";
 import { VisualDebugger } from "./VisualDebugger";
-import { sceneFourAIs } from "./scenes";
+import { sceneFourAIs, sceneTwoAIs } from "./scenes";
 
 export function playLocal(
     container: HTMLDivElement,
@@ -41,6 +41,9 @@ export function playLocal(
 
     global.timeScale = 4;
 
+    const MAX_TICK_TIME = 60;
+    const MIN_TICK_TIME = 16;
+
     let timeReal = Date.now();
     function gameLoop() {
         const timeRealNew = Date.now();
@@ -48,7 +51,13 @@ export function playLocal(
 
         if (!isPauseRef.current) {
             const timeScale = global.timeScale;
-            game.tick(deltaReal * timeScale);
+            const tickTime = Math.min(deltaReal * timeScale, MAX_TICK_TIME);
+
+            if (tickTime < MIN_TICK_TIME) {
+                return;
+            }
+
+            game.tick(tickTime);
         }
 
         timeReal = timeRealNew;
@@ -65,9 +74,10 @@ export function playLocal(
     ui.init();
 
     // sceneOneTeam(game);
-    sceneFourAIs(game, ui);
+    // sceneFourAIs(game, ui);
+    sceneTwoAIs(game);
 
     renderLoop();
     gameLoop();
-    setInterval(gameLoop, 10);
+    setInterval(gameLoop);
 }

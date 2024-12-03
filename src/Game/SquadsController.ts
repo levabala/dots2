@@ -1,13 +1,19 @@
 import { SQUAD_NAMES } from "../assets/squadNames";
-import { BETWEEN_SQUADS_GAP, SQUAD_MIN_DOTS } from "../consts";
+import {
+    BETWEEN_SQUADS_GAP,
+    SQUAD_MIN_DOTS,
+    SQUAD_UPDATE_FRAME_INTERVAL,
+} from "../consts";
 import {
     arePointsEqual,
     distanceBetween,
+    getOrientedBoundingBox,
     rotatePoint,
     rotateRect,
     type Point,
     type Rect,
 } from "../shapes";
+import { Vector } from "../Vector";
 import type { Building } from "./BuildingsController";
 import type { Dot } from "./DotsController";
 import { SquadFrameUtils } from "./SquadFrameUtils";
@@ -16,7 +22,9 @@ import type { Team } from "./TeamController";
 export type Squad = {
     key: string;
     index: number;
-    frame: Rect;
+    frameActual: Rect;
+    frameTarget: Rect;
+    timeUntilFrameActualUpdate: number;
     slots: Slot[];
     attackTargetBuildings: Set<Building>;
     attackTargetSquads: Set<Squad>;
@@ -81,6 +89,46 @@ export class SquadsController {
         }
     }
 
+    static calcSquadFrameActual(squad: Squad) {
+        const dots = squad.slots
+            .filter((slot): slot is Omit<Slot, "dot"> & { dot: Dot } =>
+                Boolean(slot.dot),
+            )
+            .map((slot) => slot.dot);
+
+        if (!dots.length) {
+            return null;
+        }
+
+        const boxNew = getOrientedBoundingBox(dots.map((dot) => dot.position));
+        const boxOld = squad.frameActual;
+
+        const MIN_DIFF_TO_UPDATE = 0.1;
+
+        return {
+            p1:
+                Vector.betweenPoints(boxOld.p1, boxNew.p1).length() >
+                MIN_DIFF_TO_UPDATE
+                    ? boxNew.p1
+                    : boxOld.p1,
+            p2:
+                Vector.betweenPoints(boxOld.p2, boxNew.p2).length() >
+                MIN_DIFF_TO_UPDATE
+                    ? boxNew.p2
+                    : boxOld.p2,
+            p3:
+                Vector.betweenPoints(boxOld.p3, boxNew.p3).length() >
+                MIN_DIFF_TO_UPDATE
+                    ? boxNew.p3
+                    : boxOld.p3,
+            p4:
+                Vector.betweenPoints(boxOld.p4, boxNew.p4).length() >
+                MIN_DIFF_TO_UPDATE
+                    ? boxNew.p4
+                    : boxOld.p4,
+        };
+    }
+
     createSquad(dots: Dot[], team: Team, center: Point) {
         if (dots.length < SQUAD_MIN_DOTS) {
             return { isSuccess: false, error: "no enough dots" } as const;
@@ -95,7 +143,9 @@ export class SquadsController {
         const squad: Squad = {
             key: this.createSquadKey(),
             index: this.squads.length,
-            frame,
+            frameTarget: frame,
+            frameActual: frame,
+            timeUntilFrameActualUpdate: 0,
             slots,
             attackTargetBuildings: new Set(),
             attackTargetSquads: new Set(),
@@ -106,6 +156,10 @@ export class SquadsController {
             team,
             removed: false,
         };
+
+        squad.frameActual =
+            SquadsController.calcSquadFrameActual(squad) || squad.frameTarget;
+
         this.squads.push(squad);
 
         for (const slot of slots) {
@@ -205,6 +259,13 @@ export class SquadsController {
             }
         }
 
+        if (positions.length < count) {
+            global.panic("not enough positions created", {
+                positions,
+                count,
+            });
+        }
+
         return positions;
     }
 
@@ -271,7 +332,7 @@ export class SquadsController {
     moveSquadTo(squad: Squad, targetFrame: Rect) {
         this.updateSlotPositionsAndReassignDots(squad, targetFrame);
 
-        squad.frame = targetFrame;
+        squad.frameTarget = targetFrame;
     }
 
     // chatgpt (c)
@@ -329,7 +390,7 @@ export class SquadsController {
 
             squadRects.push(squadRect);
 
-            squad.frame = squadRect;
+            squad.frameTarget = squadRect;
 
             currentOffset += squadLength + BETWEEN_SQUADS_GAP;
         }
@@ -337,7 +398,7 @@ export class SquadsController {
         return squadRects;
     }
 
-    tick(_timeDelta: number): SquadsControllerTickEffects {
+    tick(timeDelta: number): SquadsControllerTickEffects {
         const effects: SquadsControllerTickEffects = {
             squadsRemoved: [],
         };
@@ -379,6 +440,22 @@ export class SquadsController {
                 squad.attackTargetBuildings.delete(building);
             }
         };
+
+        const updateFrameActual = (squad: Squad) => {
+            if (squad.timeUntilFrameActualUpdate > 0) {
+                squad.timeUntilFrameActualUpdate -= timeDelta;
+                return;
+            }
+
+            squad.frameActual =
+                SquadsController.calcSquadFrameActual(squad) ||
+                squad.frameTarget;
+            squad.timeUntilFrameActualUpdate = SQUAD_UPDATE_FRAME_INTERVAL;
+        };
+
+        for (const squad of this.squads) {
+            updateFrameActual(squad);
+        }
 
         for (const squad of this.squads) {
             changePathToSquad(squad);

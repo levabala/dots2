@@ -113,7 +113,9 @@ export class RendererCanvasSimple implements Renderer {
 
         for (const squad of squadsController.squads) {
             const isSelected = this.ui.squadsSelected.includes(squad);
-            this.renderSquadFrames(squad, isSelected);
+
+            this.renderSquadFrameActual(squad);
+            this.renderSquadFrameTarget(squad, isSelected);
         }
 
         for (const projectile of projectilesController.projectiles) {
@@ -515,11 +517,20 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.stroke();
     }
 
-    renderSquadFrames(squad: Squad, isSelected: boolean) {
+    renderSquadFrameTarget(squad: Squad, isSelected: boolean) {
         this.ctx.lineWidth = 1;
-        this.ctx.strokeStyle = isSelected ? "darkkhaki" : "brown";
+        this.ctx.strokeStyle = isSelected ? "darkkhaki" : this.getTeamColor(squad.team.index);
 
-        RendererUtils.drawRect(this.ctx, squad.frame);
+        RendererUtils.drawRect(this.ctx, squad.frameTarget);
+
+        this.ctx.stroke();
+    }
+
+    renderSquadFrameActual(squad: Squad) {
+        this.ctx.lineWidth = 0.8;
+        this.ctx.strokeStyle = "gray";
+
+        RendererUtils.drawRect(this.ctx, squad.frameActual);
 
         this.ctx.stroke();
     }
@@ -538,15 +549,15 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.lineWidth = 1;
         this.ctx.strokeStyle = "red";
 
-        const from = getRectCenter(squadFrom.frame);
-        const to = getRectCenter(squadTo.frame);
+        const from = getRectCenter(squadFrom.frameTarget);
+        const to = getRectCenter(squadTo.frameTarget);
 
         const lineCenterToCenter = { p1: from, p2: to };
         const start = getIntersectionFirstRect(
             lineCenterToCenter,
-            squadFrom.frame,
+            squadFrom.frameTarget,
         );
-        const end = getIntersectionFirstRect(lineCenterToCenter, squadTo.frame);
+        const end = getIntersectionFirstRect(lineCenterToCenter, squadTo.frameTarget);
 
         if (!start || !end) {
             return;
@@ -565,13 +576,13 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.lineWidth = 1;
         this.ctx.strokeStyle = "red";
 
-        const from = getRectCenter(squadFrom.frame);
+        const from = getRectCenter(squadFrom.frameTarget);
         const to = getPolygonCenter(buildingTo.frame);
 
         const lineCenterToCenter = { p1: from, p2: to };
         const start = getIntersectionFirstRect(
             lineCenterToCenter,
-            squadFrom.frame,
+            squadFrom.frameTarget,
         );
         const end = getIntersectionFirstPolygon(
             lineCenterToCenter,

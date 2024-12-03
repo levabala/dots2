@@ -332,3 +332,14 @@ export function sceneFourAIs(game: Game, ui: UI) {
     const playerOrange = new PlayerAI4(new PlayerInterface(game, teamOrange));
     playerOrange.startAI();
 }
+
+export function sceneTwoAIs(game: Game) {
+    const teamRed = sceneOneTeamLeftBottom(game);
+    const teamBlue = sceneOneTeamRightBottom(game);
+
+    const playerRed = new PlayerAI1(new PlayerInterface(game, teamRed));
+    playerRed.startAI();
+
+    // const playerBlue = new PlayerAI1(new PlayerInterface(game, teamBlue));
+    // playerBlue.startAI();
+}

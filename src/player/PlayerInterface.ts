@@ -165,12 +165,12 @@ export class PlayerInterface {
     }
 
     moveSquadToPoint(squad: Squad, targetPoint: Point) {
-        const offset = getPointOffset(getRectCenter(squad.frame), targetPoint);
+        const offset = getPointOffset(getRectCenter(squad.frameTarget), targetPoint);
 
         return this.moveSquadToRect(
             squad,
             polygonToRect(
-                createPolygonOffset(rectToPolygon(squad.frame), offset),
+                createPolygonOffset(rectToPolygon(squad.frameTarget), offset),
             ),
         );
     }

@@ -14,14 +14,14 @@ import {
 import { Vector } from "../Vector";
 
 export class PlayerUtils {
-    static squadAllDotsInFrame(squad: Pick<Squad, "slots" | "frame">) {
+    static squadAllDotsInFrame(squad: Pick<Squad, "slots" | "frameTarget">) {
         return squad.slots.every(
             (slot) =>
-                !slot.dot || isPointInRect(slot.dot.position, squad.frame),
+                !slot.dot || isPointInRect(slot.dot.position, squad.frameTarget),
         );
     }
 
-    static squadAllDotsInPosition(squad: Pick<Squad, "slots" | "frame">) {
+    static squadAllDotsInPosition(squad: Pick<Squad, "slots" | "frameTarget">) {
         return squad.slots.every(
             (slot) =>
                 !slot.dot ||
@@ -34,14 +34,14 @@ export class PlayerUtils {
         target: Point,
         distanceUntil: number,
     ) {
-        const squadCenter = getRectCenter(squad.frame);
+        const squadCenter = getRectCenter(squad.frameTarget);
 
         const squadEdge = getIntersectionFirstRect(
             {
                 p1: squadCenter,
                 p2: target,
             },
-            squad.frame,
+            squad.frameTarget,
         );
 
         if (!squadEdge) {
@@ -71,7 +71,7 @@ export class PlayerUtils {
 
         return polygonToRect(
             createPolygonOffset(
-                rectToPolygon(squad.frame),
+                rectToPolygon(squad.frameTarget),
                 Vector.betweenPoints(squadCenter, centerNew),
             ),
         );

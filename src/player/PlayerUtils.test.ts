@@ -36,7 +36,7 @@ describe("PlayerUtils", () => {
                         dot: null,
                     },
                 ],
-                frame: {
+                frameTarget: {
                     p1: { x: 0, y: 0 },
                     p2: { x: 4, y: 0 },
                     p3: { x: 4, y: 4 },
@@ -77,7 +77,7 @@ describe("PlayerUtils", () => {
                         } as Dot,
                     },
                 ],
-                frame: {
+                frameTarget: {
                     p1: { x: 0, y: 0 },
                     p2: { x: 4, y: 0 },
                     p3: { x: 4, y: 4 },
@@ -89,7 +89,7 @@ describe("PlayerUtils", () => {
 
     test("getNewSquadFrameInFrontOf", () => {
         const squad = {
-            frame: {
+            frameTarget: {
                 p1: { x: 0, y: -1 },
                 p2: { x: 1, y: -1 },
                 p3: { x: 1, y: 1 },

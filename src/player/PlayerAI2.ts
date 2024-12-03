@@ -150,7 +150,7 @@ class Warlord {
         for (const [squadMy, target] of this.squadsAssignments) {
             const targetFrame = PlayerUtils.isBuilding(target)
                 ? target.frame
-                : rectToPolygon(target.frame);
+                : rectToPolygon(target.frameActual);
 
             const frame = PlayerUtils.getNewSquadFrameInFrontOf(
                 squadMy,
@@ -181,7 +181,7 @@ class Warlord {
             .map((squad) => ({
                 squad,
                 distance: distanceBetween(
-                    getRectCenter(squad.frame),
+                    getRectCenter(squad.frameActual),
                     this.baseCenter,
                 ),
             }))

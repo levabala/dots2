@@ -556,7 +556,7 @@ export class UI {
 
     getSquadByPosition({ x, y }: Point): Squad | null {
         for (const squad of this.game.getSquads()) {
-            if (isPointInRect({ x, y }, squad.frame)) {
+            if (isPointInRect({ x, y }, squad.frameTarget)) {
                 return squad;
             }
         }
@@ -869,7 +869,7 @@ export class UI {
 
         squads.forEach((sf, i) => {
             if (!squadRects[i]) return;
-            sf.frame = squadRects[i];
+            sf.frameTarget = squadRects[i];
         });
     }
 

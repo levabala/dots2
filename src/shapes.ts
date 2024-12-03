@@ -558,34 +558,41 @@ export function createMultiPolygon(polygons: Polygon[]): Polygon {
 
 // chatgpt (c)
 function convexHull(points: Point[]): Polygon {
-    if (points.length < 3) return points; // A convex hull requires at least 3 points
+    if (points.length <= 3) return [...new Set(points)]; // Return unique points if fewer than 3
 
-    // Find the leftmost point
-    const leftmost = points.reduce(
-        (left, p) => (p.x < left.x ? p : left),
-        points[0],
-    );
+    // Sort points by x-coordinate, breaking ties by y-coordinate
+    points.sort((a, b) => (a.x === b.x ? a.y - b.y : a.x - b.x));
 
-    const hull: Point[] = [];
-    let current = leftmost;
-    let next: Point;
-
-    do {
-        hull.push(current);
-        next = points[0]; // Start by assuming the next point is the first one
-
-        for (let i = 1; i < points.length; i++) {
-            if (
-                next === current ||
-                isCounterClockwise(current, next, points[i])
-            ) {
-                next = points[i];
-            }
+    // Build lower hull
+    const lower: Point[] = [];
+    for (const p of points) {
+        while (
+            lower.length >= 2 &&
+            !isCounterClockwise(lower[lower.length - 2], lower[lower.length - 1], p)
+        ) {
+            lower.pop();
         }
-        current = next;
-    } while (current !== leftmost);
+        lower.push(p);
+    }
 
-    return hull;
+    // Build upper hull
+    const upper: Point[] = [];
+    for (let i = points.length - 1; i >= 0; i--) {
+        const p = points[i];
+        while (
+            upper.length >= 2 &&
+            !isCounterClockwise(upper[upper.length - 2], upper[upper.length - 1], p)
+        ) {
+            upper.pop();
+        }
+        upper.push(p);
+    }
+
+    // Remove the last point of each half because it's repeated at the beginning of the other
+    upper.pop();
+    lower.pop();
+
+    return [...lower, ...upper];
 }
 
 // chatgpt (c)
@@ -820,4 +827,71 @@ export function isRectInCircle(rect: Rect, point: Point, radius: number) {
         distanceBetween(rect.p3, point) <= radius &&
         distanceBetween(rect.p4, point) <= radius
     );
+}
+
+// chatgpt (c)
+export function getOrientedBoundingBox(points: Point[]): Rect {
+    if (points.length === 0) {
+        throw new Error("No points provided");
+    }
+
+    if (points.length === 1) {
+        // Single point: return a degenerate rectangle (all corners are the same)
+        const p = points[0];
+        return { p1: p, p2: p, p3: p, p4: p };
+    }
+
+    if (points.length === 2) {
+        // Two points: return a rectangle with the two points as diagonal corners
+        const p1 = points[0];
+        const p3 = points[1];
+        return orthogonalRect(p1, p3);
+    }
+
+    // For 3 or more points, compute the oriented bounding box
+    const hull = convexHull(points);
+    let minArea = Infinity;
+    let bestRect: Rect | null = null;
+
+    for (let i = 0; i < hull.length; i++) {
+        const p1 = hull[i];
+        const p2 = hull[(i + 1) % hull.length];
+
+        const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+        const rotatedPoints = points.map((p) => rotatePoint(p, p1, -angle));
+
+        let minX = Infinity,
+            minY = Infinity,
+            maxX = -Infinity,
+            maxY = -Infinity;
+
+        for (const p of rotatedPoints) {
+            if (p.x < minX) minX = p.x;
+            if (p.y < minY) minY = p.y;
+            if (p.x > maxX) maxX = p.x;
+            if (p.y > maxY) maxY = p.y;
+        }
+
+        const area = (maxX - minX) * (maxY - minY);
+        if (area < minArea) {
+            minArea = area;
+
+            const topLeft = rotatePoint({ x: minX, y: minY }, p1, angle);
+            const topRight = rotatePoint({ x: maxX, y: minY }, p1, angle);
+            const bottomRight = rotatePoint(
+                { x: maxX, y: maxY },
+                p1,
+                angle
+            );
+            const bottomLeft = rotatePoint({ x: minX, y: maxY }, p1, angle);
+
+            bestRect = { p1: topLeft, p2: topRight, p3: bottomRight, p4: bottomLeft };
+        }
+    }
+
+    if (!bestRect) {
+        throw new Error("Failed to compute bounding box");
+    }
+
+    return bestRect;
 }

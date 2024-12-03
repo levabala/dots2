@@ -156,7 +156,7 @@ class Warlord {
     }
 
     private isSquadDangerousToHQ(squad: Squad) {
-        const squadCenter = getRectCenter(squad.frame);
+        const squadCenter = getRectCenter(squad.frameTarget);
 
         const distance = distanceBetween(squadCenter, this.baseCenter);
 
@@ -260,8 +260,8 @@ class Warlord {
         distance: number,
     ) {
         const enemyFrontlineCenter = getIntersectionFirstRect(
-            { p1: this.baseCenter, p2: getRectCenter(squadEnemy.frame) },
-            squadEnemy.frame,
+            { p1: this.baseCenter, p2: getRectCenter(squadEnemy.frameTarget) },
+            squadEnemy.frameTarget,
         );
 
         if (!enemyFrontlineCenter) {
@@ -410,7 +410,7 @@ class Warlord {
         const rowsHeight = rowHeight * rowsDeep;
 
         const attackRangeRect = resizeRectByChange(
-            squadEnemy.frame,
+            squadEnemy.frameTarget,
             DOT_ATTACK_RANGE * 2 - rowsHeight,
             DOT_ATTACK_RANGE * 2 - rowsHeight,
         );
