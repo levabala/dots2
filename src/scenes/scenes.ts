@@ -1,4 +1,3 @@
-import { times } from "remeda";
 import type { Game } from "../Game";
 import { BUILDINGS_CONFIGS } from "../Game/buildingsConfigs";
 import { createPolygonOffset } from "../shapes";
@@ -8,7 +7,6 @@ export function sceneTwoTeamsSomeBuildings(game: Game) {
     const {
         teamController,
         resourcesController,
-        dotsController,
         buildingsController,
     } = game.getPrivateStaffYouShouldNotUse();
 
@@ -20,9 +18,6 @@ export function sceneTwoTeamsSomeBuildings(game: Game) {
 
     resourcesController.setCoins(team1, 1000);
     resourcesController.setCoins(team2, 1000);
-
-    times(100, () => dotsController.addDotRandom(team1));
-    times(100, () => dotsController.addDotRandom(team2));
 
     const center1 = { x: 1000, y: 1000 };
     buildingsController.addBuilding({

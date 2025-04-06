@@ -1,6 +1,6 @@
 export const DEFAULT_PROJECTILE = {
     radius: 4,
-    speed: 1500 / 1000,
+    speed: 3000 / 1000,
     damage: 1,
     flyDistanceLeft: 500,
 };
@@ -15,7 +15,7 @@ export const DOTS_GRID_SIZE = Math.max(DOT_WIDTH, DOT_HEIGHT) * 5;
 export const DOT_COST_FOOD = 10;
 export const DOT_COST_COINS = 1;
 export const DOT_ATTACK_RANGE = 200;
-export const DOT_ATTACK_COOLDOWN = 2000;
+export const DOT_ATTACK_COOLDOWN = 5000;
 export const DOT_AIMING_DURATION = 500;
 export const DOT_HEALTH_MAX = 2;
 export const DOT_MORALE_BASELINE = 50;

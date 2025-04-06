@@ -137,14 +137,22 @@ const CommandPanel: React.FC<{
                         type="range"
                         value={timeScale}
                         min="0"
-                        max="9.9"
-                        step="0.1"
+                        max="9.5"
+                        step="0.5"
                         onChange={(e) => {
                             global.timeScale = parseFloat(e.target.value);
                             setTimeScale(global.timeScale);
                         }}
                     />
                     <label>Time scale: {timeScale.toFixed(1)}</label>
+                    <button
+                        onClick={() => {
+                            global.timeScale = 1;
+                            setTimeScale(global.timeScale);
+                        }}
+                    >
+                        1
+                    </button>
                 </div>
             </div>
             <div

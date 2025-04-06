@@ -1,7 +1,4 @@
-import { prioritizeAttackCloseSquadInsteadOfHQ, testBuildBasicBase, testCreateSquads, testDestroyEnemyWithoutArmy, testSpawnUnits } from "./player/PlayerAI2.test.ts";
 import { playLocal } from "./playLocal";
-import { playTest } from "./tests/playTest";
-import { testAttackDotToDot, testAttackSquadToSquad, testMoveSquad } from "./tests/units.spec.ts";
 
 if (typeof global === "undefined") {
     window.global = window;

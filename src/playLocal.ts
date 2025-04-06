@@ -2,10 +2,9 @@ import { Game } from "./Game";
 import { setupPanicAssert } from "./setupPanicAssert";
 import { Logger } from "./Logger";
 import { RendererCanvasSimple } from "./Renderer";
-import { sceneOneTeam } from "./scenes/scenes2";
 import { UI } from "./UI";
 import { VisualDebugger } from "./VisualDebugger";
-import { sceneFourAIs, sceneTwoAIs } from "./scenes";
+import { sceneTwoTeamsSomeBuildings } from "./scenes";
 
 export function playLocal(
     container: HTMLDivElement,
@@ -75,7 +74,7 @@ export function playLocal(
 
     // sceneOneTeam(game);
     // sceneFourAIs(game, ui);
-    sceneTwoAIs(game);
+    sceneTwoTeamsSomeBuildings(game);
 
     renderLoop();
     gameLoop();
