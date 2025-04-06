@@ -30,6 +30,11 @@ import {
     DOT_MORALE_SHOOT_GAIN_RADIUS,
     DOT_MORALE_DROP_COEFF_PER_ALLY_NEARBY_RADIUS,
     DOT_MORALE_DROP_COEFF_PER_ALLY_NEARBY_MINIMAL,
+    DOT_MORALE_FLEEING_DROP_RADIUS,
+    DOT_MORALE_FLEEING_DROP_NEARBY_PER_SECOND,
+    DOT_MORALE_MIN_BACKGROUND_LEVEL,
+    DOT_MORALE_FLEE_START_DROP_NEARBY,
+    DOT_MORALE_FLEE_START_DROP_RADIUS,
 } from "../consts";
 import { DotsGrid } from "../DotsGrid";
 import {
@@ -951,6 +956,14 @@ export class DotsController {
         };
 
         const changeMorale = (dot: Dot) => {
+            const calcAlliesFleeingNearby = () =>
+                this.dotsGrid.getDotsInRange(
+                    dot.position,
+                    DOT_MORALE_FLEEING_DROP_RADIUS,
+                    (dotOther) =>
+                        dot.team === dotOther.team && dotOther.isFleeing,
+                );
+
             const moraleTarget = dot.squad
                 ? DOT_MORALE_BASELINE_IN_SQUAD
                 : DOT_MORALE_BASELINE;
@@ -967,9 +980,21 @@ export class DotsController {
                 : baselineDropPerSecond;
             const moraleChangeAbs = (moraleChangePerSecond * timeDelta) / 1000;
 
-            const moraleUpdated = isGaining
+            const moraleUpdatedTowardsBaseline = isGaining
                 ? Math.min(dot.morale + moraleChangeAbs, moraleTarget)
                 : Math.max(dot.morale - moraleChangeAbs, moraleTarget);
+
+            const moraleUpdated =
+                moraleUpdatedTowardsBaseline > DOT_MORALE_MIN_BACKGROUND_LEVEL
+                    ? Math.max(
+                          moraleUpdatedTowardsBaseline -
+                              (calcAlliesFleeingNearby().length *
+                                  DOT_MORALE_FLEEING_DROP_NEARBY_PER_SECOND *
+                                  timeDelta) /
+                                  1000,
+                          DOT_MORALE_MIN_BACKGROUND_LEVEL,
+                      )
+                    : moraleUpdatedTowardsBaseline;
 
             DotsController.updateDotMoraleCapped(dot, moraleUpdated);
         };
@@ -980,6 +1005,15 @@ export class DotsController {
             const startedFleeing = !dot.isFleeing && isFleeing;
 
             dot.isFleeing = isFleeing;
+
+            if (startedFleeing) {
+                this.updateDotMoraleBy({
+                    dot,
+                    changeSelf: 0,
+                    changeNearby: -DOT_MORALE_FLEE_START_DROP_NEARBY,
+                    changeRadius: DOT_MORALE_FLEE_START_DROP_RADIUS,
+                });
+            }
 
             return { startedFleeing };
         };
