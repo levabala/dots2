@@ -19,6 +19,7 @@ export type Projectile = {
 
 export type ProjectilesControllerTickEffects = {
     dotsKilled: Dot[];
+    dotsHitNotKilled: Dot[];
     buildingsKilled: Building[];
 };
 
@@ -74,9 +75,10 @@ export class ProjectilesController {
         return { isKilled: building.health <= 0 };
     }
 
-    tick(timeDelta: number): ProjectilesControllerTickEffects {
+    tick(timeDelta: number) {
         const effects: ProjectilesControllerTickEffects = {
             dotsKilled: [],
+            dotsHitNotKilled: [],
             buildingsKilled: [],
         };
 
@@ -152,6 +154,8 @@ export class ProjectilesController {
 
                     if (isKilled) {
                         effects.dotsKilled.push(closestIntersection.dot);
+                    } else {
+                        effects.dotsHitNotKilled.push(closestIntersection.dot);
                     }
 
                     return;

@@ -7,24 +7,27 @@ import {
     DOT_HEALTH_MAX,
     DOT_HEIGHT,
     DOT_MORALE_BASELINE,
-    DOT_MORALE_DROP_BY_NEARBY_ENEMY_COUNT,
-    DOT_MORALE_DROP_BY_NEARBY_ENEMY_RADIUS,
     DOT_MORALE_FLEE_LEVEL,
-    DOT_MORALE_GAIN_BY_NEARBY_ALLIE_COUNT,
-    DOT_MORALE_GAIN_BY_NEARBY_ALLIE_RADIUS,
     DOT_MORALE_MAX,
-    DOT_MORALE_DROP_PER_SECOND_MAX,
-    DOT_MORALE_GAIN_PER_SECOND_MAX,
     DOT_SPEED,
     DOT_WIDTH,
     DOTS_GRID_SIZE,
     DOT_MORALE_MIN,
-    DOT_MORALE_GAIN_BY_NEARBY_ALLIE_COUNT_MAX,
-    DOT_MORALE_DROP_BY_NEARBY_ENEMY_COUNT_MAX,
-    DOT_MORALE_DROP_BY_NEARBY_DEAD_ALLIE_RADIUS,
-    DOT_MORALE_DROP_BY_NEARBY_DEAD_ALLIE_COUNT_MAX,
-    DOT_MORALE_DROP_BY_NEARBY_DEAD_ALLIE_COUNT,
     DOT_SCAN_INTERVAL,
+    DOT_MORALE_BASELINE_GAIN_PER_SECOND,
+    DOT_MORALE_BASELINE_DROP_PER_SECOND,
+    DOT_MORALE_INITIAL,
+    DOT_MORALE_BASELINE_IN_SQUAD,
+    DOT_MORALE_BASELINE_GAIN_IN_SQUAD_PER_SECOND,
+    DOT_MORALE_BASELINE_DROP_IN_SQUAD_PER_SECOND,
+    DOT_MORALE_HIT_DROP_SELF,
+    DOT_MORALE_HIT_DROP_RADIUS,
+    DOT_MORALE_HIT_DROP_NEARBY,
+    DOT_MORALE_KILL_DROP_NEARBY,
+    DOT_MORALE_KILL_DROP_RADIUS,
+    DOT_MORALE_SHOOT_GAIN_SELF,
+    DOT_MORALE_SHOOT_GAIN_NEARBY,
+    DOT_MORALE_SHOOT_GAIN_RADIUS,
 } from "../consts";
 import { DotsGrid } from "../DotsGrid";
 import {
@@ -153,7 +156,7 @@ export class DotsController {
             removed: false,
             allowAttack: true,
             isFleeing: false,
-            morale: DOT_MORALE_BASELINE,
+            morale: DOT_MORALE_INITIAL,
 
             squad: null,
             slot: null,
@@ -361,6 +364,129 @@ export class DotsController {
         attacker.attackTargetDot = target;
     }
 
+    static updateDotMoraleCapped(dot: Dot, moraleNew: number) {
+        dot.morale = Math.min(
+            DOT_MORALE_MAX,
+            Math.max(DOT_MORALE_MIN, moraleNew),
+        );
+    }
+
+    updateDotMoraleBy({
+        dot: dotSelf,
+        changeSelf,
+        changeNearby,
+        changeRadius,
+    }: {
+        dot: Dot;
+        changeSelf: number;
+        changeNearby: number;
+        changeRadius: number;
+    }) {
+        DotsController.updateDotMoraleCapped(
+            dotSelf,
+            dotSelf.morale + changeSelf,
+        );
+
+        const dotNearbyList = this.dotsGrid.getDotsInRange(
+            dotSelf.position,
+            changeRadius,
+        );
+
+        for (const dotNearby of dotNearbyList) {
+            if (dotNearby === dotSelf) {
+                continue;
+            }
+
+            DotsController.updateDotMoraleCapped(
+                dotNearby,
+                dotNearby.morale + changeNearby,
+            );
+        }
+    }
+
+    updateDotListMoraleBy({
+        dotList,
+        changeSelf,
+        changeNearby,
+        changeRadius,
+    }: {
+        dotList: Dot[];
+        changeSelf: number;
+        changeNearby: number;
+        changeRadius: number;
+    }) {
+        for (const dotSelf of dotList) {
+            this.updateDotMoraleBy({
+                dot: dotSelf,
+                changeSelf,
+                changeNearby,
+                changeRadius,
+            });
+        }
+    }
+
+    updateDotsMoraleByHits(dotHitList: Dot[]) {
+        this.updateDotListMoraleBy({
+            dotList: dotHitList,
+            changeSelf: -DOT_MORALE_HIT_DROP_SELF,
+            changeNearby: -DOT_MORALE_HIT_DROP_NEARBY,
+            changeRadius: DOT_MORALE_HIT_DROP_RADIUS,
+        });
+    }
+
+    updateDotsMoraleByKills(dotKillList: Dot[]) {
+        this.updateDotListMoraleBy({
+            dotList: dotKillList,
+            changeSelf: 0,
+            changeNearby: -DOT_MORALE_KILL_DROP_NEARBY,
+            changeRadius: DOT_MORALE_KILL_DROP_RADIUS,
+        });
+    }
+
+    updateDotsMoraleByShoots(dotShotList: Dot[]) {
+        this.updateDotListMoraleBy({
+            dotList: dotShotList,
+            changeSelf: DOT_MORALE_SHOOT_GAIN_SELF,
+            changeNearby: DOT_MORALE_SHOOT_GAIN_NEARBY,
+            changeRadius: DOT_MORALE_SHOOT_GAIN_RADIUS,
+        });
+    }
+
+    dotShoot(dot: Dot) {
+        dot.attackCooldownLeft = dot.attackCooldown;
+        dot.aimingTimeLeft = dot.aimingDuration;
+
+        if (dot.squad && dot.squad.allowShootOnce) {
+            dot.squad.dotsToShootOnce.delete(dot);
+            dot.allowAttack = false;
+            DotsController.clearAttackTargetDot(dot);
+
+            const noAttackTargetForTheRest = Array.from(
+                dot.squad.dotsToShootOnce,
+            ).every((dot) => {
+                return dot.attackTargetDot === null;
+            });
+
+            if (noAttackTargetForTheRest) {
+                dot.squad.allowShootOnce = false;
+            }
+        }
+
+        this.updateDotMoraleBy({
+            dot,
+            changeNearby: DOT_MORALE_SHOOT_GAIN_NEARBY,
+            changeRadius: DOT_MORALE_SHOOT_GAIN_RADIUS,
+            changeSelf: DOT_MORALE_SHOOT_GAIN_SELF,
+        });
+    }
+
+    static clearAttackTargetDot(dot: Dot) {
+        if (dot.attackTargetDot) {
+            dot.attackTargetDot.attackTargetedByDots.delete(dot);
+            dot.attackTargetDot = null;
+        }
+    }
+
     tick(timeDelta: number): DotsControllerTickEffects {
         const effects: DotsControllerTickEffects = {
             projectilesToShoot: [],
@@ -457,13 +583,6 @@ export class DotsController {
             dot.aimingTimeLeft = Math.max(dot.aimingTimeLeft - timeDelta, 0);
         };
 
-        const clearAttackTargetDot = (dot: Dot) => {
-            if (dot.attackTargetDot) {
-                dot.attackTargetDot.attackTargetedByDots.delete(dot);
-                dot.attackTargetDot = null;
-            }
-        };
-
         const clearAttackTargetBuilding = (dot: Dot) => {
             if (dot.attackTargetBuilding) {
                 dot.attackTargetBuilding = null;
@@ -528,25 +647,7 @@ export class DotsController {
                 toPoint: attackTargetPosition,
                 params: DEFAULT_PROJECTILE,
             });
-
-            dot.attackCooldownLeft = dot.attackCooldown;
-            dot.aimingTimeLeft = dot.aimingDuration;
-
-            if (dot.squad && dot.squad.allowShootOnce) {
-                dot.squad.dotsToShootOnce.delete(dot);
-                dot.allowAttack = false;
-                clearAttackTargetDot(dot);
-
-                const noAttackTargetForTheRest = Array.from(
-                    dot.squad.dotsToShootOnce,
-                ).every((dot) => {
-                    return dot.attackTargetDot === null;
-                });
-
-                if (noAttackTargetForTheRest) {
-                    dot.squad.allowShootOnce = false;
-                }
-            }
+            this.dotShoot(dot);
         };
 
         type DotWithDistance = Dot & { _targeting_distance: number };
@@ -609,7 +710,7 @@ export class DotsController {
                 dot.squad !== null && dot.squad.allowAttack;
 
             if (!dot.allowAttack && !allowAttackSquad) {
-                clearAttackTargetDot(dot);
+                DotsController.clearAttackTargetDot(dot);
                 return;
             }
 
@@ -633,7 +734,7 @@ export class DotsController {
                     return;
                 }
 
-                clearAttackTargetDot(dot);
+                DotsController.clearAttackTargetDot(dot);
                 dot.attackTargetBuilding = buildingTarget;
                 return;
             }
@@ -655,7 +756,7 @@ export class DotsController {
                     continue;
                 }
 
-                clearAttackTargetDot(dot);
+                DotsController.clearAttackTargetDot(dot);
 
                 global.assert(
                     dotTarget.removed !== true,
@@ -669,7 +770,7 @@ export class DotsController {
                 return;
             }
 
-            clearAttackTargetDot(dot);
+            DotsController.clearAttackTargetDot(dot);
         };
 
         const isBadTargetDot = (dot: Dot, dotTarget: Dot): boolean => {
@@ -756,7 +857,7 @@ export class DotsController {
                 const gotBadTarget = isBadTargetDot(dot, dot.attackTargetDot);
 
                 if (gotBadTarget) {
-                    clearAttackTargetDot(dot);
+                    DotsController.clearAttackTargetDot(dot);
                 }
 
                 return;
@@ -773,63 +874,27 @@ export class DotsController {
         };
 
         const changeMorale = (dot: Dot) => {
-            const alliesNearby = this.dotsGrid.getDotsInRange(
-                dot.position,
-                DOT_MORALE_GAIN_BY_NEARBY_ALLIE_RADIUS,
-                (d) => d.team === dot.team && d.squad !== null && d !== dot,
-            );
+            const moraleTarget = dot.squad
+                ? DOT_MORALE_BASELINE_IN_SQUAD
+                : DOT_MORALE_BASELINE;
+            const baselineGainPerSecond = dot.squad
+                ? DOT_MORALE_BASELINE_GAIN_IN_SQUAD_PER_SECOND
+                : DOT_MORALE_BASELINE_GAIN_PER_SECOND;
+            const baselineDropPerSecond = dot.squad
+                ? DOT_MORALE_BASELINE_DROP_IN_SQUAD_PER_SECOND
+                : DOT_MORALE_BASELINE_DROP_PER_SECOND;
 
-            const enemiesNearby = this.dotsGrid.getDotsInRange(
-                dot.position,
-                DOT_MORALE_DROP_BY_NEARBY_ENEMY_RADIUS,
-                (d) => d.team !== dot.team && d.squad !== null,
-            );
+            const isGaining = dot.morale < moraleTarget;
+            const moraleChangePerSecond = isGaining
+                ? baselineGainPerSecond
+                : baselineDropPerSecond;
+            const moraleChangeAbs = (moraleChangePerSecond * timeDelta) / 1000;
 
-            const deadAlliesNearby = this.dotsGridDead.getDotsInRange(
-                dot.position,
-                DOT_MORALE_DROP_BY_NEARBY_DEAD_ALLIE_RADIUS,
-                (d) => d.team === dot.team,
-            );
+            const moraleUpdated = isGaining
+                ? Math.min(dot.morale + moraleChangeAbs, moraleTarget)
+                : Math.max(dot.morale - moraleChangeAbs, moraleTarget);
 
-            const moraleTargetChangeNearbyAllies = Math.min(
-                alliesNearby.length * DOT_MORALE_GAIN_BY_NEARBY_ALLIE_COUNT,
-                DOT_MORALE_GAIN_BY_NEARBY_ALLIE_COUNT_MAX,
-            );
-            const moraleTargetChangeNearbyEnemies =
-                -1 *
-                Math.min(
-                    enemiesNearby.length *
-                        DOT_MORALE_DROP_BY_NEARBY_ENEMY_COUNT,
-                    DOT_MORALE_DROP_BY_NEARBY_ENEMY_COUNT_MAX,
-                );
-            const moraleTargetChangeNearbyDeadAllies =
-                -1 *
-                Math.min(
-                    deadAlliesNearby.length *
-                        DOT_MORALE_DROP_BY_NEARBY_DEAD_ALLIE_COUNT,
-                    DOT_MORALE_DROP_BY_NEARBY_DEAD_ALLIE_COUNT_MAX,
-                );
-
-            const moraleTarget =
-                DOT_MORALE_BASELINE +
-                moraleTargetChangeNearbyAllies +
-                moraleTargetChangeNearbyEnemies +
-                moraleTargetChangeNearbyDeadAllies;
-
-            const moraleDiff = moraleTarget - dot.morale;
-            const moraleDiffAbs = Math.abs(moraleDiff);
-            const changeCapPerSecond =
-                Math.sign(moraleDiff) === -1
-                    ? DOT_MORALE_DROP_PER_SECOND_MAX
-                    : DOT_MORALE_GAIN_PER_SECOND_MAX;
-            const changeCap = changeCapPerSecond * timeDelta;
-            const moraleChangeAbs = Math.min(moraleDiffAbs, changeCap);
-            const moraleChange = Math.sign(moraleDiff) * moraleChangeAbs;
-
-            dot.morale = Math.min(
-                DOT_MORALE_MAX,
-                Math.max(DOT_MORALE_MIN, dot.morale + moraleChange),
-            );
+            DotsController.updateDotMoraleCapped(dot, moraleUpdated);
         };
 
         const updateIsFleeing = (dot: Dot) => {
@@ -839,10 +904,7 @@ export class DotsController {
         };
 
         for (const dot of this.dots) {
-            if ("TEMPORARY_DISABLED".length === 0) {
-                changeMorale(dot);
-            }
-
+            changeMorale(dot);
             updateIsFleeing(dot);
         }
 

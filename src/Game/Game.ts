@@ -139,7 +139,7 @@ export class Game {
         this.eventListeners[name].delete(listener);
     }
 
-    orderAttackDot({ attacker, target }: { attacker: Dot, target: Dot }) {
+    orderAttackDot({ attacker, target }: { attacker: Dot; target: Dot }) {
         this.dotsController.orderAttackDot({ attacker, target });
     }
 
@@ -292,7 +292,15 @@ export class Game {
             }
         }
 
-        this.projectilesController.tick(timeDelta);
+        const effectsProjectiles = this.projectilesController.tick(timeDelta);
+
+        this.dotsController.updateDotsMoraleByHits(
+            effectsProjectiles.dotsHitNotKilled,
+        );
+        this.dotsController.updateDotsMoraleByKills(
+            effectsProjectiles.dotsKilled,
+        );
+
         const effectsBuildings = this.buildingsController.tick(timeDelta, {
             teamToResources: new Map(this.resourcesController.teamToState),
         });
