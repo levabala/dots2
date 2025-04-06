@@ -28,9 +28,12 @@ import {
     DOT_MORALE_SHOOT_GAIN_SELF,
     DOT_MORALE_SHOOT_GAIN_NEARBY,
     DOT_MORALE_SHOOT_GAIN_RADIUS,
+    DOT_MORALE_DROP_COEFF_PER_ALLY_NEARBY_RADIUS,
+    DOT_MORALE_DROP_COEFF_PER_ALLY_NEARBY_MINIMAL,
 } from "../consts";
 import { DotsGrid } from "../DotsGrid";
 import {
+    calcAveragePosition,
     distanceBetween,
     getIntersectionAnyRect,
     type Point,
@@ -41,6 +44,7 @@ import type { Slot, Squad } from "./SquadsController";
 import type { Projectile } from "./ProjectilesController";
 import type { Team } from "./TeamController";
 import type { Building } from "./BuildingsController";
+import { Vector } from "../Vector";
 
 export type DotTemplate = {
     width: number;
@@ -86,6 +90,7 @@ export type ProjectileToShoot = {
 export type DotsControllerTickEffects = {
     projectilesToShoot: ProjectileToShoot[];
     dotsRemoved: Dot[];
+    dotsStartedFleeing: Dot[];
 };
 
 export class DotsController {
@@ -337,6 +342,50 @@ export class DotsController {
         dot.path = [destination];
     }
 
+    dotAssignFleePath(dot: Dot) {
+        const enemiesNearby = this.dotsGrid.getDotsInRange(
+            dot.position,
+            DOT_ATTACK_RANGE * 2,
+            (dotOther) => dotOther.team !== dot.team,
+        );
+        const averagePosition = enemiesNearby.length
+            ? calcAveragePosition(enemiesNearby.map((dot) => dot.position))
+            : null;
+        const generalDirectionAngle =
+            averagePosition === null
+                ? 0
+                : Vector.betweenPoints(dot.position, averagePosition)
+                      .inverse()
+                      .angle();
+
+        function generatePathSegment(
+            from: Point,
+            baseAngle: number,
+            angleRandomnessRange: number,
+            length: number,
+        ) {
+            const angle =
+                baseAngle + (Math.random() - 0.5) * angleRandomnessRange;
+            const { x, y } = Vector.fromAngleLength(angle, length).add(from);
+
+            return { x, y };
+        }
+
+        const path: Point[] = [];
+        for (let i = 0; i < 10; i++) {
+            const prev = path.length ? path[path.length - 1] : dot.position;
+            const next = generatePathSegment(
+                prev,
+                generalDirectionAngle,
+                averagePosition ? Math.PI / 4 : Math.PI * 4,
+                30,
+            );
+            path.push(next);
+        }
+
+        dot.path = path;
+    }
+
     checkHasShootIntersectionWithOwnTeam(dot: Dot, target: Point): boolean {
         const line = {
             p1: dot.position,
@@ -371,6 +420,23 @@ export class DotsController {
         );
     }
 
+    calcMoraleDropCoeff(dot: Dot): number {
+        if (!dot.squad) {
+            return 1;
+        }
+
+        const allies = this.dotsGrid.getDotsInRange(
+            dot.position,
+            DOT_MORALE_DROP_COEFF_PER_ALLY_NEARBY_RADIUS,
+            (dotOther) => dotOther.team === dot.team,
+        );
+
+        return Math.max(
+            1 - Math.max(1, allies.length / 30000),
+            DOT_MORALE_DROP_COEFF_PER_ALLY_NEARBY_MINIMAL,
+        );
+    }
+
     updateDotMoraleBy({
         dot: dotSelf,
         changeSelf,
@@ -382,9 +448,14 @@ export class DotsController {
         changeNearby: number;
         changeRadius: number;
     }) {
+        const changeSelfWithCoeff =
+            changeSelf < 0
+                ? changeSelf * this.calcMoraleDropCoeff(dotSelf)
+                : changeSelf;
+
         DotsController.updateDotMoraleCapped(
             dotSelf,
-            dotSelf.morale + changeSelf,
+            dotSelf.morale + changeSelfWithCoeff,
         );
 
         const dotNearbyList = this.dotsGrid.getDotsInRange(
@@ -397,9 +468,14 @@ export class DotsController {
                 continue;
             }
 
+            const changeNearbyWithCoeff =
+                changeNearby < 0
+                    ? changeNearby * this.calcMoraleDropCoeff(dotNearby)
+                    : changeNearby;
+
             DotsController.updateDotMoraleCapped(
                 dotNearby,
-                dotNearby.morale + changeNearby,
+                dotNearby.morale + changeNearbyWithCoeff,
             );
         }
     }
@@ -491,6 +567,7 @@ export class DotsController {
         const effects: DotsControllerTickEffects = {
             projectilesToShoot: [],
             dotsRemoved: [],
+            dotsStartedFleeing: [],
         };
 
         const moveByPath = (dot: Dot) => {
@@ -900,12 +977,27 @@ export class DotsController {
         const updateIsFleeing = (dot: Dot) => {
             const isFleeing = dot.morale <= DOT_MORALE_FLEE_LEVEL;
 
+            const startedFleeing = !dot.isFleeing && isFleeing;
+
             dot.isFleeing = isFleeing;
+
+            return { startedFleeing };
         };
 
         for (const dot of this.dots) {
             changeMorale(dot);
-            updateIsFleeing(dot);
+            const { startedFleeing } = updateIsFleeing(dot);
+
+            if (startedFleeing) {
+                dot.path = [];
+                effects.dotsStartedFleeing.push(dot);
+            }
+
+            if (dot.isFleeing && dot.path.length < 1) {
+                dot.attackTargetDot = null;
+                dot.attackTargetBuilding = null;
+                this.dotAssignFleePath(dot);
+            }
         }
 
         for (const dot of this.dots) {

@@ -55,6 +55,10 @@ export class Vector implements Point {
         return this.mul({ x: scale, y: scale });
     }
 
+    inverse() {
+        return new Vector(-this.x, -this.y);
+    }
+
     static fromPoint(point: Point) {
         return new Vector(point.x, point.y);
     }

@@ -568,7 +568,11 @@ function convexHull(points: Point[]): Polygon {
     for (const p of points) {
         while (
             lower.length >= 2 &&
-            !isCounterClockwise(lower[lower.length - 2], lower[lower.length - 1], p)
+            !isCounterClockwise(
+                lower[lower.length - 2],
+                lower[lower.length - 1],
+                p,
+            )
         ) {
             lower.pop();
         }
@@ -581,7 +585,11 @@ function convexHull(points: Point[]): Polygon {
         const p = points[i];
         while (
             upper.length >= 2 &&
-            !isCounterClockwise(upper[upper.length - 2], upper[upper.length - 1], p)
+            !isCounterClockwise(
+                upper[upper.length - 2],
+                upper[upper.length - 1],
+                p,
+            )
         ) {
             upper.pop();
         }
@@ -878,14 +886,15 @@ export function getOrientedBoundingBox(points: Point[]): Rect {
 
             const topLeft = rotatePoint({ x: minX, y: minY }, p1, angle);
             const topRight = rotatePoint({ x: maxX, y: minY }, p1, angle);
-            const bottomRight = rotatePoint(
-                { x: maxX, y: maxY },
-                p1,
-                angle
-            );
+            const bottomRight = rotatePoint({ x: maxX, y: maxY }, p1, angle);
             const bottomLeft = rotatePoint({ x: minX, y: maxY }, p1, angle);
 
-            bestRect = { p1: topLeft, p2: topRight, p3: bottomRight, p4: bottomLeft };
+            bestRect = {
+                p1: topLeft,
+                p2: topRight,
+                p3: bottomRight,
+                p4: bottomLeft,
+            };
         }
     }
 
@@ -894,4 +903,23 @@ export function getOrientedBoundingBox(points: Point[]): Rect {
     }
 
     return bestRect;
+}
+
+export function calcAveragePosition(points: Point[]): Point {
+    if (points.length === 0) {
+        throw new Error("Points array cannot be empty");
+    }
+
+    let sumX = 0;
+    let sumY = 0;
+
+    for (const point of points) {
+        sumX += point.x;
+        sumY += point.y;
+    }
+
+    return {
+        x: sumX / points.length,
+        y: sumY / points.length,
+    };
 }

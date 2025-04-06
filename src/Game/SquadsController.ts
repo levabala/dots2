@@ -205,6 +205,21 @@ export class SquadsController {
         }
     }
 
+    removeDotFromItsSquad(dot: Dot) {
+        assert(
+            Boolean(dot.squad && dot.slot),
+            "removeDotFromItsSquad called on a dot without a squad or slot",
+            { dot },
+        );
+
+        if (!dot.squad || !dot.slot) {
+            return;
+        }
+
+        dot.slot.dot = null;
+        dot.squad = null;
+    }
+
     isInSquad(dot: Dot) {
         return this.squads.some((squad) =>
             squad.slots.some((slot) => slot.dot === dot),

@@ -267,6 +267,12 @@ export class Game {
             );
         }
 
+        for (const dotStartedFleeing of effectsDots.dotsStartedFleeing) {
+            if (dotStartedFleeing.squad) {
+                this.squadsController.removeDotFromItsSquad(dotStartedFleeing);
+            }
+        }
+
         for (const team of this.teamController.teams) {
             this.resourcesController.setHousing(
                 team,
