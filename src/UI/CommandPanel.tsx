@@ -7,7 +7,7 @@ import {
     type BuildingCost,
     type BuildingKind,
 } from "../Game/BuildingsController";
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 export type CommandPanelLog = {
     timestamp: Date;
@@ -54,6 +54,7 @@ const CommandPanel: React.FC<{
     callbacks,
 }) => {
     const logsRef = useRef<HTMLDivElement>(null);
+    const [timeScale, setTimeScale] = useState(global.timeScale);
 
     const isScrolledToBottom = useRef(true);
     useEffect(() => {
@@ -117,7 +118,35 @@ const CommandPanel: React.FC<{
                 boxSizing: "border-box",
             }}
         >
-            <h3 style={{ margin: 0, marginBottom: 4 }}>Command Panel</h3>
+            <div
+                style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: 4,
+                }}
+            >
+                <h3 style={{ margin: 0 }}>Command Panel</h3>
+                <div
+                    style={{
+                        display: "flex",
+                        gap: "4px",
+                        alignItems: "center",
+                    }}
+                >
+                    <input
+                        type="range"
+                        value={timeScale}
+                        min="0"
+                        max="9.9"
+                        step="0.1"
+                        onChange={(e) => {
+                            global.timeScale = parseFloat(e.target.value);
+                            setTimeScale(global.timeScale);
+                        }}
+                    />
+                    <label>Time scale: {timeScale.toFixed(1)}</label>
+                </div>
+            </div>
             <div
                 style={{
                     display: "flex",
@@ -242,14 +271,17 @@ const CommandPanel: React.FC<{
                         </button>
                         <button
                             onClick={() => callbacks.selectBuilding("barracks")}
-                            data-tooltip={buildingToCost &&JSON.stringify(
-                                buildingToCost.barracks,
-                                undefined,
-                                2,
-                            )}
+                            data-tooltip={
+                                buildingToCost &&
+                                JSON.stringify(
+                                    buildingToCost.barracks,
+                                    undefined,
+                                    2,
+                                )
+                            }
                             disabled={
                                 resources === null ||
-                                    buildingToCost === null ||
+                                buildingToCost === null ||
                                 !BuildingsController.canBuild(
                                     buildingToCost.barracks,
                                     resources,
@@ -260,14 +292,17 @@ const CommandPanel: React.FC<{
                         </button>
                         <button
                             onClick={() => callbacks.selectBuilding("house")}
-                            data-tooltip={buildingToCost &&JSON.stringify(
-                                buildingToCost.house,
-                                undefined,
-                                2,
-                            )}
+                            data-tooltip={
+                                buildingToCost &&
+                                JSON.stringify(
+                                    buildingToCost.house,
+                                    undefined,
+                                    2,
+                                )
+                            }
                             disabled={
                                 resources === null ||
-                                    buildingToCost === null ||
+                                buildingToCost === null ||
                                 !BuildingsController.canBuild(
                                     buildingToCost.house,
                                     resources,
@@ -278,14 +313,17 @@ const CommandPanel: React.FC<{
                         </button>
                         <button
                             onClick={() => callbacks.selectBuilding("farm")}
-                            data-tooltip={buildingToCost &&JSON.stringify(
-                                buildingToCost.farm,
-                                undefined,
-                                2,
-                            )}
+                            data-tooltip={
+                                buildingToCost &&
+                                JSON.stringify(
+                                    buildingToCost.farm,
+                                    undefined,
+                                    2,
+                                )
+                            }
                             disabled={
                                 resources === null ||
-                                    buildingToCost === null ||
+                                buildingToCost === null ||
                                 !BuildingsController.canBuild(
                                     buildingToCost.farm,
                                     resources,
@@ -296,14 +334,17 @@ const CommandPanel: React.FC<{
                         </button>
                         <button
                             onClick={() => callbacks.selectBuilding("granary")}
-                            data-tooltip={buildingToCost &&JSON.stringify(
-                                buildingToCost.granary,
-                                undefined,
-                                2,
-                            )}
+                            data-tooltip={
+                                buildingToCost &&
+                                JSON.stringify(
+                                    buildingToCost.granary,
+                                    undefined,
+                                    2,
+                                )
+                            }
                             disabled={
                                 resources === null ||
-                                    buildingToCost === null ||
+                                buildingToCost === null ||
                                 !BuildingsController.canBuild(
                                     buildingToCost.granary,
                                     resources,
@@ -313,21 +354,26 @@ const CommandPanel: React.FC<{
                             Granary
                         </button>
                         <button
-                            onClick={() => callbacks.selectBuilding("coinMiner")}
-                            data-tooltip={buildingToCost &&JSON.stringify(
-                                buildingToCost.coinMiner,
-                                undefined,
-                                2,
-                            )}
+                            onClick={() =>
+                                callbacks.selectBuilding("coinMiner")
+                            }
+                            data-tooltip={
+                                buildingToCost &&
+                                JSON.stringify(
+                                    buildingToCost.coinMiner,
+                                    undefined,
+                                    2,
+                                )
+                            }
                             disabled={
                                 resources === null ||
-                                    buildingToCost === null ||
+                                buildingToCost === null ||
                                 !BuildingsController.canBuild(
                                     buildingToCost.coinMiner,
                                     resources,
                                 )
                             }
-                            >
+                        >
                             Coin Miner
                         </button>
                     </div>
