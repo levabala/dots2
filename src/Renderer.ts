@@ -1,4 +1,9 @@
-import { DEFAULT_PROJECTILE, DOT_MORALE_MAX } from "./consts";
+import {
+    DEFAULT_PROJECTILE,
+    DOT_MORALE_BASELINE_IN_SQUAD,
+    DOT_MORALE_FLEE_LEVEL,
+    DOT_MORALE_MAX,
+} from "./consts";
 import type { DotsGrid } from "./DotsGrid";
 import type { Game } from "./Game";
 import type { Building, BuildingBase } from "./Game/BuildingsController";
@@ -16,13 +21,14 @@ import {
     type Point,
     type Rect,
 } from "./shapes";
+import { prop, sort, sortBy, take, takeLast } from "remeda";
 
-const MORALE_BAR_WIDTH = 8;
-const MORALE_BAR_HEIGHT = 2;
-const MORALE_BAR_OFFSET = 1;
-const HEALTH_BAR_OFFSET = MORALE_BAR_HEIGHT + MORALE_BAR_OFFSET + 0.5;
+const DOT_MORALE_BAR_WIDTH = 8;
+const DOT_MORALE_BAR_HEIGHT = 2;
+const DOT_MORALE_BAR_OFFSET = 1;
+const HEALTH_BAR_OFFSET = DOT_MORALE_BAR_HEIGHT + DOT_MORALE_BAR_OFFSET + 0.5;
 const HEALTH_BAR_HEIGHT = 2;
-const HEALTH_BAR_WIDTH = MORALE_BAR_WIDTH;
+const HEALTH_BAR_WIDTH = DOT_MORALE_BAR_WIDTH;
 
 interface Renderer {
     game: Game;
@@ -142,6 +148,8 @@ export class RendererCanvasSimple implements Renderer {
                     buildingTarget,
                 );
             }
+
+            this.renderSquadMorale(squad);
         }
 
         if (this.ui.selection) {
@@ -431,6 +439,79 @@ export class RendererCanvasSimple implements Renderer {
         this.ctx.stroke();
     }
 
+    renderSquadMorale(squad: Squad) {
+        const middle = getRectCenter(squad.frameTarget);
+
+        const moraleBarBottomCenter = middle;
+
+        const width = 100;
+        const height = 30;
+
+        const moraleBarContainerRect = {
+            p1: {
+                x: moraleBarBottomCenter.x - width / 2,
+                y: moraleBarBottomCenter.y - height,
+            },
+            p2: {
+                x: moraleBarBottomCenter.x + width / 2,
+                y: moraleBarBottomCenter.y - height,
+            },
+            p3: {
+                x: moraleBarBottomCenter.x + width / 2,
+                y: moraleBarBottomCenter.y,
+            },
+            p4: {
+                x: moraleBarBottomCenter.x - width / 2,
+                y: moraleBarBottomCenter.y,
+            },
+        };
+
+        const dotsAll = squad.slots
+            .filter((slot) => slot.dot)
+            .map((slot) => slot.dot!);
+        const dotsSortedByMorale = sortBy(dotsAll, prop("morale"));
+        const dots = take(dotsSortedByMorale, Math.floor(dotsAll.length * 0.3));
+
+        let squadMoraleSum = 0;
+        let squadMoraleMax = 0;
+        let dotsCount = 0;
+        for (const dot of dots) {
+            squadMoraleSum += dot.morale;
+            squadMoraleMax += DOT_MORALE_BASELINE_IN_SQUAD;
+            dotsCount++;
+        }
+
+        const moraleLevelPercent = squadMoraleSum / squadMoraleMax;
+        const moraleLevelPixels = width - moraleLevelPercent * width;
+
+        const moraleBarValueRect = {
+            p1: moraleBarContainerRect.p1,
+            p2: {
+                x: moraleBarContainerRect.p2.x - moraleLevelPixels,
+                y: moraleBarContainerRect.p2.y,
+            },
+            p3: {
+                x: moraleBarContainerRect.p3.x - moraleLevelPixels,
+                y: moraleBarContainerRect.p3.y,
+            },
+            p4: moraleBarContainerRect.p4,
+        };
+
+        this.ctx.strokeStyle = "black";
+        this.ctx.fillStyle = "rgba(255, 255, 0, 0.3)";
+        this.ctx.lineWidth = 1;
+        RendererUtils.drawRect(this.ctx, moraleBarValueRect);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        const averageMorale = squadMoraleSum / dotsCount;
+        const isVeryLow = averageMorale < DOT_MORALE_FLEE_LEVEL + 10;
+        this.ctx.strokeStyle = isVeryLow ? "red" : "black";
+        this.ctx.lineWidth = 0.5;
+        RendererUtils.drawRect(this.ctx, moraleBarContainerRect);
+        this.ctx.stroke();
+    }
+
     renderDotMorale(dot: Dot) {
         const hitBoxPointsExceptP1 = [
             dot.hitBox.p2,
@@ -447,31 +528,31 @@ export class RendererCanvasSimple implements Renderer {
 
         const moraleBarBottomCenter = {
             x: dot.position.x,
-            y: topPoint.y - MORALE_BAR_OFFSET,
+            y: topPoint.y - DOT_MORALE_BAR_OFFSET,
         };
 
         const moraleBarContainerRect = {
             p1: {
-                x: moraleBarBottomCenter.x - MORALE_BAR_WIDTH / 2,
-                y: moraleBarBottomCenter.y - MORALE_BAR_HEIGHT,
+                x: moraleBarBottomCenter.x - DOT_MORALE_BAR_WIDTH / 2,
+                y: moraleBarBottomCenter.y - DOT_MORALE_BAR_HEIGHT,
             },
             p2: {
-                x: moraleBarBottomCenter.x + MORALE_BAR_WIDTH / 2,
-                y: moraleBarBottomCenter.y - MORALE_BAR_HEIGHT,
+                x: moraleBarBottomCenter.x + DOT_MORALE_BAR_WIDTH / 2,
+                y: moraleBarBottomCenter.y - DOT_MORALE_BAR_HEIGHT,
             },
             p3: {
-                x: moraleBarBottomCenter.x + MORALE_BAR_WIDTH / 2,
+                x: moraleBarBottomCenter.x + DOT_MORALE_BAR_WIDTH / 2,
                 y: moraleBarBottomCenter.y,
             },
             p4: {
-                x: moraleBarBottomCenter.x - MORALE_BAR_WIDTH / 2,
+                x: moraleBarBottomCenter.x - DOT_MORALE_BAR_WIDTH / 2,
                 y: moraleBarBottomCenter.y,
             },
         };
 
         const moraleLevelPercent = dot.morale / DOT_MORALE_MAX;
         const moraleLevelPixels =
-            MORALE_BAR_WIDTH - moraleLevelPercent * MORALE_BAR_WIDTH;
+            DOT_MORALE_BAR_WIDTH - moraleLevelPercent * DOT_MORALE_BAR_WIDTH;
 
         const moraleBarValueRect = {
             p1: moraleBarContainerRect.p1,
@@ -519,7 +600,9 @@ export class RendererCanvasSimple implements Renderer {
 
     renderSquadFrameTarget(squad: Squad, isSelected: boolean) {
         this.ctx.lineWidth = 1;
-        this.ctx.strokeStyle = isSelected ? "darkkhaki" : this.getTeamColor(squad.team.index);
+        this.ctx.strokeStyle = isSelected
+            ? "darkkhaki"
+            : this.getTeamColor(squad.team.index);
 
         RendererUtils.drawRect(this.ctx, squad.frameTarget);
 
@@ -557,7 +640,10 @@ export class RendererCanvasSimple implements Renderer {
             lineCenterToCenter,
             squadFrom.frameTarget,
         );
-        const end = getIntersectionFirstRect(lineCenterToCenter, squadTo.frameTarget);
+        const end = getIntersectionFirstRect(
+            lineCenterToCenter,
+            squadTo.frameTarget,
+        );
 
         if (!start || !end) {
             return;
