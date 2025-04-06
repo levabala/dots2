@@ -63,6 +63,13 @@ export class Vector implements Point {
         return new Vector(p2.x - p1.x, p2.y - p1.y);
     }
 
+    static fromAngleLength(angle: number, length: number) {
+        return new Vector(
+            Math.cos(angle) * length,
+            Math.sin(angle) * length
+        );
+    }
+
     toString() {
         return `(${this.x}, ${this.y})`;
     }
