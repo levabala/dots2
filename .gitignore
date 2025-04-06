@@ -179,3 +179,4 @@ dist
 
 # temp types
 .types
+.aider*
